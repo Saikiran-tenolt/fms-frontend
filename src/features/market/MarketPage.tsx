@@ -25,15 +25,24 @@ export const MarketPage: React.FC = () => {
     let current = trend === 'up' ? price * (1 - changePct / 100) : 
                   trend === 'down' ? price * (1 + changePct / 100) : price;
     
-    // Create 7 data points
     for (let i = 0; i < 6; i++) {
         data.push({ value: current });
         const volatility = (Math.random() - 0.5) * (price * 0.05);
         current = current + volatility;
     }
-    data.push({ value: price }); // ensure last point is exactly the current price
+    data.push({ value: price });
     return data;
   };
+
+  // Pre-compute trend data for all prices (hooks cannot be inside .map())
+  const trendDataMap = useMemo(() => {
+    const map: Record<string, { value: number }[]> = {};
+    prices.forEach((price) => {
+      map[price.id] = generateTrendData(price.price, price.trend, price.change);
+    });
+    return map;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prices]);
 
   return (
     <div className="space-y-8 animate-fadeIn max-w-7xl mx-auto">
@@ -66,7 +75,7 @@ export const MarketPage: React.FC = () => {
             const isUp = price.trend === 'up';
             const isDown = price.trend === 'down';
             const strokeColor = isUp ? '#10B981' : isDown ? '#F43F5E' : '#94A3B8';
-            const trendData = useMemo(() => generateTrendData(price.price, price.trend, price.change), [price.price, price.trend, price.change]);
+            const trendData = trendDataMap[price.id] ?? [];
 
             return (
               <div 
