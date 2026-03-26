@@ -5,7 +5,7 @@ import { Card, Badge, EmptyState } from '../../components/ui';
 
 export const AdvisoryPage: React.FC = () => {
   const { advisories, loading } = useAppSelector((state) => state.advisories);
-  
+
   if (advisories.length === 0) {
     return (
       <EmptyState
@@ -15,7 +15,7 @@ export const AdvisoryPage: React.FC = () => {
       />
     );
   }
-  
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -25,7 +25,7 @@ export const AdvisoryPage: React.FC = () => {
           Expert recommendations for your plots
         </p>
       </div>
-      
+
       {/* Advisories List */}
       <div className="space-y-4">
         {advisories.map((advisory) => (
@@ -42,8 +42,8 @@ export const AdvisoryPage: React.FC = () => {
                       advisory.severity === 'critical'
                         ? 'error'
                         : advisory.severity === 'high'
-                        ? 'warning'
-                        : 'info'
+                          ? 'warning'
+                          : 'info'
                     }
                   >
                     {advisory.severity}

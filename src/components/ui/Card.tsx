@@ -9,19 +9,18 @@ interface CardProps {
   onClick?: () => void;
 }
 
-export const Card: React.FC<CardProps> = ({ 
-  children, 
-  className = '', 
-  title, 
-  action, 
+export const Card: React.FC<CardProps> = ({
+  children,
+  className = '',
+  title,
+  action,
   hoverable = false,
-  onClick 
+  onClick
 }) => {
   return (
-    <div 
-      className={`bg-white rounded-xl shadow-sm border border-gray-200 transition-all duration-200 ${
-        hoverable ? 'hover:shadow-lg hover:-translate-y-1 cursor-pointer' : ''
-      } ${className}`}
+    <div
+      className={`bg-white rounded-xl shadow-sm border border-gray-200 transition-all duration-200 ${hoverable ? 'hover:shadow-lg hover:-translate-y-1 cursor-pointer' : ''
+        } ${className}`}
       onClick={onClick}
     >
       {(title || action) && (

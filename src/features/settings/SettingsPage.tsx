@@ -5,7 +5,7 @@ import { Card } from '../../components/ui';
 
 export const SettingsPage: React.FC = () => {
   const { user } = useAppSelector((state) => state.auth);
-  
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -15,7 +15,7 @@ export const SettingsPage: React.FC = () => {
           Manage your account and preferences
         </p>
       </div>
-      
+
       {/* Profile Section */}
       <Card title="Profile Information">
         <div className="flex items-center gap-4 mb-6">
@@ -29,7 +29,7 @@ export const SettingsPage: React.FC = () => {
           </div>
         </div>
       </Card>
-      
+
       {/* Settings Sections */}
       <Card title="Notification Preferences">
         <div className="space-y-4">
@@ -48,7 +48,7 @@ export const SettingsPage: React.FC = () => {
           </div>
         </div>
       </Card>
-      
+
       <Card title="Privacy & Security">
         <div className="space-y-4">
           <div className="flex items-center gap-3">
@@ -60,7 +60,7 @@ export const SettingsPage: React.FC = () => {
           </div>
         </div>
       </Card>
-      
+
       <Card title="Language & Region">
         <div className="space-y-4">
           <div className="flex items-center gap-3">

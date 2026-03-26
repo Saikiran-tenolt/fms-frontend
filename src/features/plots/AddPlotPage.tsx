@@ -18,13 +18,13 @@ export const AddPlotPage: React.FC = () => {
   const [gettingLocation, setGettingLocation] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { plots } = useAppSelector((state) => state.plots);
   const isFirstPlot = plots.length === 0;
-  
+
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -33,9 +33,9 @@ export const AddPlotPage: React.FC = () => {
         setError('Image size must be less than 5MB');
         return;
       }
-      
+
       setImageFile(file);
-      
+
       // Create preview
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -44,7 +44,7 @@ export const AddPlotPage: React.FC = () => {
       reader.readAsDataURL(file);
     }
   };
-  
+
   const handleRemoveImage = () => {
     setImageFile(null);
     setImagePreview(null);
@@ -52,16 +52,16 @@ export const AddPlotPage: React.FC = () => {
       fileInputRef.current.value = '';
     }
   };
-  
+
   const handleGetLocation = () => {
     if (!navigator.geolocation) {
       setError('Geolocation is not supported by your browser');
       return;
     }
-    
+
     setGettingLocation(true);
     setError('');
-    
+
     navigator.geolocation.getCurrentPosition(
       (position) => {
         setLocation({
@@ -76,23 +76,23 @@ export const AddPlotPage: React.FC = () => {
       }
     );
   };
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    
+
     // Validation
     if (location.latitude === 0 && location.longitude === 0) {
       setError('Please provide plot location');
       return;
     }
-    
+
     setLoading(true);
-    
+
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 800));
-      
+
       // Create plot object
       const newPlot: Plot = {
         plotId: `plot-${Date.now()}`,
@@ -104,10 +104,10 @@ export const AddPlotPage: React.FC = () => {
         imageUrl: imagePreview || undefined,
         createdAt: new Date().toISOString(),
       };
-      
+
       // Add plot to store
       dispatch(addPlot(newPlot));
-      
+
       // Navigate to dashboard
       navigate('/dashboard');
     } catch (err) {
@@ -115,7 +115,7 @@ export const AddPlotPage: React.FC = () => {
       setLoading(false);
     }
   };
-  
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 to-earth-50 flex items-center justify-center px-4 py-8">
       <div className="max-w-2xl w-full">
@@ -130,7 +130,7 @@ export const AddPlotPage: React.FC = () => {
               : 'Add another plot to your monitoring system'}
           </p>
         </div>
-        
+
         {/* Form */}
         <Card>
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -139,7 +139,7 @@ export const AddPlotPage: React.FC = () => {
                 {error}
               </div>
             )}
-            
+
             {/* Plot Name */}
             <div>
               <label htmlFor="plotName" className="block text-sm font-medium text-gray-700 mb-2">
@@ -155,7 +155,7 @@ export const AddPlotPage: React.FC = () => {
                 placeholder="e.g., North Field"
               />
             </div>
-            
+
             {/* Crop Type */}
             <div>
               <label htmlFor="cropType" className="block text-sm font-medium text-gray-700 mb-2">
@@ -171,7 +171,7 @@ export const AddPlotPage: React.FC = () => {
                 placeholder="e.g., Wheat, Rice, Tomato"
               />
             </div>
-            
+
             {/* Soil Type */}
             <div>
               <label htmlFor="soilType" className="block text-sm font-medium text-gray-700 mb-2">
@@ -193,7 +193,7 @@ export const AddPlotPage: React.FC = () => {
                 <option value="Silt">Silt</option>
               </select>
             </div>
-            
+
             {/* Environment Type */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -224,13 +224,13 @@ export const AddPlotPage: React.FC = () => {
                 </label>
               </div>
             </div>
-            
+
             {/* Plot Image Upload */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Plot Image (Optional)
               </label>
-              
+
               {imagePreview ? (
                 <div className="relative">
                   <img
@@ -257,7 +257,7 @@ export const AddPlotPage: React.FC = () => {
                   <p className="text-xs text-gray-500 mt-1">Max size: 5MB</p>
                 </div>
               )}
-              
+
               <input
                 ref={fileInputRef}
                 type="file"
@@ -266,13 +266,13 @@ export const AddPlotPage: React.FC = () => {
                 className="hidden"
               />
             </div>
-            
+
             {/* Location */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Plot Location *
               </label>
-              
+
               <div className="flex gap-4 mb-3">
                 <label className="flex items-center cursor-pointer">
                   <input
@@ -297,7 +297,7 @@ export const AddPlotPage: React.FC = () => {
                   <span>Manual Entry</span>
                 </label>
               </div>
-              
+
               {locationMethod === 'auto' ? (
                 <Button
                   type="button"
@@ -352,14 +352,14 @@ export const AddPlotPage: React.FC = () => {
                   </div>
                 </div>
               )}
-              
+
               {(location.latitude !== 0 || location.longitude !== 0) && (
                 <p className="text-xs text-green-600 mt-2">
                   ✓ Location: {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}
                 </p>
               )}
             </div>
-            
+
             {/* Submit Button */}
             <div className="flex gap-3 pt-4">
               {!isFirstPlot && (

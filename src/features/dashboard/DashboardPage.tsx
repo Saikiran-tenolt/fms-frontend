@@ -16,8 +16,8 @@ import {
 import { useAppSelector, useAppDispatch } from '../../hooks';
 import { setSensorData, setTrendData } from '../sensors/sensorsSlice';
 import { setAdvisories } from '../advisories/advisoriesSlice';
-import { Card, Badge, Button, EmptyState, Loader, SkeletonCard, SkeletonChart } from '../../components/ui';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Badge, EmptyState, SkeletonCard, SkeletonChart } from '../../components/ui';
+import { AreaChart, Area, ResponsiveContainer } from 'recharts';
 import {
   generateMockSensorData,
   generateMockTrendData,
@@ -35,19 +35,19 @@ export const DashboardPage: React.FC = () => {
   const { advisories } = useAppSelector((state) => state.advisories);
   const [loading, setLoading] = useState(true);
   const [weather, setWeather] = useState<any>(null);
-  
+
   const selectedPlot = plots.find((p) => p.plotId === selectedPlotId);
-  
+
   useEffect(() => {
     if (plots.length > 0 && selectedPlotId) {
       loadDashboardData();
     }
   }, [selectedPlotId, plots.length]);
-  
+
   const loadDashboardData = async () => {
     setLoading(true);
     await new Promise((resolve) => setTimeout(resolve, 1000));
-    
+
     if (selectedPlot) {
       const sensors = generateMockSensorData(selectedPlot.plotId, selectedPlot.environmentType);
       dispatch(setSensorData({ plotId: selectedPlot.plotId, data: sensors }));
@@ -56,14 +56,14 @@ export const DashboardPage: React.FC = () => {
       setWeather(generateMockWeather(selectedPlot.plotId));
       dispatch(setAdvisories(mockAdvisories));
     }
-    
+
     setLoading(false);
   };
-  
+
   const handlePlotChange = (plotId: string) => {
     dispatch(selectPlot(plotId));
   };
-  
+
   if (plots.length === 0) {
     return (
       <EmptyState
@@ -77,76 +77,80 @@ export const DashboardPage: React.FC = () => {
       />
     );
   }
-  
+
   const currentSensors = selectedPlotId ? sensorData[selectedPlotId] : null;
   const soilMoistureTrend = selectedPlotId ? trendData[`${selectedPlotId}_soilMoisture`] : [];
   const temperatureTrend = selectedPlotId ? trendData[`${selectedPlotId}_temperature`] : [];
+  const humidityTrend = selectedPlotId ? trendData[`${selectedPlotId}_soilMoisture`] : []; // Reusing mock since we just need visuals
+  const soilTempTrend = selectedPlotId ? trendData[`${selectedPlotId}_temperature`] : []; // Reusing mock
   const latestAdvisory = advisories[0];
-  
+
   return (
-    <div className="space-y-8 animate-fadeIn">
+    <div className="space-y-8 animate-fadeIn max-w-6xl mx-auto">
       {/* 1️⃣ WELCOME HEADER BANNER */}
-      <Card className="bg-gradient-to-br from-primary-600 via-primary-500 to-primary-700 border-0 shadow-2xl overflow-hidden">
-        <div className="relative">
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzRjMC0yLjIxIDEuNzktNCA0LTRzNCAxLjc5IDQgNC0xLjc5IDQtNCA0LTQtMS43OS00LTR6bTAgMTBjMC0yLjIxIDEuNzktNCA0LTRzNCAxLjc5IDQgNC0xLjc5IDQtNCA0LTQtMS43OS00LTR6bTAgMTBjMC0yLjIxIDEuNzktNCA0LTRzNCAxLjc5IDQgNC0xLjc5IDQtNCA0LTQtMS43OS00LTR6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-20"></div>
-          <div className="relative p-8">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="h-14 w-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
-                    <Sprout className="h-8 w-8 text-white" />
-                  </div>
-                  <div>
-                    <h1 className="text-3xl sm:text-4xl font-bold text-white">Smart Farm Monitoring</h1>
-                    <p className="text-primary-100 text-sm mt-1">Real-time agricultural intelligence</p>
-                  </div>
+      <div className="bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm rounded-2xl overflow-hidden relative">
+        <div className="absolute -top-24 -right-12 p-12 opacity-5 pointer-events-none text-emerald-900">
+          <Sprout className="w-96 h-96" />
+        </div>
+        <div className="relative p-8 px-8 sm:px-10">
+          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+            <div className="flex-1">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="h-12 w-12 bg-white flex items-center justify-center rounded-xl shadow-sm border border-slate-100">
+                  <Sprout className="h-6 w-6 text-emerald-500" />
                 </div>
-                
-                {selectedPlot && (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
-                    <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                      <p className="text-primary-100 text-xs font-semibold uppercase tracking-wider mb-1">Active Plot</p>
-                      <p className="text-white text-xl font-bold">{selectedPlot.plotName}</p>
-                    </div>
-                    <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                      <p className="text-primary-100 text-xs font-semibold uppercase tracking-wider mb-1">Crop Type</p>
-                      <p className="text-white text-xl font-bold">{selectedPlot.cropType}</p>
-                    </div>
-                    <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                      <p className="text-primary-100 text-xs font-semibold uppercase tracking-wider mb-1">Weather</p>
-                      <div className="flex items-center gap-2">
-                        <span className="text-3xl">{weather?.icon || '☀️'}</span>
-                        <p className="text-white text-xl font-bold">{weather?.temperature || '--'}°C</p>
-                      </div>
+                <div>
+                  <h1 className="text-3xl font-bold tracking-tight text-slate-900">Real-time Field Overview</h1>
+                  <p className="text-slate-500 text-sm font-medium mt-1">Smart agricultural intelligence</p>
+                </div>
+              </div>
+
+              {selectedPlot && (
+                <div className="flex flex-wrap gap-8 mt-8">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Active Plot</p>
+                    <p className="text-xl font-bold tracking-tight text-slate-900">{selectedPlot.plotName}</p>
+                  </div>
+                  <div className="w-px bg-slate-200 hidden sm:block"></div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Crop Type</p>
+                    <p className="text-xl font-bold tracking-tight text-slate-900">{selectedPlot.cropType}</p>
+                  </div>
+                  <div className="w-px bg-slate-200 hidden sm:block"></div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Local Weather</p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">{weather?.icon || '☀️'}</span>
+                      <p className="text-xl font-bold tracking-tight text-slate-900">{weather?.temperature || '--'}°C</p>
                     </div>
                   </div>
-                )}
-              </div>
-              
-              {plots.length > 1 && (
-                <div className="lg:w-64">
-                  <label htmlFor="plotSelector" className="block text-sm font-semibold text-white mb-3">
-                    Switch Plot
-                  </label>
-                  <select
-                    id="plotSelector"
-                    value={selectedPlotId || ''}
-                    onChange={(e) => handlePlotChange(e.target.value)}
-                    className="w-full px-4 py-3 bg-white/20 backdrop-blur-sm border-2 border-white/30 rounded-xl text-white font-semibold focus:ring-4 focus:ring-white/30 focus:border-white/50 outline-none transition-all"
-                  >
-                    {plots.map((plot) => (
-                      <option key={plot.plotId} value={plot.plotId} className="text-gray-900">
-                        {plot.plotName}
-                      </option>
-                    ))}
-                  </select>
                 </div>
               )}
             </div>
+
+            {plots.length > 1 && (
+              <div className="lg:w-64">
+                <label htmlFor="plotSelector" className="block text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-2">
+                  Switch Plot
+                </label>
+                <select
+                  id="plotSelector"
+                  value={selectedPlotId || ''}
+                  onChange={(e) => handlePlotChange(e.target.value)}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-slate-900 font-semibold focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all shadow-sm cursor-pointer"
+                >
+                  {plots.map((plot) => (
+                    <option key={plot.plotId} value={plot.plotId}>
+                      {plot.plotName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
         </div>
-      </Card>
-      
+      </div>
+
       {loading ? (
         <div className="space-y-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -161,327 +165,272 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
       ) : (
-        <>
-          {/* 2️⃣ SENSOR KPI CARDS */}
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-              <div className="h-10 w-10 bg-primary-100 rounded-xl flex items-center justify-center">
-                <Droplets className="h-5 w-5 text-primary-600" />
-              </div>
-              Sensor Readings
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {/* Soil Moisture */}
-              {currentSensors?.soilMoisture && (
-                <Card className="bg-gradient-to-br from-blue-50 via-white to-blue-50/30 border-2 border-blue-200 hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer group">
-                  <div className="flex flex-col items-center text-center">
-                    <div className="h-20 w-20 bg-blue-100 rounded-full flex items-center justify-center mb-4 ring-4 ring-blue-50 group-hover:scale-110 transition-transform">
-                      <Droplets className="h-10 w-10 text-blue-600" />
+        <div className="space-y-8">
+          {/* 2️⃣ SENSOR KPI CARDS WITH SPARKLINES */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Soil Moisture */}
+            {currentSensors?.soilMoisture && (
+              <div className="bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm rounded-2xl p-6 flex flex-col hover:shadow-md transition-shadow relative overflow-hidden group">
+                <div className="flex justify-between items-start mb-4 relative z-10">
+                  <div className="flex items-start gap-4">
+                    <div className="h-10 w-10 bg-emerald-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <Droplets className="h-5 w-5 text-emerald-600" />
                     </div>
-                    <p className="text-sm font-bold text-gray-700 mb-3 uppercase tracking-wider">Soil Moisture</p>
-                    <div className="mb-2">
-                      <span className="text-5xl font-bold text-gray-900">{currentSensors.soilMoisture.value}</span>
-                      <span className="text-2xl text-gray-600 ml-1">%</span>
-                    </div>
-                    <Badge
-                      variant={
-                        currentSensors.soilMoisture.status === 'ok' ? 'success' :
-                        currentSensors.soilMoisture.status === 'warning' ? 'warning' : 'error'
-                      }
-                      size="md"
-                      className="px-4 py-1.5"
-                    >
-                      {currentSensors.soilMoisture.status.toUpperCase()}
-                    </Badge>
-                  </div>
-                </Card>
-              )}
-              
-              {/* Temperature */}
-              {currentSensors?.temperature && (
-                <Card className="bg-gradient-to-br from-red-50 via-white to-red-50/30 border-2 border-red-200 hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer group">
-                  <div className="flex flex-col items-center text-center">
-                    <div className="h-20 w-20 bg-red-100 rounded-full flex items-center justify-center mb-4 ring-4 ring-red-50 group-hover:scale-110 transition-transform">
-                      <Thermometer className="h-10 w-10 text-red-600" />
-                    </div>
-                    <p className="text-sm font-bold text-gray-700 mb-3 uppercase tracking-wider">Temperature</p>
-                    <div className="mb-2">
-                      <span className="text-5xl font-bold text-gray-900">{currentSensors.temperature.value}</span>
-                      <span className="text-2xl text-gray-600 ml-1">°C</span>
-                    </div>
-                    <Badge
-                      variant={
-                        currentSensors.temperature.status === 'ok' ? 'success' :
-                        currentSensors.temperature.status === 'warning' ? 'warning' : 'error'
-                      }
-                      size="md"
-                      className="px-4 py-1.5"
-                    >
-                      {currentSensors.temperature.status.toUpperCase()}
-                    </Badge>
-                  </div>
-                </Card>
-              )}
-              
-              {/* Humidity */}
-              {currentSensors?.humidity && (
-                <Card className="bg-gradient-to-br from-teal-50 via-white to-teal-50/30 border-2 border-teal-200 hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer group">
-                  <div className="flex flex-col items-center text-center">
-                    <div className="h-20 w-20 bg-teal-100 rounded-full flex items-center justify-center mb-4 ring-4 ring-teal-50 group-hover:scale-110 transition-transform">
-                      <Wind className="h-10 w-10 text-teal-600" />
-                    </div>
-                    <p className="text-sm font-bold text-gray-700 mb-3 uppercase tracking-wider">Humidity</p>
-                    <div className="mb-2">
-                      <span className="text-5xl font-bold text-gray-900">{currentSensors.humidity.value}</span>
-                      <span className="text-2xl text-gray-600 ml-1">%</span>
-                    </div>
-                    <Badge
-                      variant={
-                        currentSensors.humidity.status === 'ok' ? 'success' :
-                        currentSensors.humidity.status === 'warning' ? 'warning' : 'error'
-                      }
-                      size="md"
-                      className="px-4 py-1.5"
-                    >
-                      {currentSensors.humidity.status.toUpperCase()}
-                    </Badge>
-                  </div>
-                </Card>
-              )}
-              
-              {/* Soil Temperature */}
-              {currentSensors?.soilTemperature && (
-                <Card className="bg-gradient-to-br from-orange-50 via-white to-orange-50/30 border-2 border-orange-200 hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer group">
-                  <div className="flex flex-col items-center text-center">
-                    <div className="h-20 w-20 bg-orange-100 rounded-full flex items-center justify-center mb-4 ring-4 ring-orange-50 group-hover:scale-110 transition-transform">
-                      <Sun className="h-10 w-10 text-orange-600" />
-                    </div>
-                    <p className="text-sm font-bold text-gray-700 mb-3 uppercase tracking-wider">Soil Temp</p>
-                    <div className="mb-2">
-                      <span className="text-5xl font-bold text-gray-900">{currentSensors.soilTemperature.value}</span>
-                      <span className="text-2xl text-gray-600 ml-1">°C</span>
-                    </div>
-                    <Badge
-                      variant={
-                        currentSensors.soilTemperature.status === 'ok' ? 'success' :
-                        currentSensors.soilTemperature.status === 'warning' ? 'warning' : 'error'
-                      }
-                      size="md"
-                      className="px-4 py-1.5"
-                    >
-                      {currentSensors.soilTemperature.status.toUpperCase()}
-                    </Badge>
-                  </div>
-                </Card>
-              )}
-            </div>
-          </div>
-          
-          {/* 3️⃣ SENSOR TREND CHARTS */}
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-              <div className="h-10 w-10 bg-primary-100 rounded-xl flex items-center justify-center">
-                <FileText className="h-5 w-5 text-primary-600" />
-              </div>
-              Historical Trends
-            </h2>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="border-2 border-blue-100 hover:shadow-xl transition-shadow">
-                <div className="mb-6">
-                  <h3 className="text-xl font-bold text-gray-900">Soil Moisture Trend</h3>
-                  <p className="text-sm text-gray-600 mt-1">Last 7 days monitoring</p>
-                </div>
-                <ResponsiveContainer width="100%" height={280}>
-                  <LineChart data={soilMoistureTrend}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis dataKey="date" tick={{ fontSize: 12, fill: '#6b7280' }} />
-                    <YAxis tick={{ fontSize: 12, fill: '#6b7280' }} />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: '#fff', 
-                        border: '2px solid #3b82f6',
-                        borderRadius: '12px',
-                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
-                      }} 
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="value" 
-                      stroke="#3b82f6" 
-                      strokeWidth={3} 
-                      dot={{ r: 5, fill: '#3b82f6', strokeWidth: 2, stroke: '#fff' }}
-                      activeDot={{ r: 7 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </Card>
-              
-              <Card className="border-2 border-red-100 hover:shadow-xl transition-shadow">
-                <div className="mb-6">
-                  <h3 className="text-xl font-bold text-gray-900">Temperature Trend</h3>
-                  <p className="text-sm text-gray-600 mt-1">Last 7 days monitoring</p>
-                </div>
-                <ResponsiveContainer width="100%" height={280}>
-                  <LineChart data={temperatureTrend}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis dataKey="date" tick={{ fontSize: 12, fill: '#6b7280' }} />
-                    <YAxis tick={{ fontSize: 12, fill: '#6b7280' }} />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: '#fff', 
-                        border: '2px solid #ef4444',
-                        borderRadius: '12px',
-                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
-                      }} 
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="value" 
-                      stroke="#ef4444" 
-                      strokeWidth={3} 
-                      dot={{ r: 5, fill: '#ef4444', strokeWidth: 2, stroke: '#fff' }}
-                      activeDot={{ r: 7 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </Card>
-            </div>
-          </div>
-          
-          {/* 4️⃣ ALERTS SECTION */}
-          {mockAlerts.length > 0 && (
-            <Card className="border-2 border-amber-200 bg-gradient-to-br from-amber-50 to-white">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="h-10 w-10 bg-amber-100 rounded-xl flex items-center justify-center">
-                  <AlertTriangle className="h-6 w-6 text-amber-600" />
-                </div>
-                <h2 className="text-2xl font-bold text-gray-900">Active Alerts</h2>
-              </div>
-              <div className="space-y-4">
-                {mockAlerts.map((alert) => (
-                  <div
-                    key={alert.id}
-                    className="flex items-start gap-4 p-5 bg-white border-2 border-amber-200 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-200 hover:scale-[1.01]"
-                  >
-                    <div className="h-12 w-12 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
-                      <AlertTriangle className="h-6 w-6 text-amber-600" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <p className="font-bold text-lg text-gray-900">{alert.title}</p>
-                          <p className="text-gray-600 mt-1">{alert.plotName}</p>
-                          <p className="text-gray-700 mt-2">{alert.message}</p>
-                        </div>
-                        <Badge
-                          variant={alert.severity === 'high' ? 'error' : 'warning'}
-                          size="md"
-                          className="flex-shrink-0"
-                        >
-                          {alert.severity}
-                        </Badge>
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Soil Moisture</p>
+                      <div className="flex items-baseline gap-1">
+                        <span className="font-bold tracking-tight text-slate-900 text-3xl">{currentSensors.soilMoisture.value}</span>
+                        <span className="text-slate-500 font-medium">%</span>
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            </Card>
-          )}
-          
-          {/* Latest Advisory */}
-          {latestAdvisory && (
-            <Card className="border-2 border-primary-200 bg-gradient-to-br from-primary-50 to-white">
-              <div className="flex items-start gap-4">
-                <div className="h-14 w-14 bg-primary-100 rounded-2xl flex items-center justify-center flex-shrink-0">
-                  <FileText className="h-7 w-7 text-primary-600" />
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-3">
-                    <h3 className="text-xl font-bold text-gray-900">Latest Advisory</h3>
-                    <Badge
-                      variant={
-                        latestAdvisory.severity === 'critical' ? 'error' :
-                        latestAdvisory.severity === 'high' ? 'warning' : 'info'
-                      }
-                      size="md"
-                    >
-                      {latestAdvisory.severity}
-                    </Badge>
+                
+                <div className="mt-auto h-16 w-full -mx-2 -mb-2 opacity-80 group-hover:opacity-100 transition-opacity">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={soilMoistureTrend}>
+                      <defs>
+                        <linearGradient id="colorMoisture" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#10B981" stopOpacity={0.25}/>
+                          <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <Area type="monotone" dataKey="value" stroke="#10B981" strokeWidth={2.5} fillOpacity={1} fill="url(#colorMoisture)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+                
+                <div className="absolute top-6 right-6 z-10">
+                  <div className={`h-2.5 w-2.5 rounded-full ${
+                    currentSensors.soilMoisture.status === 'ok' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]' : 
+                    currentSensors.soilMoisture.status === 'warning' ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]'
+                  }`}></div>
+                </div>
+              </div>
+            )}
+
+            {/* Temperature */}
+            {currentSensors?.temperature && (
+              <div className="bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm rounded-2xl p-6 flex flex-col hover:shadow-md transition-shadow relative overflow-hidden group">
+                <div className="flex justify-between items-start mb-4 relative z-10">
+                  <div className="flex items-start gap-4">
+                    <div className="h-10 w-10 bg-emerald-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <Thermometer className="h-5 w-5 text-emerald-600" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Temperature</p>
+                      <div className="flex items-baseline gap-1">
+                        <span className="font-bold tracking-tight text-slate-900 text-3xl">{currentSensors.temperature.value}</span>
+                        <span className="text-slate-500 font-medium">°C</span>
+                      </div>
+                    </div>
                   </div>
-                  <h4 className="font-semibold text-lg text-gray-900 mb-2">{latestAdvisory.title}</h4>
-                  <p className="text-gray-700 mb-3">{latestAdvisory.description}</p>
-                  <div className="bg-white border-l-4 border-primary-500 p-4 rounded-r-xl">
-                    <p className="text-sm font-semibold text-primary-900 mb-1">Recommended Action:</p>
-                    <p className="text-sm text-primary-800">{latestAdvisory.recommendedAction}</p>
+                </div>
+                
+                <div className="mt-auto h-16 w-full -mx-2 -mb-2 opacity-80 group-hover:opacity-100 transition-opacity">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={temperatureTrend}>
+                      <defs>
+                        <linearGradient id="colorTemp" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#10B981" stopOpacity={0.25}/>
+                          <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <Area type="monotone" dataKey="value" stroke="#10B981" strokeWidth={2.5} fillOpacity={1} fill="url(#colorTemp)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+                
+                <div className="absolute top-6 right-6 z-10">
+                  <div className={`h-2.5 w-2.5 rounded-full ${
+                    currentSensors.temperature.status === 'ok' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]' : 
+                    currentSensors.temperature.status === 'warning' ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]'
+                  }`}></div>
+                </div>
+              </div>
+            )}
+
+            {/* Humidity */}
+            {currentSensors?.humidity && (
+              <div className="bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm rounded-2xl p-6 flex flex-col hover:shadow-md transition-shadow relative overflow-hidden group">
+                <div className="flex justify-between items-start mb-4 relative z-10">
+                  <div className="flex items-start gap-4">
+                    <div className="h-10 w-10 bg-emerald-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <Wind className="h-5 w-5 text-emerald-600" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Humidity</p>
+                      <div className="flex items-baseline gap-1">
+                        <span className="font-bold tracking-tight text-slate-900 text-3xl">{currentSensors.humidity.value}</span>
+                        <span className="text-slate-500 font-medium">%</span>
+                      </div>
+                    </div>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => navigate('/advisories')}
-                    className="mt-4"
-                  >
-                    View All Advisories →
-                  </Button>
+                </div>
+                
+                <div className="mt-auto h-16 w-full -mx-2 -mb-2 opacity-80 group-hover:opacity-100 transition-opacity">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={humidityTrend}>
+                      <defs>
+                        <linearGradient id="colorHumidity" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#10B981" stopOpacity={0.25}/>
+                          <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <Area type="monotone" dataKey="value" stroke="#10B981" strokeWidth={2.5} fillOpacity={1} fill="url(#colorHumidity)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+                
+                <div className="absolute top-6 right-6 z-10">
+                  <div className={`h-2.5 w-2.5 rounded-full ${
+                    currentSensors.humidity.status === 'ok' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]' : 
+                    currentSensors.humidity.status === 'warning' ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]'
+                  }`}></div>
                 </div>
               </div>
-            </Card>
-          )}
-          
-          {/* 5️⃣ QUICK ACTIONS */}
-          <Card>
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-              <div className="h-10 w-10 bg-primary-100 rounded-xl flex items-center justify-center">
-                <MessageSquare className="h-5 w-5 text-primary-600" />
+            )}
+
+            {/* Soil Temperature */}
+            {currentSensors?.soilTemperature && (
+               <div className="bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm rounded-2xl p-6 flex flex-col hover:shadow-md transition-shadow relative overflow-hidden group">
+                <div className="flex justify-between items-start mb-4 relative z-10">
+                  <div className="flex items-start gap-4">
+                    <div className="h-10 w-10 bg-emerald-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <Sun className="h-5 w-5 text-emerald-600" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Soil Temp</p>
+                      <div className="flex items-baseline gap-1">
+                        <span className="font-bold tracking-tight text-slate-900 text-3xl">{currentSensors.soilTemperature.value}</span>
+                        <span className="text-slate-500 font-medium">°C</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="mt-auto h-16 w-full -mx-2 -mb-2 opacity-80 group-hover:opacity-100 transition-opacity">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={soilTempTrend}>
+                      <defs>
+                        <linearGradient id="colorSoilTemp" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#10B981" stopOpacity={0.25}/>
+                          <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <Area type="monotone" dataKey="value" stroke="#10B981" strokeWidth={2.5} fillOpacity={1} fill="url(#colorSoilTemp)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+                
+                <div className="absolute top-6 right-6 z-10">
+                  <div className={`h-2.5 w-2.5 rounded-full ${
+                    currentSensors.soilTemperature.status === 'ok' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]' : 
+                    currentSensors.soilTemperature.status === 'warning' ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]'
+                  }`}></div>
+                </div>
               </div>
-              Quick Actions
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              <button
-                onClick={() => navigate('/plots')}
-                className="flex flex-col items-center justify-center p-8 bg-gradient-to-br from-primary-50 to-white border-2 border-primary-200 rounded-2xl hover:shadow-2xl hover:scale-105 transition-all duration-300 group"
-              >
-                <div className="h-16 w-16 bg-primary-100 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                  <MapPin className="h-8 w-8 text-primary-600" />
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* 3️⃣ ALERTS & ADVISORIES SECTION */}
+            <div className="lg:col-span-2 space-y-6">
+              {mockAlerts.length > 0 && (
+                <div className="bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm rounded-2xl p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-lg font-bold tracking-tight text-slate-900">Active Alerts</h2>
+                    <Badge variant="warning">{mockAlerts.length} Issues</Badge>
+                  </div>
+                  <div className="space-y-4">
+                    {mockAlerts.map((alert) => (
+                      <div
+                        key={alert.id}
+                        className="flex items-start gap-4 p-4 bg-white border border-slate-100 rounded-xl hover:shadow-sm transition-all"
+                      >
+                        <div className="h-10 w-10 bg-amber-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <AlertTriangle className="h-5 w-5 text-amber-500" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between gap-4">
+                            <div>
+                              <p className="font-bold tracking-tight text-slate-900">{alert.title}</p>
+                              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mt-1">{alert.plotName}</p>
+                              <p className="text-sm text-slate-600 mt-2">{alert.message}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <span className="font-bold text-lg text-gray-900 mb-2">View Plots</span>
-                <span className="text-sm text-gray-600 text-center">Manage your farm plots</span>
-              </button>
-              
-              <button
-                onClick={() => navigate('/market')}
-                className="flex flex-col items-center justify-center p-8 bg-gradient-to-br from-green-50 to-white border-2 border-green-200 rounded-2xl hover:shadow-2xl hover:scale-105 transition-all duration-300 group"
-              >
-                <div className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                  <DollarSign className="h-8 w-8 text-green-600" />
+              )}
+
+              {/* Latest Advisory */}
+              {latestAdvisory && (
+                <div className="bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm rounded-2xl p-6">
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-lg font-bold tracking-tight text-slate-900">AI Advisory</h2>
+                    </div>
+                  <div className="flex items-start gap-4">
+                    <div className="h-10 w-10 bg-emerald-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <FileText className="h-5 w-5 text-emerald-600" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-bold tracking-tight text-slate-900 mb-1">{latestAdvisory.title}</h4>
+                      <p className="text-sm text-slate-600 mb-4 leading-relaxed">{latestAdvisory.description}</p>
+                      <div className="bg-emerald-50/50 border border-emerald-100 p-4 rounded-xl">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700 mb-1">Recommended Action</p>
+                        <p className="text-sm font-medium text-emerald-900">{latestAdvisory.recommendedAction}</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <span className="font-bold text-lg text-gray-900 mb-2">Market Prices</span>
-                <span className="text-sm text-gray-600 text-center">Check crop prices</span>
-              </button>
-              
-              <button
-                onClick={() => navigate('/assistant')}
-                className="flex flex-col items-center justify-center p-8 bg-gradient-to-br from-blue-50 to-white border-2 border-blue-200 rounded-2xl hover:shadow-2xl hover:scale-105 transition-all duration-300 group"
-              >
-                <div className="h-16 w-16 bg-blue-100 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                  <MessageSquare className="h-8 w-8 text-blue-600" />
-                </div>
-                <span className="font-bold text-lg text-gray-900 mb-2">Smart Assistant</span>
-                <span className="text-sm text-gray-600 text-center">Get AI advice</span>
-              </button>
-              
-              <button
-                onClick={() => navigate('/assistant')}
-                className="flex flex-col items-center justify-center p-8 bg-gradient-to-br from-purple-50 to-white border-2 border-purple-200 rounded-2xl hover:shadow-2xl hover:scale-105 transition-all duration-300 group"
-              >
-                <div className="h-16 w-16 bg-purple-100 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                  <ImageIcon className="h-8 w-8 text-purple-600" />
-                </div>
-                <span className="font-bold text-lg text-gray-900 mb-2">Upload Image</span>
-                <span className="text-sm text-gray-600 text-center">AI crop analysis</span>
-              </button>
+              )}
             </div>
-          </Card>
-        </>
+
+            {/* 4️⃣ QUICK ACTIONS */}
+            <div className="space-y-6">
+                <div className="bg-white/40 backdrop-blur-md border border-white/40 shadow-sm rounded-2xl p-6">
+                    <h2 className="text-lg font-bold tracking-tight text-slate-900 mb-6">Quick Actions</h2>
+                    <div className="grid grid-cols-2 gap-4">
+                        <button
+                        onClick={() => navigate('/plots')}
+                        className="relative flex flex-col items-center justify-center p-6 bg-white border border-slate-200 shadow-sm rounded-xl hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-200 hover:border-emerald-200 group transition-all duration-300 overflow-hidden"
+                        >
+                            <MapPin size={28} className="text-slate-400 group-hover:text-emerald-500 group-hover:scale-110 transition-all duration-300 mb-4" />
+                            <span className="text-sm font-medium text-slate-600">Plots</span>
+                            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] w-6 bg-emerald-500 rounded-t-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        </button>
+                        <button
+                        onClick={() => navigate('/market')}
+                        className="relative flex flex-col items-center justify-center p-6 bg-white border border-slate-200 shadow-sm rounded-xl hover:-translate-y-1 hover:shadow-xl hover:shadow-amber-200 hover:border-amber-200 group transition-all duration-300 overflow-hidden"
+                        >
+                            <DollarSign size={28} className="text-slate-400 group-hover:text-amber-500 group-hover:scale-110 transition-all duration-300 mb-4" />
+                            <span className="text-sm font-medium text-slate-600">Market</span>
+                            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] w-6 bg-amber-500 rounded-t-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        </button>
+                        <button
+                        onClick={() => navigate('/assistant')}
+                        className="relative flex flex-col items-center justify-center p-6 bg-white border border-slate-200 shadow-sm rounded-xl hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-200 hover:border-blue-200 group transition-all duration-300 overflow-hidden"
+                        >
+                            <MessageSquare size={28} className="text-slate-400 group-hover:text-blue-500 group-hover:scale-110 transition-all duration-300 mb-4" />
+                            <span className="text-sm font-medium text-slate-600">Assistant</span>
+                            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] w-6 bg-blue-500 rounded-t-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        </button>
+                        <button
+                        onClick={() => navigate('/assistant')}
+                        className="relative flex flex-col items-center justify-center p-6 bg-white border border-slate-200 shadow-sm rounded-xl hover:-translate-y-1 hover:shadow-xl hover:shadow-purple-200 hover:border-purple-200 group transition-all duration-300 overflow-hidden"
+                        >
+                            <ImageIcon size={28} className="text-slate-400 group-hover:text-purple-500 group-hover:scale-110 transition-all duration-300 mb-4" />
+                            <span className="text-sm font-medium text-slate-600">Scan</span>
+                            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] w-6 bg-purple-500 rounded-t-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

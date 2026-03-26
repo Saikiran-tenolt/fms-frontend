@@ -7,15 +7,15 @@ import { Card, Badge, Button, EmptyState } from '../../components/ui';
 export const NotificationsPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const { notifications, unreadCount } = useAppSelector((state) => state.notifications);
-  
+
   const handleMarkAsRead = (id: string) => {
     dispatch(markAsRead(id));
   };
-  
+
   const handleMarkAllAsRead = () => {
     dispatch(markAllAsRead());
   };
-  
+
   if (notifications.length === 0) {
     return (
       <EmptyState
@@ -25,7 +25,7 @@ export const NotificationsPage: React.FC = () => {
       />
     );
   }
-  
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -43,7 +43,7 @@ export const NotificationsPage: React.FC = () => {
           </Button>
         )}
       </div>
-      
+
       {/* Notifications List */}
       <div className="space-y-3">
         {notifications.map((notification) => (
@@ -53,9 +53,8 @@ export const NotificationsPage: React.FC = () => {
           >
             <div className="flex items-start gap-4">
               <Bell
-                className={`h-5 w-5 flex-shrink-0 mt-0.5 ${
-                  notification.isRead ? 'text-gray-400' : 'text-blue-600'
-                }`}
+                className={`h-5 w-5 flex-shrink-0 mt-0.5 ${notification.isRead ? 'text-gray-400' : 'text-blue-600'
+                  }`}
               />
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
@@ -67,8 +66,8 @@ export const NotificationsPage: React.FC = () => {
                       notification.priority === 'high'
                         ? 'error'
                         : notification.priority === 'medium'
-                        ? 'warning'
-                        : 'default'
+                          ? 'warning'
+                          : 'default'
                     }
                     size="sm"
                   >

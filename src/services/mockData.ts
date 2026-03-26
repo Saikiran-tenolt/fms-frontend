@@ -284,13 +284,13 @@ export const mockAIResponses: Record<string, string> = {
 // Mock AI Response Generator
 export const generateAIResponse = (userMessage: string): string => {
   const lowerMessage = userMessage.toLowerCase();
-  
+
   for (const [key, response] of Object.entries(mockAIResponses)) {
     if (lowerMessage.includes(key)) {
       return response;
     }
   }
-  
+
   return mockAIResponses.default;
 };
 
