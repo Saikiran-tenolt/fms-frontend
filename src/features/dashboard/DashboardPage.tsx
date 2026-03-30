@@ -88,7 +88,7 @@ export const DashboardPage: React.FC = () => {
   return (
     <div className="space-y-8 animate-fadeIn max-w-6xl mx-auto">
       {/* 1️⃣ WELCOME HEADER BANNER */}
-      <div className="bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm rounded-2xl overflow-hidden relative">
+      <div className="bg-white/70 backdrop-blur-xl border border-gray shadow-sm rounded-2xl overflow-hidden relative">
         <div className="absolute -top-24 -right-12 p-12 opacity-5 pointer-events-none text-emerald-900">
           <Sprout className="w-96 h-96" />
         </div>
@@ -170,7 +170,7 @@ export const DashboardPage: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* Soil Moisture */}
             {currentSensors?.soilMoisture && (
-              <div className="bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm rounded-2xl p-6 flex flex-col hover:shadow-md transition-shadow relative overflow-hidden group">
+              <div className="bg-white/70 backdrop-blur-xl border border-gray shadow-sm rounded-2xl p-6 flex flex-col hover:shadow-md transition-shadow relative overflow-hidden group">
                 <div className="flex justify-between items-start mb-4 relative z-10">
                   <div className="flex items-start gap-4">
                     <div className="h-10 w-10 bg-emerald-50 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -185,33 +185,32 @@ export const DashboardPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="mt-auto h-16 w-full -mx-2 -mb-2 opacity-80 group-hover:opacity-100 transition-opacity">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={soilMoistureTrend}>
                       <defs>
                         <linearGradient id="colorMoisture" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#10B981" stopOpacity={0.25}/>
-                          <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
+                          <stop offset="5%" stopColor="#10B981" stopOpacity={0.25} />
+                          <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
                         </linearGradient>
                       </defs>
                       <Area type="monotone" dataKey="value" stroke="#10B981" strokeWidth={2.5} fillOpacity={1} fill="url(#colorMoisture)" />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
-                
+
                 <div className="absolute top-6 right-6 z-10">
-                  <div className={`h-2.5 w-2.5 rounded-full ${
-                    currentSensors.soilMoisture.status === 'ok' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]' : 
+                  <div className={`h-2.5 w-2.5 rounded-full ${currentSensors.soilMoisture.status === 'ok' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]' :
                     currentSensors.soilMoisture.status === 'warning' ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]'
-                  }`}></div>
+                    }`}></div>
                 </div>
               </div>
             )}
 
             {/* Temperature */}
             {currentSensors?.temperature && (
-              <div className="bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm rounded-2xl p-6 flex flex-col hover:shadow-md transition-shadow relative overflow-hidden group">
+              <div className="bg-white/70 backdrop-blur-xl border border-gray shadow-sm rounded-2xl p-6 flex flex-col hover:shadow-md transition-shadow relative overflow-hidden group">
                 <div className="flex justify-between items-start mb-4 relative z-10">
                   <div className="flex items-start gap-4">
                     <div className="h-10 w-10 bg-emerald-50 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -226,33 +225,32 @@ export const DashboardPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="mt-auto h-16 w-full -mx-2 -mb-2 opacity-80 group-hover:opacity-100 transition-opacity">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={temperatureTrend}>
                       <defs>
                         <linearGradient id="colorTemp" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#10B981" stopOpacity={0.25}/>
-                          <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
+                          <stop offset="5%" stopColor="#10B981" stopOpacity={0.25} />
+                          <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
                         </linearGradient>
                       </defs>
                       <Area type="monotone" dataKey="value" stroke="#10B981" strokeWidth={2.5} fillOpacity={1} fill="url(#colorTemp)" />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
-                
+
                 <div className="absolute top-6 right-6 z-10">
-                  <div className={`h-2.5 w-2.5 rounded-full ${
-                    currentSensors.temperature.status === 'ok' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]' : 
+                  <div className={`h-2.5 w-2.5 rounded-full ${currentSensors.temperature.status === 'ok' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]' :
                     currentSensors.temperature.status === 'warning' ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]'
-                  }`}></div>
+                    }`}></div>
                 </div>
               </div>
             )}
 
             {/* Humidity */}
             {currentSensors?.humidity && (
-              <div className="bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm rounded-2xl p-6 flex flex-col hover:shadow-md transition-shadow relative overflow-hidden group">
+              <div className="bg-white/70 backdrop-blur-xl border border-gray shadow-sm rounded-2xl p-6 flex flex-col hover:shadow-md transition-shadow relative overflow-hidden group">
                 <div className="flex justify-between items-start mb-4 relative z-10">
                   <div className="flex items-start gap-4">
                     <div className="h-10 w-10 bg-emerald-50 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -267,33 +265,32 @@ export const DashboardPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="mt-auto h-16 w-full -mx-2 -mb-2 opacity-80 group-hover:opacity-100 transition-opacity">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={humidityTrend}>
                       <defs>
                         <linearGradient id="colorHumidity" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#10B981" stopOpacity={0.25}/>
-                          <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
+                          <stop offset="5%" stopColor="#10B981" stopOpacity={0.25} />
+                          <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
                         </linearGradient>
                       </defs>
                       <Area type="monotone" dataKey="value" stroke="#10B981" strokeWidth={2.5} fillOpacity={1} fill="url(#colorHumidity)" />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
-                
+
                 <div className="absolute top-6 right-6 z-10">
-                  <div className={`h-2.5 w-2.5 rounded-full ${
-                    currentSensors.humidity.status === 'ok' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]' : 
+                  <div className={`h-2.5 w-2.5 rounded-full ${currentSensors.humidity.status === 'ok' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]' :
                     currentSensors.humidity.status === 'warning' ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]'
-                  }`}></div>
+                    }`}></div>
                 </div>
               </div>
             )}
 
             {/* Soil Temperature */}
             {currentSensors?.soilTemperature && (
-               <div className="bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm rounded-2xl p-6 flex flex-col hover:shadow-md transition-shadow relative overflow-hidden group">
+              <div className="bg-white/70 backdrop-blur-xl border border-gray shadow-sm rounded-2xl p-6 flex flex-col hover:shadow-md transition-shadow relative overflow-hidden group">
                 <div className="flex justify-between items-start mb-4 relative z-10">
                   <div className="flex items-start gap-4">
                     <div className="h-10 w-10 bg-emerald-50 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -308,26 +305,25 @@ export const DashboardPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="mt-auto h-16 w-full -mx-2 -mb-2 opacity-80 group-hover:opacity-100 transition-opacity">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={soilTempTrend}>
                       <defs>
                         <linearGradient id="colorSoilTemp" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#10B981" stopOpacity={0.25}/>
-                          <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
+                          <stop offset="5%" stopColor="#10B981" stopOpacity={0.25} />
+                          <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
                         </linearGradient>
                       </defs>
                       <Area type="monotone" dataKey="value" stroke="#10B981" strokeWidth={2.5} fillOpacity={1} fill="url(#colorSoilTemp)" />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
-                
+
                 <div className="absolute top-6 right-6 z-10">
-                  <div className={`h-2.5 w-2.5 rounded-full ${
-                    currentSensors.soilTemperature.status === 'ok' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]' : 
+                  <div className={`h-2.5 w-2.5 rounded-full ${currentSensors.soilTemperature.status === 'ok' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]' :
                     currentSensors.soilTemperature.status === 'warning' ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]'
-                  }`}></div>
+                    }`}></div>
                 </div>
               </div>
             )}
@@ -337,7 +333,7 @@ export const DashboardPage: React.FC = () => {
             {/* 3️⃣ ALERTS & ADVISORIES SECTION */}
             <div className="lg:col-span-2 space-y-6">
               {mockAlerts.length > 0 && (
-                <div className="bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm rounded-2xl p-6">
+                <div className="bg-white/70 backdrop-blur-xl border border-gray shadow-sm rounded-2xl p-6">
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-lg font-bold tracking-tight text-slate-900">Active Alerts</h2>
                     <Badge variant="warning">{mockAlerts.length} Issues</Badge>
@@ -368,10 +364,10 @@ export const DashboardPage: React.FC = () => {
 
               {/* Latest Advisory */}
               {latestAdvisory && (
-                <div className="bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm rounded-2xl p-6">
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-lg font-bold tracking-tight text-slate-900">AI Advisory</h2>
-                    </div>
+                <div className="bg-white/70 backdrop-blur-xl border border-gray shadow-sm rounded-2xl p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-lg font-bold tracking-tight text-slate-900">AI Advisory</h2>
+                  </div>
                   <div className="flex items-start gap-4">
                     <div className="h-10 w-10 bg-emerald-50 rounded-lg flex items-center justify-center flex-shrink-0">
                       <FileText className="h-5 w-5 text-emerald-600" />
@@ -391,43 +387,43 @@ export const DashboardPage: React.FC = () => {
 
             {/* 4️⃣ QUICK ACTIONS */}
             <div className="space-y-6">
-                <div className="bg-white/40 backdrop-blur-md border border-white/40 shadow-sm rounded-2xl p-6">
-                    <h2 className="text-lg font-bold tracking-tight text-slate-900 mb-6">Quick Actions</h2>
-                    <div className="grid grid-cols-2 gap-4">
-                        <button
-                        onClick={() => navigate('/plots')}
-                        className="relative flex flex-col items-center justify-center p-6 bg-white border border-slate-200 shadow-sm rounded-xl hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-200 hover:border-emerald-200 group transition-all duration-300 overflow-hidden"
-                        >
-                            <MapPin size={28} className="text-slate-400 group-hover:text-emerald-500 group-hover:scale-110 transition-all duration-300 mb-4" />
-                            <span className="text-sm font-medium text-slate-600">Plots</span>
-                            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] w-6 bg-emerald-500 rounded-t-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                        </button>
-                        <button
-                        onClick={() => navigate('/market')}
-                        className="relative flex flex-col items-center justify-center p-6 bg-white border border-slate-200 shadow-sm rounded-xl hover:-translate-y-1 hover:shadow-xl hover:shadow-amber-200 hover:border-amber-200 group transition-all duration-300 overflow-hidden"
-                        >
-                            <DollarSign size={28} className="text-slate-400 group-hover:text-amber-500 group-hover:scale-110 transition-all duration-300 mb-4" />
-                            <span className="text-sm font-medium text-slate-600">Market</span>
-                            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] w-6 bg-amber-500 rounded-t-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                        </button>
-                        <button
-                        onClick={() => navigate('/assistant')}
-                        className="relative flex flex-col items-center justify-center p-6 bg-white border border-slate-200 shadow-sm rounded-xl hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-200 hover:border-blue-200 group transition-all duration-300 overflow-hidden"
-                        >
-                            <MessageSquare size={28} className="text-slate-400 group-hover:text-blue-500 group-hover:scale-110 transition-all duration-300 mb-4" />
-                            <span className="text-sm font-medium text-slate-600">Assistant</span>
-                            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] w-6 bg-blue-500 rounded-t-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                        </button>
-                        <button
-                        onClick={() => navigate('/assistant')}
-                        className="relative flex flex-col items-center justify-center p-6 bg-white border border-slate-200 shadow-sm rounded-xl hover:-translate-y-1 hover:shadow-xl hover:shadow-purple-200 hover:border-purple-200 group transition-all duration-300 overflow-hidden"
-                        >
-                            <ImageIcon size={28} className="text-slate-400 group-hover:text-purple-500 group-hover:scale-110 transition-all duration-300 mb-4" />
-                            <span className="text-sm font-medium text-slate-600">Scan</span>
-                            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] w-6 bg-purple-500 rounded-t-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                        </button>
-                    </div>
+              <div className="bg-white/40 backdrop-blur-md border border-gray shadow-sm rounded-2xl p-6">
+                <h2 className="text-lg font-bold tracking-tight text-slate-900 mb-6">Quick Actions</h2>
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    onClick={() => navigate('/plots')}
+                    className="relative flex flex-col items-center justify-center p-6 bg-white border border-slate-200 shadow-sm rounded-xl hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-200 hover:border-emerald-200 group transition-all duration-300 overflow-hidden"
+                  >
+                    <MapPin size={28} className="text-slate-400 group-hover:text-emerald-500 group-hover:scale-110 transition-all duration-300 mb-4" />
+                    <span className="text-sm font-medium text-slate-600">Plots</span>
+                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] w-6 bg-emerald-500 rounded-t-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  </button>
+                  <button
+                    onClick={() => navigate('/market')}
+                    className="relative flex flex-col items-center justify-center p-6 bg-white border border-slate-200 shadow-sm rounded-xl hover:-translate-y-1 hover:shadow-xl hover:shadow-amber-200 hover:border-amber-200 group transition-all duration-300 overflow-hidden"
+                  >
+                    <DollarSign size={28} className="text-slate-400 group-hover:text-amber-500 group-hover:scale-110 transition-all duration-300 mb-4" />
+                    <span className="text-sm font-medium text-slate-600">Market</span>
+                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] w-6 bg-amber-500 rounded-t-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  </button>
+                  <button
+                    onClick={() => navigate('/assistant')}
+                    className="relative flex flex-col items-center justify-center p-6 bg-white border border-slate-200 shadow-sm rounded-xl hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-200 hover:border-blue-200 group transition-all duration-300 overflow-hidden"
+                  >
+                    <MessageSquare size={28} className="text-slate-400 group-hover:text-blue-500 group-hover:scale-110 transition-all duration-300 mb-4" />
+                    <span className="text-sm font-medium text-slate-600">Assistant</span>
+                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] w-6 bg-blue-500 rounded-t-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  </button>
+                  <button
+                    onClick={() => navigate('/assistant')}
+                    className="relative flex flex-col items-center justify-center p-6 bg-white border border-slate-200 shadow-sm rounded-xl hover:-translate-y-1 hover:shadow-xl hover:shadow-purple-200 hover:border-purple-200 group transition-all duration-300 overflow-hidden"
+                  >
+                    <ImageIcon size={28} className="text-slate-400 group-hover:text-purple-500 group-hover:scale-110 transition-all duration-300 mb-4" />
+                    <span className="text-sm font-medium text-slate-600">Scan</span>
+                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] w-6 bg-purple-500 rounded-t-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  </button>
                 </div>
+              </div>
             </div>
           </div>
         </div>

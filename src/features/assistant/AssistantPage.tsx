@@ -108,7 +108,7 @@ export const AssistantPage: React.FC = () => {
 
       {/* Context Bar */}
       {selectedPlot && (
-        <div className="bg-white/70 backdrop-blur-md border border-white/60 shadow-sm rounded-2xl p-4 flex flex-wrap items-center gap-6">
+        <div className="bg-white/70 backdrop-blur-md border border-gray shadow-sm rounded-2xl p-4 flex flex-wrap items-center gap-6">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">Plot</p>
             <p className="font-bold tracking-tight text-slate-900">{selectedPlot.plotName}</p>
@@ -136,12 +136,12 @@ export const AssistantPage: React.FC = () => {
       )}
 
       {/* Chat Area */}
-      <div className="flex-1 flex flex-col overflow-hidden bg-white/40 backdrop-blur-md border border-white/60 shadow-lg rounded-3xl relative">
+      <div className="flex-1 flex flex-col overflow-hidden bg-white/40 backdrop-blur-md border border-gray shadow-lg rounded-3xl relative">
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full">
               <div className="h-16 w-16 bg-emerald-50 border border-emerald-100 rounded-full flex items-center justify-center mb-6 shadow-sm">
-                 <Bot className="h-8 w-8 text-emerald-600" />
+                <Bot className="h-8 w-8 text-emerald-600" />
               </div>
               <h2 className="text-xl font-bold tracking-tight text-slate-900 mb-2">How can I help you today?</h2>
               <p className="text-slate-500 font-medium mb-8 text-center max-w-sm">
@@ -168,9 +168,9 @@ export const AssistantPage: React.FC = () => {
                     }`}
                 >
                   {message.sender === 'ai' && (
-                     <div className="h-8 w-8 bg-emerald-50 border border-emerald-100 rounded-full flex items-center justify-center mr-3 mt-1 shadow-sm flex-shrink-0">
-                       <Bot className="h-4 w-4 text-emerald-600" />
-                     </div>
+                    <div className="h-8 w-8 bg-emerald-50 border border-emerald-100 rounded-full flex items-center justify-center mr-3 mt-1 shadow-sm flex-shrink-0">
+                      <Bot className="h-4 w-4 text-emerald-600" />
+                    </div>
                   )}
                   <div
                     className={`max-w-[75%] rounded-2xl px-5 py-3.5 shadow-sm ${message.sender === 'user'
@@ -211,13 +211,13 @@ export const AssistantPage: React.FC = () => {
         </div>
 
         {/* Input Area */}
-        <div className="p-6 bg-white/20 backdrop-blur-md rounded-b-3xl border-t border-white/50">
+        <div className="p-6 bg-white/20 backdrop-blur-md rounded-b-3xl border-t border-gray">
           {imagePreview && (
             <div className="mb-4 relative inline-block">
               <img
                 src={imagePreview}
                 alt="Preview"
-                className="h-24 w-24 object-cover rounded-xl border-2 border-white shadow-md"
+                className="h-24 w-24 object-cover rounded-xl border-2 border-gray shadow-md"
               />
               <button
                 onClick={handleRemoveImage}
@@ -229,7 +229,7 @@ export const AssistantPage: React.FC = () => {
             </div>
           )}
 
-          <div className="flex items-end gap-3 bg-white/80 backdrop-blur-xl border-2 border-white shadow-md rounded-2xl p-2 transition-all focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-300">
+          <div className="flex items-end gap-3 bg-white/80 backdrop-blur-xl border-2 border-gray shadow-md rounded-2xl p-2 transition-all focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-300">
             <button
               onClick={() => fileInputRef.current?.click()}
               className="p-3 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors"

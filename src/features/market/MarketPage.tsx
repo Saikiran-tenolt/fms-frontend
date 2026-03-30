@@ -22,13 +22,13 @@ export const MarketPage: React.FC = () => {
   // Helper to generate a realistic-looking sparkline trend array
   const generateTrendData = (price: number, trend: 'up' | 'down' | 'stable', changePct: number) => {
     const data = [];
-    let current = trend === 'up' ? price * (1 - changePct / 100) : 
-                  trend === 'down' ? price * (1 + changePct / 100) : price;
-    
+    let current = trend === 'up' ? price * (1 - changePct / 100) :
+      trend === 'down' ? price * (1 + changePct / 100) : price;
+
     for (let i = 0; i < 6; i++) {
-        data.push({ value: current });
-        const volatility = (Math.random() - 0.5) * (price * 0.05);
-        current = current + volatility;
+      data.push({ value: current });
+      const volatility = (Math.random() - 0.5) * (price * 0.05);
+      current = current + volatility;
     }
     data.push({ value: price });
     return data;
@@ -41,7 +41,7 @@ export const MarketPage: React.FC = () => {
       map[price.id] = generateTrendData(price.price, price.trend, price.change);
     });
     return map;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prices]);
 
   return (
@@ -54,7 +54,7 @@ export const MarketPage: React.FC = () => {
             Real-time crop valuations from the nearest Mandi
           </p>
         </div>
-        
+
         {/* Search */}
         <div className="relative w-full sm:w-80">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
@@ -78,9 +78,9 @@ export const MarketPage: React.FC = () => {
             const trendData = trendDataMap[price.id] ?? [];
 
             return (
-              <div 
+              <div
                 key={price.id}
-                className="bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm hover:shadow-lg rounded-3xl p-6 transition-all duration-300 relative overflow-hidden group"
+                className="bg-white/70 backdrop-blur-xl border border-gray shadow-sm hover:shadow-lg rounded-3xl p-6 transition-all duration-300 relative overflow-hidden group"
               >
                 <div className="flex justify-between items-start mb-6 relative z-10">
                   <div>
@@ -114,17 +114,17 @@ export const MarketPage: React.FC = () => {
                     <AreaChart data={trendData}>
                       <defs>
                         <linearGradient id={`colorTrend-${price.id}`} x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor={strokeColor} stopOpacity={0.3}/>
-                          <stop offset="100%" stopColor={strokeColor} stopOpacity={0}/>
+                          <stop offset="5%" stopColor={strokeColor} stopOpacity={0.3} />
+                          <stop offset="100%" stopColor={strokeColor} stopOpacity={0} />
                         </linearGradient>
                       </defs>
-                      <Area 
-                        type="monotone" 
-                        dataKey="value" 
-                        stroke={strokeColor} 
-                        strokeWidth={2.5} 
-                        fillOpacity={1} 
-                        fill={`url(#colorTrend-${price.id})`} 
+                      <Area
+                        type="monotone"
+                        dataKey="value"
+                        stroke={strokeColor}
+                        strokeWidth={2.5}
+                        fillOpacity={1}
+                        fill={`url(#colorTrend-${price.id})`}
                         isAnimationActive={false}
                       />
                     </AreaChart>
