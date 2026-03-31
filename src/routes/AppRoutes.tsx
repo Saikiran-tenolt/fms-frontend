@@ -38,7 +38,11 @@ export const AppRoutes: React.FC = () => {
         <Route path="notifications" element={<NotificationsPage />} />
         <Route path="market" element={<MarketPage />} />
         <Route path="assistant" element={<AssistantPage />} />
-        <Route path="settings" element={<SettingsPage />} />
+        <Route path="settings" element={<SettingsPage />}>
+          <Route path="profile" element={<SettingsPage />} />
+          <Route path="notifications" element={<SettingsPage />} />
+          <Route path="security" element={<SettingsPage />} />
+        </Route>
       </Route>
       
       {/* Standalone plot creation route (for onboarding) */}

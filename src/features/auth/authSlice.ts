@@ -3,14 +3,16 @@ import type { AuthState, User } from '../../types';
 
 const loadAuthFromStorage = (): AuthState => {
   try {
-    const token = localStorage.getItem('authToken');
+    const accessToken = localStorage.getItem('accessToken');
+    const refreshToken = localStorage.getItem('refreshToken');
     const userStr = localStorage.getItem('authUser');
     
-    if (token && userStr) {
+    if (accessToken && userStr) {
       const user = JSON.parse(userStr) as User;
       return {
         user,
-        token,
+        accessToken,
+        refreshToken,
         isAuthenticated: true,
       };
     }
@@ -20,7 +22,8 @@ const loadAuthFromStorage = (): AuthState => {
   
   return {
     user: null,
-    token: null,
+    accessToken: null,
+    refreshToken: null,
     isAuthenticated: false,
   };
 };
@@ -31,22 +34,28 @@ const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    login: (state, action: PayloadAction<{ user: User; token: string }>) => {
+    login: (state, action: PayloadAction<{ user: User; accessToken: string; refreshToken: string }>) => {
       state.user = action.payload.user;
-      state.token = action.payload.token;
+      state.accessToken = action.payload.accessToken;
+      state.refreshToken = action.payload.refreshToken;
       state.isAuthenticated = true;
       
       // Persist to localStorage
-      localStorage.setItem('authToken', action.payload.token);
+      localStorage.setItem('accessToken', action.payload.accessToken);
+      localStorage.setItem('refreshToken', action.payload.refreshToken);
       localStorage.setItem('authUser', JSON.stringify(action.payload.user));
     },
     logout: (state) => {
       state.user = null;
-      state.token = null;
+      state.accessToken = null;
+      state.refreshToken = null;
       state.isAuthenticated = false;
       
-      // Clear localStorage
+      // Clear all possible storage keys
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
       localStorage.removeItem('authToken');
+      localStorage.removeItem('mock-token');
       localStorage.removeItem('authUser');
     },
     updateUser: (state, action: PayloadAction<User>) => {

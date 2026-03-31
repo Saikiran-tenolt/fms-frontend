@@ -1,14 +1,20 @@
-// User & Auth Types
 export interface User {
   id: string;
   name: string;
   email: string;
   role: 'FARMER' | 'ADMIN';
+  permanentLocation?: {
+    village: string;
+    block: string;
+    district: string;
+    state: string;
+  };
 }
 
 export interface AuthState {
   user: User | null;
-  token: string | null;
+  accessToken: string | null;
+  refreshToken: string | null;
   isAuthenticated: boolean;
 }
 

@@ -62,7 +62,7 @@ export const PlotListPage: React.FC = () => {
                   <Sprout className="h-24 w-24 text-emerald-600/20" />
                 </div>
               )}
-              
+
               {/* Top Right Badge Overlays */}
               <div className="absolute top-4 right-4 z-10">
                 <Badge variant="default" size="sm" className="bg-white/80 backdrop-blur-md text-slate-800 border-none shadow-sm uppercase tracking-wider text-[10px] font-bold">
@@ -76,18 +76,18 @@ export const PlotListPage: React.FC = () => {
                   <h3 className="text-lg font-bold tracking-tight text-slate-900 mb-2 truncate">
                     {plot.plotName}
                   </h3>
-                  
+
                   <div className="grid grid-cols-2 gap-4">
-                     <div>
-                       <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-0.5">Crop</p>
-                       <p className="text-sm font-bold text-slate-900 truncate">{plot.cropType}</p>
-                     </div>
-                     <div>
-                       <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-0.5">Soil</p>
-                       <p className="text-sm font-bold text-slate-900 truncate">{plot.soilType}</p>
-                     </div>
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-0.5">Crop</p>
+                      <p className="text-sm font-bold text-slate-900 truncate">{plot.cropType}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-0.5">Soil</p>
+                      <p className="text-sm font-bold text-slate-900 truncate">{plot.soilType}</p>
+                    </div>
                   </div>
-                  
+
                   <div className="mt-3 pt-3 border-t border-slate-200/60 flex items-center text-xs font-semibold text-slate-500">
                     <MapPin className="h-3 w-3 mr-1 text-emerald-500" />
                     {plot.location.latitude.toFixed(4)}, {plot.location.longitude.toFixed(4)}

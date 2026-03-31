@@ -1,7 +1,7 @@
 import axios from 'axios';
 import type { AxiosInstance } from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+const API_BASE_URL = 'https://fms-backend-976n.onrender.com/api/v1';
 
 // Create axios instance
 const api: AxiosInstance = axios.create({
@@ -15,7 +15,7 @@ const api: AxiosInstance = axios.create({
 // Request interceptor - attach auth token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem('accessToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -39,7 +39,8 @@ api.interceptors.response.use(
       
       if (status === 401) {
         // Unauthorized - clear auth and redirect to login
-        localStorage.removeItem('authToken');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
         localStorage.removeItem('authUser');
         window.location.href = '/login';
       }
