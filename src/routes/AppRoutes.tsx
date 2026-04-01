@@ -33,7 +33,9 @@ export const AppRoutes: React.FC = () => {
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="plots" element={<PlotListPage />} />
+        <Route path="plots/create" element={<AddPlotPage />} />
         <Route path="plots/:id" element={<PlotDetailsPage />} />
+        <Route path="plots/:id/edit" element={<AddPlotPage />} />
         <Route path="advisories" element={<AdvisoryPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
         <Route path="market" element={<MarketPage />} />
@@ -44,16 +46,6 @@ export const AppRoutes: React.FC = () => {
           <Route path="security" element={<SettingsPage />} />
         </Route>
       </Route>
-      
-      {/* Standalone plot creation route (for onboarding) */}
-      <Route
-        path="/plots/create"
-        element={
-          <ProtectedRoute>
-            <AddPlotPage />
-          </ProtectedRoute>
-        }
-      />
       
       {/* Catch all - redirect to dashboard */}
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

@@ -53,6 +53,17 @@ export const LoginPage: React.FC = () => {
       console.log('Sending OTP to:', phone);
       const res = await authService.sendOtp(phone);
       console.log('OTP Response:', res);
+
+      // Display the OTP using an alert message, with a slight delay so the UI updates first
+      const otpCode = res?.otp || res?.data?.otp;
+      setTimeout(() => {
+        if (otpCode) {
+          alert(`Your OTP is: ${otpCode} or Check in the console`);
+        } else {
+          alert(`OTP Response: ${JSON.stringify(res)}`);
+        }
+      }, 100);
+
       setStep(2);
       setResendTimer(60);
     } catch (err: any) {

@@ -48,15 +48,15 @@ export const SettingsPage: React.FC = () => {
       </div>
 
       {/* Profile Section */}
-      <Card 
-        title="Profile Information" 
+      <Card
+        title="Profile Information"
         action={!isEditing && (
-          <button 
+          <button
             onClick={() => setIsEditing(true)}
             className="p-2 hover:bg-slate-50 rounded-lg transition-colors text-slate-400 hover:text-emerald-500"
             title="Edit Profile"
           >
-            <Pencil className="h-4 w-4" />
+            <Pencil className="text-blackh-4 w-4" />
           </button>
         )}
       >
@@ -65,19 +65,19 @@ export const SettingsPage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Full Name</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={editForm.name}
-                  onChange={(e) => setEditForm({...editForm, name: e.target.value})}
+                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
                   className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
                 />
               </div>
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Email Address</label>
-                <input 
-                  type="email" 
+                <input
+                  type="email"
                   value={editForm.email}
-                  onChange={(e) => setEditForm({...editForm, email: e.target.value})}
+                  onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
                   className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
                 />
               </div>
@@ -89,11 +89,11 @@ export const SettingsPage: React.FC = () => {
                 {['village', 'block', 'district', 'state'].map((field) => (
                   <div key={field}>
                     <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">{field}</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       value={(editForm.location as any)[field]}
                       onChange={(e) => setEditForm({
-                        ...editForm, 
+                        ...editForm,
                         location: { ...editForm.location, [field]: e.target.value }
                       })}
                       className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"

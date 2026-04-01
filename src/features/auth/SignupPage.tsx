@@ -50,7 +50,7 @@ export const SignupPage: React.FC = () => {
       const token = `mock-token-${Date.now()}`;
       
       // Dispatch login action
-      dispatch(login({ user, token }));
+      dispatch(login({ user, accessToken: token, refreshToken: '' }));
       
       // Redirect to dashboard
       navigate('/dashboard');

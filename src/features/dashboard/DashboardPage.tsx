@@ -7,7 +7,7 @@ import {
   AlertTriangle,
   FileText,
   MapPin,
-  DollarSign,
+  IndianRupee,
   MessageSquare,
   Image as ImageIcon,
   Sprout,
@@ -402,7 +402,7 @@ export const DashboardPage: React.FC = () => {
                     onClick={() => navigate('/market')}
                     className="relative flex flex-col items-center justify-center p-6 bg-white border border-slate-200 shadow-sm rounded-xl hover:-translate-y-1 hover:shadow-xl hover:shadow-amber-200 hover:border-amber-200 group transition-all duration-300 overflow-hidden"
                   >
-                    <DollarSign size={28} className="text-slate-400 group-hover:text-amber-500 group-hover:scale-110 transition-all duration-300 mb-4" />
+                    <IndianRupee size={28} className="text-slate-400 group-hover:text-amber-500 group-hover:scale-110 transition-all duration-300 mb-4" />
                     <span className="text-sm font-medium text-slate-600">Market</span>
                     <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] w-6 bg-amber-500 rounded-t-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                   </button>
