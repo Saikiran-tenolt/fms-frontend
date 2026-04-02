@@ -3,13 +3,15 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Sprout, MapPin, Calendar, Droplets, Thermometer, Wind, 
   CloudRain, MessageSquare, TrendingUp, Image as ImageIcon, ExternalLink, 
-  Clock, AlertCircle, ArrowRight
+  Clock, AlertCircle, ArrowRight, Trash2
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { motion } from 'framer-motion';
 
 import { useAppSelector, useAppDispatch } from '../../hooks';
 import { setSensorData, setTrendData } from '../sensors/sensorsSlice';
+import { deletePlot, addPlot } from '../plots/plotsSlice';
 import { generateMockSensorData, generateMockTrendData, mockAlerts } from '../../services/mockData';
 import { EmptyState, Loader } from '../../components/ui';
 
@@ -47,6 +49,29 @@ export const PlotDetailsPage: React.FC = () => {
     }
     
     setLoading(false);
+  };
+  
+  const handleDelete = () => {
+    if (!plot) return;
+
+    // Capture plot data for undo
+    const plotToDelete = { ...plot };
+
+    // Optimistically delete
+    dispatch(deletePlot(plot.plotId));
+    navigate('/plots');
+
+    toast.warning(`Plot "${plot.plotName}" deleted`, {
+      description: 'You can undo this action within 5 seconds.',
+      action: {
+        label: 'Undo',
+        onClick: () => {
+          dispatch(addPlot(plotToDelete));
+          toast.success(`Restored "${plotToDelete.plotName}"`);
+        },
+      },
+      duration: 5000,
+    });
   };
   
   if (!plot) {
@@ -99,6 +124,13 @@ export const PlotDetailsPage: React.FC = () => {
           </div>
         </div>
         <div className="flex gap-3">
+          <button 
+            onClick={handleDelete}
+            className="p-3.5 rounded-2xl bg-white border border-rose-100 text-rose-500 hover:bg-rose-50 transition-all shadow-sm group"
+            title="Delete Plot"
+          >
+            <Trash2 className="w-5 h-5 group-hover:scale-110 transition-transform" />
+          </button>
           <button onClick={() => navigate(`/plots/${plot.plotId}/edit`)} className="px-6 py-3 bg-white border border-slate-100 rounded-2xl font-bold text-sm text-slate-600 hover:bg-slate-50 transition-all shadow-sm whitespace-nowrap">Edit Plot</button>
           <button className="px-6 py-3 bg-emerald-600 text-white rounded-2xl font-bold text-sm hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20 whitespace-nowrap">Generate Report</button>
         </div>

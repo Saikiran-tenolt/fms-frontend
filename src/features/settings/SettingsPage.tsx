@@ -1,5 +1,6 @@
 import React from 'react';
 import { User as UserIcon, Bell, Shield, Globe, Pencil } from 'lucide-react';
+import { toast } from 'sonner';
 import { useAppSelector } from '../../hooks';
 import { Card, Button } from '../../components/ui';
 
@@ -20,6 +21,7 @@ export const SettingsPage: React.FC = () => {
   const handleSave = () => {
     // In a real app, this would dispatch an API call
     console.log('Saving profile:', editForm);
+    toast.success('Profile saved successfully!');
     setIsEditing(false);
   };
 
@@ -155,7 +157,18 @@ export const SettingsPage: React.FC = () => {
               </div>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" className="sr-only peer" defaultChecked />
+              <input 
+                type="checkbox" 
+                className="sr-only peer" 
+                defaultChecked 
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    toast.success('Email notifications enabled');
+                  } else {
+                    toast.info('Email notifications disabled');
+                  }
+                }}
+              />
               <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
             </label>
           </div>

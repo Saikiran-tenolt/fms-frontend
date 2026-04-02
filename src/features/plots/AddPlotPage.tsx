@@ -8,6 +8,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../hooks';
 import { addPlot, updatePlot } from './plotsSlice';
 import type { Plot } from '../../types';
+import { toast } from 'sonner';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -222,7 +223,7 @@ export const AddPlotPage: React.FC = () => {
 
   const fetchLocation = async () => {
     if (!navigator.geolocation) {
-      alert("Geolocation is not supported by your browser");
+      toast.error("Geolocation is not supported by your browser");
       return;
     }
     setIsFetchingLocation(true);
@@ -234,9 +235,10 @@ export const AddPlotPage: React.FC = () => {
           longitude: position.coords.longitude.toString() 
         }));
         setIsFetchingLocation(false);
+        toast.success("Location coordinates fetched successfully");
       },
       (error) => {
-        alert(`Unable to get location: ${error.message}`);
+        toast.error(`Unable to get location: ${error.message}`);
         setIsFetchingLocation(false);
       }
     );
@@ -256,7 +258,7 @@ export const AddPlotPage: React.FC = () => {
 
     setIsSubmitting(true);
 
-    try {
+    const submissionPromise = async () => {
       let imageUrl: string | undefined = undefined;
       if (formData.image) {
         const reader = new FileReader();
@@ -280,17 +282,24 @@ export const AddPlotPage: React.FC = () => {
         createdAt: existingPlot ? existingPlot.createdAt : new Date().toISOString()
       };
 
+      // Artificial delay for better UX with toast.promise
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
       if (existingPlot) {
         dispatch(updatePlot(plotDataToSave));
       } else {
         dispatch(addPlot(plotDataToSave));
       }
-      setIsSubmitting(false);
       setIsSuccess(true);
-    } catch (error) {
-      console.error(error);
-      setIsSubmitting(false);
-    }
+      return plotDataToSave;
+    };
+
+    toast.promise(submissionPromise(), {
+      loading: existingPlot ? 'Updating plot details...' : 'Deploying your new plot...',
+      success: (data) => `${data.plotName} has been ${existingPlot ? 'updated' : 'deployed'} successfully!`,
+      error: 'Failed to save plot data. Please check your inputs.',
+      finally: () => setIsSubmitting(false),
+    });
   };
 
   const nextStep = () => setStep(s => Math.min(s + 1, 3));

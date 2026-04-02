@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Droplets,
@@ -17,6 +17,7 @@ import { useAppSelector, useAppDispatch } from '../../hooks';
 import { setSensorData, setTrendData } from '../sensors/sensorsSlice';
 import { setAdvisories } from '../advisories/advisoriesSlice';
 import { Badge, EmptyState, SkeletonCard, SkeletonChart } from '../../components/ui';
+import { toast } from 'sonner';
 import { AreaChart, Area, ResponsiveContainer } from 'recharts';
 import {
   generateMockSensorData,
@@ -32,9 +33,28 @@ export const DashboardPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const { plots, selectedPlotId } = useAppSelector((state) => state.plots);
   const { sensorData, trendData } = useAppSelector((state) => state.sensors);
+  const { notifications } = useAppSelector((state) => state.notifications);
   const { advisories } = useAppSelector((state) => state.advisories);
   const [loading, setLoading] = useState(true);
   const [weather, setWeather] = useState<any>(null);
+  const hasShownNotifications = useRef(false);
+
+  useEffect(() => {
+    if (!loading && notifications.length > 0 && !hasShownNotifications.current) {
+      const unread = notifications.filter(n => !n.isRead);
+      if (unread.length > 0) {
+        unread.forEach((n, index) => {
+          setTimeout(() => {
+            toast(n.title, {
+              description: n.message,
+              duration: 5000,
+            });
+          }, index * 500); // Stagger toasts slightly to appear one after another
+        });
+        hasShownNotifications.current = true;
+      }
+    }
+  }, [loading, notifications]);
 
   const selectedPlot = plots.find((p) => p.plotId === selectedPlotId);
 

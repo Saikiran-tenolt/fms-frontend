@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { Provider } from 'react-redux';
+import { Toaster } from 'sonner';
 import { store } from './store/store';
 import { AppRoutes } from './routes/AppRoutes';
 import { useAppDispatch, useAppSelector } from './hooks';
@@ -26,8 +27,9 @@ const AppContent: React.FC = () => {
 function App() {
   return (
     <Provider store={store}>
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AppContent />
+        <Toaster position="bottom-right" richColors expand={true} visibleToasts={6} />
       </BrowserRouter>
     </Provider>
   );

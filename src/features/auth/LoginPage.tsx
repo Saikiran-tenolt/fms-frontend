@@ -4,6 +4,7 @@ import { ChevronLeft, Loader2, ShieldCheck, MapPin, User, Mail, Smartphone, Arro
 import { useAppDispatch } from '../../hooks';
 import { login } from './authSlice';
 import { Button } from '../../components/ui';
+import { toast } from 'sonner';
 import authService, { VerifyPayload, Location as ProfileLocation } from '../../services/authService';
 
 export const LoginPage: React.FC = () => {
@@ -54,15 +55,16 @@ export const LoginPage: React.FC = () => {
       const res = await authService.sendOtp(phone);
       console.log('OTP Response:', res);
 
-      // Display the OTP using an alert message, with a slight delay so the UI updates first
+      // Display the OTP using a toast message
       const otpCode = res?.otp || res?.data?.otp;
-      setTimeout(() => {
-        if (otpCode) {
-          alert(`Your OTP is: ${otpCode} or Check in the console`);
-        } else {
-          alert(`OTP Response: ${JSON.stringify(res)}`);
-        }
-      }, 100);
+      if (otpCode) {
+        toast.success(`Verification code sent!`, {
+          description: `Your OTP is: ${otpCode} (Demo mode)`,
+          duration: 10000,
+        });
+      } else {
+        toast.success('Verification code sent to your device.');
+      }
 
       setStep(2);
       setResendTimer(60);
@@ -133,8 +135,11 @@ export const LoginPage: React.FC = () => {
         refreshToken: response.refreshToken || ''
       }));
 
-      // High-end Onboarding Navigation
-      // First redirect to dashboard
+      // Navigation with UX feedback
+      toast.success(`Welcome back, ${response.user.name}!`, {
+        description: 'Redirecting to your dashboard...',
+      });
+
       navigate('/dashboard');
 
       // Then specifically trigger navigation to Add Plots after a short delay for visual transition
