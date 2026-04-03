@@ -30,7 +30,7 @@ export const AppRoutes: React.FC = () => {
           </ProtectedRoute>
         }
       >
-        <Route index element={<Navigate to="/dashboard" replace />} />
+        <Route index element={<Navigate to="/login" replace />} />
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="plots" element={<PlotListPage />} />
         <Route path="plots/create" element={<AddPlotPage />} />
@@ -47,8 +47,8 @@ export const AppRoutes: React.FC = () => {
         </Route>
       </Route>
       
-      {/* Catch all - redirect to dashboard */}
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      {/* Catch all - redirect to login */}
+      <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
 };

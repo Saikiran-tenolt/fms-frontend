@@ -8,6 +8,7 @@ export default {
     extend: {
       fontFamily: {
         sans: ['Inter', 'system-ui', 'Avenir', 'Helvetica', 'Arial', 'sans-serif'],
+        manrope: ['Manrope', 'sans-serif'],
       },
       colors: {
         primary: {
@@ -20,8 +21,21 @@ export default {
           600: '#059669',
           700: '#047857',
           800: '#065f46',
-          900: '#064e3b',
+          900: '#012d1d',
+          container: '#1b4332',
+          fixed: '#c1ecd4',
         },
+        'on-primary-container': '#ffffff',
+        'on-primary-fixed': '#002114',
+        'secondary-container': '#f1f5f9',
+        'on-secondary-container': '#475569',
+        'surface-container': '#f8fafc',
+        'surface-container-low': '#f1f5f9',
+        'surface-container-lowest': '#ffffff',
+        'on-surface-variant': '#64748b',
+        'outline-variant': '#e2e8f0',
+        'error-container': '#fee2e2',
+        'on-error-container': '#9ef4e65', // Using hex for error color if needed
         slate: {
           50: '#f8fafc',
           100: '#f1f5f9',

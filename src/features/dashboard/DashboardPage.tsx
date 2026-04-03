@@ -1,24 +1,25 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Droplets,
-  Thermometer,
-  Wind,
   AlertTriangle,
-  FileText,
   MapPin,
   IndianRupee,
   MessageSquare,
   Image as ImageIcon,
-  Sprout,
-  Sun,
+  Droplets,
+  Thermometer,
+  Maximize,
+  Brain,
+  Radio,
+  ChevronDown,
+  CloudRain
 } from 'lucide-react';
 import { useAppSelector, useAppDispatch } from '../../hooks';
 import { setSensorData, setTrendData } from '../sensors/sensorsSlice';
 import { setAdvisories } from '../advisories/advisoriesSlice';
-import { Badge, EmptyState, SkeletonCard, SkeletonChart } from '../../components/ui';
+import { EmptyState, SkeletonCard, SkeletonChart } from '../../components/ui';
+import { SensorGrid } from '../sensors/components/SensorGrid';
 import { toast } from 'sonner';
-import { AreaChart, Area, ResponsiveContainer } from 'recharts';
 import {
   generateMockSensorData,
   generateMockTrendData,
@@ -49,7 +50,7 @@ export const DashboardPage: React.FC = () => {
               description: n.message,
               duration: 5000,
             });
-          }, index * 500); // Stagger toasts slightly to appear one after another
+          }, index * 500);
         });
         hasShownNotifications.current = true;
       }
@@ -73,15 +74,13 @@ export const DashboardPage: React.FC = () => {
       dispatch(setSensorData({ plotId: selectedPlot.plotId, data: sensors }));
       dispatch(setTrendData({ plotId: selectedPlot.plotId, sensor: 'soilMoisture', data: generateMockTrendData() }));
       dispatch(setTrendData({ plotId: selectedPlot.plotId, sensor: 'temperature', data: generateMockTrendData() }));
+      dispatch(setTrendData({ plotId: selectedPlot.plotId, sensor: 'humidity', data: generateMockTrendData() }));
+      dispatch(setTrendData({ plotId: selectedPlot.plotId, sensor: 'soilTemperature', data: generateMockTrendData() }));
       setWeather(generateMockWeather(selectedPlot.plotId));
       dispatch(setAdvisories(mockAdvisories));
     }
 
     setLoading(false);
-  };
-
-  const handlePlotChange = (plotId: string) => {
-    dispatch(selectPlot(plotId));
   };
 
   if (plots.length === 0) {
@@ -101,63 +100,56 @@ export const DashboardPage: React.FC = () => {
   const currentSensors = selectedPlotId ? sensorData[selectedPlotId] : null;
   const soilMoistureTrend = selectedPlotId ? trendData[`${selectedPlotId}_soilMoisture`] : [];
   const temperatureTrend = selectedPlotId ? trendData[`${selectedPlotId}_temperature`] : [];
-  const humidityTrend = selectedPlotId ? trendData[`${selectedPlotId}_soilMoisture`] : []; // Reusing mock since we just need visuals
-  const soilTempTrend = selectedPlotId ? trendData[`${selectedPlotId}_temperature`] : []; // Reusing mock
   const latestAdvisory = advisories[0];
 
-  return (
-    <div className="space-y-8 animate-fadeIn max-w-6xl mx-auto">
-      {/* 1️⃣ WELCOME HEADER BANNER */}
-      <div className="bg-white/70 backdrop-blur-xl border border-gray shadow-sm rounded-2xl overflow-hidden relative">
-        <div className="absolute -top-24 -right-12 p-12 opacity-5 pointer-events-none text-emerald-900">
-          <Sprout className="w-96 h-96" />
+  if (loading) {
+    return (
+      <div className="px-8 max-w-7xl mx-auto space-y-12 mt-8 pb-20">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
         </div>
-        <div className="relative p-8 px-8 sm:px-10">
-          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
-            <div className="flex-1">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="h-12 w-12 bg-white flex items-center justify-center rounded-xl shadow-sm border border-slate-100">
-                  <Sprout className="h-6 w-6 text-emerald-500" />
-                </div>
-                <div>
-                  <h1 className="text-3xl font-bold tracking-tight text-slate-900">Real-time Field Overview</h1>
-                  <p className="text-slate-500 text-sm font-medium mt-1">Smart agricultural intelligence</p>
-                </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <SkeletonChart />
+          <SkeletonChart />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-4 sm:px-8 max-w-7xl mx-auto space-y-12 mt-8 pb-20 font-manrope">
+      {/* Hero Section: Real-time Field Overview */}
+      <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-end">
+        <div className="lg:col-span-7 space-y-4">
+          <div className="flex items-center gap-3">
+            <span className="px-2 py-0.5 bg-secondary-container text-on-secondary-container text-[10px] font-bold tracking-widest uppercase rounded">Active Field</span>
+            <h3 className="text-on-surface-variant text-sm font-medium">Updated 2 mins ago</h3>
+          </div>
+          <h1 className="text-4xl lg:text-5xl font-extrabold text-primary-900 tracking-tighter leading-none">
+            {selectedPlot?.plotName} / <span className="text-primary-500">{selectedPlot?.cropType}</span>
+          </h1>
+          <p className="text-on-surface-variant max-w-lg leading-relaxed">
+            Precision monitoring active across the field. Current vegetative stage indicates optimal progress.
+          </p>
+          <div className="flex items-center gap-8 mt-6">
+            <div className="flex flex-col">
+              <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1">Local Weather</span>
+              <div className="flex items-center gap-2 text-primary-900 font-bold">
+                <CloudRain className="w-5 h-5 text-blue-500" />
+                <span className="text-xl">{weather?.temperature}°C</span>
               </div>
-
-              {selectedPlot && (
-                <div className="flex flex-wrap gap-8 mt-8">
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Active Plot</p>
-                    <p className="text-xl font-bold tracking-tight text-slate-900">{selectedPlot.plotName}</p>
-                  </div>
-                  <div className="w-px bg-slate-200 hidden sm:block"></div>
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Crop Type</p>
-                    <p className="text-xl font-bold tracking-tight text-slate-900">{selectedPlot.cropType}</p>
-                  </div>
-                  <div className="w-px bg-slate-200 hidden sm:block"></div>
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Local Weather</p>
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl">{weather?.icon || '☀️'}</span>
-                      <p className="text-xl font-bold tracking-tight text-slate-900">{weather?.temperature || '--'}°C</p>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
-
-            {plots.length > 1 && (
-              <div className="lg:w-64">
-                <label htmlFor="plotSelector" className="block text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-2">
-                  Switch Plot
-                </label>
+            <div className="h-8 w-px bg-outline-variant/30 hidden xs:block"></div>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1">Switch Plot</span>
+              <div className="relative inline-block">
                 <select
-                  id="plotSelector"
                   value={selectedPlotId || ''}
-                  onChange={(e) => handlePlotChange(e.target.value)}
-                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-slate-900 font-semibold focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all shadow-sm cursor-pointer"
+                  onChange={(e) => dispatch(selectPlot(e.target.value))}
+                  className="appearance-none flex items-center gap-2 pl-3 pr-8 py-1.5 bg-surface-container-low border border-outline-variant/30 rounded-lg text-sm font-bold text-primary-900 hover:bg-surface-container transition-colors cursor-pointer outline-none"
                 >
                   {plots.map((plot) => (
                     <option key={plot.plotId} value={plot.plotId}>
@@ -165,289 +157,175 @@ export const DashboardPage: React.FC = () => {
                     </option>
                   ))}
                 </select>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {loading ? (
-        <div className="space-y-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <SkeletonCard />
-            <SkeletonCard />
-            <SkeletonCard />
-            <SkeletonCard />
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <SkeletonChart />
-            <SkeletonChart />
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-8">
-          {/* 2️⃣ SENSOR KPI CARDS WITH SPARKLINES */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Soil Moisture */}
-            {currentSensors?.soilMoisture && (
-              <div className="bg-white/70 backdrop-blur-xl border border-gray shadow-sm rounded-2xl p-6 flex flex-col hover:shadow-md transition-shadow relative overflow-hidden group">
-                <div className="flex justify-between items-start mb-4 relative z-10">
-                  <div className="flex items-start gap-4">
-                    <div className="h-10 w-10 bg-emerald-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <Droplets className="h-5 w-5 text-emerald-600" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Soil Moisture</p>
-                      <div className="flex items-baseline gap-1">
-                        <span className="font-bold tracking-tight text-slate-900 text-3xl">{currentSensors.soilMoisture.value}</span>
-                        <span className="text-slate-500 font-medium">%</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-auto h-16 w-full -mx-2 -mb-2 opacity-80 group-hover:opacity-100 transition-opacity">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={soilMoistureTrend}>
-                      <defs>
-                        <linearGradient id="colorMoisture" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#10B981" stopOpacity={0.25} />
-                          <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <Area type="monotone" dataKey="value" stroke="#10B981" strokeWidth={2.5} fillOpacity={1} fill="url(#colorMoisture)" />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-
-                <div className="absolute top-6 right-6 z-10">
-                  <div className={`h-2.5 w-2.5 rounded-full ${currentSensors.soilMoisture.status === 'ok' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]' :
-                    currentSensors.soilMoisture.status === 'warning' ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]'
-                    }`}></div>
-                </div>
-              </div>
-            )}
-
-            {/* Temperature */}
-            {currentSensors?.temperature && (
-              <div className="bg-white/70 backdrop-blur-xl border border-gray shadow-sm rounded-2xl p-6 flex flex-col hover:shadow-md transition-shadow relative overflow-hidden group">
-                <div className="flex justify-between items-start mb-4 relative z-10">
-                  <div className="flex items-start gap-4">
-                    <div className="h-10 w-10 bg-emerald-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <Thermometer className="h-5 w-5 text-emerald-600" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Temperature</p>
-                      <div className="flex items-baseline gap-1">
-                        <span className="font-bold tracking-tight text-slate-900 text-3xl">{currentSensors.temperature.value}</span>
-                        <span className="text-slate-500 font-medium">°C</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-auto h-16 w-full -mx-2 -mb-2 opacity-80 group-hover:opacity-100 transition-opacity">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={temperatureTrend}>
-                      <defs>
-                        <linearGradient id="colorTemp" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#10B981" stopOpacity={0.25} />
-                          <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <Area type="monotone" dataKey="value" stroke="#10B981" strokeWidth={2.5} fillOpacity={1} fill="url(#colorTemp)" />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-
-                <div className="absolute top-6 right-6 z-10">
-                  <div className={`h-2.5 w-2.5 rounded-full ${currentSensors.temperature.status === 'ok' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]' :
-                    currentSensors.temperature.status === 'warning' ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]'
-                    }`}></div>
-                </div>
-              </div>
-            )}
-
-            {/* Humidity */}
-            {currentSensors?.humidity && (
-              <div className="bg-white/70 backdrop-blur-xl border border-gray shadow-sm rounded-2xl p-6 flex flex-col hover:shadow-md transition-shadow relative overflow-hidden group">
-                <div className="flex justify-between items-start mb-4 relative z-10">
-                  <div className="flex items-start gap-4">
-                    <div className="h-10 w-10 bg-emerald-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <Wind className="h-5 w-5 text-emerald-600" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Humidity</p>
-                      <div className="flex items-baseline gap-1">
-                        <span className="font-bold tracking-tight text-slate-900 text-3xl">{currentSensors.humidity.value}</span>
-                        <span className="text-slate-500 font-medium">%</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-auto h-16 w-full -mx-2 -mb-2 opacity-80 group-hover:opacity-100 transition-opacity">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={humidityTrend}>
-                      <defs>
-                        <linearGradient id="colorHumidity" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#10B981" stopOpacity={0.25} />
-                          <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <Area type="monotone" dataKey="value" stroke="#10B981" strokeWidth={2.5} fillOpacity={1} fill="url(#colorHumidity)" />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-
-                <div className="absolute top-6 right-6 z-10">
-                  <div className={`h-2.5 w-2.5 rounded-full ${currentSensors.humidity.status === 'ok' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]' :
-                    currentSensors.humidity.status === 'warning' ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]'
-                    }`}></div>
-                </div>
-              </div>
-            )}
-
-            {/* Soil Temperature */}
-            {currentSensors?.soilTemperature && (
-              <div className="bg-white/70 backdrop-blur-xl border border-gray shadow-sm rounded-2xl p-6 flex flex-col hover:shadow-md transition-shadow relative overflow-hidden group">
-                <div className="flex justify-between items-start mb-4 relative z-10">
-                  <div className="flex items-start gap-4">
-                    <div className="h-10 w-10 bg-emerald-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <Sun className="h-5 w-5 text-emerald-600" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Soil Temp</p>
-                      <div className="flex items-baseline gap-1">
-                        <span className="font-bold tracking-tight text-slate-900 text-3xl">{currentSensors.soilTemperature.value}</span>
-                        <span className="text-slate-500 font-medium">°C</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-auto h-16 w-full -mx-2 -mb-2 opacity-80 group-hover:opacity-100 transition-opacity">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={soilTempTrend}>
-                      <defs>
-                        <linearGradient id="colorSoilTemp" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#10B981" stopOpacity={0.25} />
-                          <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <Area type="monotone" dataKey="value" stroke="#10B981" strokeWidth={2.5} fillOpacity={1} fill="url(#colorSoilTemp)" />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-
-                <div className="absolute top-6 right-6 z-10">
-                  <div className={`h-2.5 w-2.5 rounded-full ${currentSensors.soilTemperature.status === 'ok' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]' :
-                    currentSensors.soilTemperature.status === 'warning' ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]'
-                    }`}></div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* 3️⃣ ALERTS & ADVISORIES SECTION */}
-            <div className="lg:col-span-2 space-y-6">
-              {mockAlerts.length > 0 && (
-                <div className="bg-white/70 backdrop-blur-xl border border-gray shadow-sm rounded-2xl p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-lg font-bold tracking-tight text-slate-900">Active Alerts</h2>
-                    <Badge variant="warning">{mockAlerts.length} Issues</Badge>
-                  </div>
-                  <div className="space-y-4">
-                    {mockAlerts.map((alert) => (
-                      <div
-                        key={alert.id}
-                        className="flex items-start gap-4 p-4 bg-white border border-slate-100 rounded-xl hover:shadow-sm transition-all"
-                      >
-                        <div className="h-10 w-10 bg-amber-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <AlertTriangle className="h-5 w-5 text-amber-500" />
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-start justify-between gap-4">
-                            <div>
-                              <p className="font-bold tracking-tight text-slate-900">{alert.title}</p>
-                              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mt-1">{alert.plotName}</p>
-                              <p className="text-sm text-slate-600 mt-2">{alert.message}</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Latest Advisory */}
-              {latestAdvisory && (
-                <div className="bg-white/70 backdrop-blur-xl border border-gray shadow-sm rounded-2xl p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-lg font-bold tracking-tight text-slate-900">AI Advisory</h2>
-                  </div>
-                  <div className="flex items-start gap-4">
-                    <div className="h-10 w-10 bg-emerald-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <FileText className="h-5 w-5 text-emerald-600" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-bold tracking-tight text-slate-900 mb-1">{latestAdvisory.title}</h4>
-                      <p className="text-sm text-slate-600 mb-4 leading-relaxed">{latestAdvisory.description}</p>
-                      <div className="bg-emerald-50/50 border border-emerald-100 p-4 rounded-xl">
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700 mb-1">Recommended Action</p>
-                        <p className="text-sm font-medium text-emerald-900">{latestAdvisory.recommendedAction}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* 4️⃣ QUICK ACTIONS */}
-            <div className="space-y-6">
-              <div className="bg-white/40 backdrop-blur-md border border-gray shadow-sm rounded-2xl p-6">
-                <h2 className="text-lg font-bold tracking-tight text-slate-900 mb-6">Quick Actions</h2>
-                <div className="grid grid-cols-2 gap-4">
-                  <button
-                    onClick={() => navigate('/plots')}
-                    className="relative flex flex-col items-center justify-center p-6 bg-white border border-slate-200 shadow-sm rounded-xl hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-200 hover:border-emerald-200 group transition-all duration-300 overflow-hidden"
-                  >
-                    <MapPin size={28} className="text-slate-400 group-hover:text-emerald-500 group-hover:scale-110 transition-all duration-300 mb-4" />
-                    <span className="text-sm font-medium text-slate-600">Plots</span>
-                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] w-6 bg-emerald-500 rounded-t-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  </button>
-                  <button
-                    onClick={() => navigate('/market')}
-                    className="relative flex flex-col items-center justify-center p-6 bg-white border border-slate-200 shadow-sm rounded-xl hover:-translate-y-1 hover:shadow-xl hover:shadow-amber-200 hover:border-amber-200 group transition-all duration-300 overflow-hidden"
-                  >
-                    <IndianRupee size={28} className="text-slate-400 group-hover:text-amber-500 group-hover:scale-110 transition-all duration-300 mb-4" />
-                    <span className="text-sm font-medium text-slate-600">Market</span>
-                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] w-6 bg-amber-500 rounded-t-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  </button>
-                  <button
-                    onClick={() => navigate('/assistant')}
-                    className="relative flex flex-col items-center justify-center p-6 bg-white border border-slate-200 shadow-sm rounded-xl hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-200 hover:border-blue-200 group transition-all duration-300 overflow-hidden"
-                  >
-                    <MessageSquare size={28} className="text-slate-400 group-hover:text-blue-500 group-hover:scale-110 transition-all duration-300 mb-4" />
-                    <span className="text-sm font-medium text-slate-600">Assistant</span>
-                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] w-6 bg-blue-500 rounded-t-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  </button>
-                  <button
-                    onClick={() => navigate('/assistant')}
-                    className="relative flex flex-col items-center justify-center p-6 bg-white border border-slate-200 shadow-sm rounded-xl hover:-translate-y-1 hover:shadow-xl hover:shadow-purple-200 hover:border-purple-200 group transition-all duration-300 overflow-hidden"
-                  >
-                    <ImageIcon size={28} className="text-slate-400 group-hover:text-purple-500 group-hover:scale-110 transition-all duration-300 mb-4" />
-                    <span className="text-sm font-medium text-slate-600">Scan</span>
-                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] w-6 bg-purple-500 rounded-t-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  </button>
-                </div>
+                <ChevronDown className="w-4 h-4 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-black/70" />
               </div>
             </div>
           </div>
         </div>
+        <div className="lg:col-span-5 flex flex-wrap gap-3 lg:justify-end">
+          {currentSensors?.soilMoisture?.status && currentSensors.soilMoisture.status !== 'ok' && (
+            <div className="flex items-center gap-2 px-4 py-2 bg-error-container text-on-error-container rounded-lg text-xs font-bold">
+              <AlertTriangle className="w-4 h-4" />
+              Soil Alert: {currentSensors.soilMoisture.status}
+            </div>
+          )}
+          {currentSensors?.temperature?.status && currentSensors.temperature.status !== 'ok' && (
+            <div className="flex items-center gap-2 px-4 py-2 bg-error-container text-on-error-container rounded-lg text-xs font-bold">
+              <Thermometer className="w-4 h-4" />
+              Temp Alert: {currentSensors.temperature.status}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Field Map View */}
+      <section className="rounded-2xl overflow-hidden bg-surface-container-lowest border border-outline-variant/10 shadow-md h-[400px] relative group">
+        <img className="w-full h-full object-cover grayscale-[0.2] group-hover:scale-105 transition-transform duration-1000" alt="Field sat" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDnEG46wjKTwfzJsI-5SiCNM3CtwZcMgI9qZUVzYUX1kKN0HjBXhYsfMRLt07pXnsIdyoX0lB0gxXsGqEyTUuZJMbMGHUNN6hLvGMRBAq_jJgDIqxgz-1jvincfTDkyjISLRky4LyV_bG12Hj8enTNsfYx8-qyabGe3kZxvNbCBahUpE_XHOd_24ddgYpkNm7TWPJJbOCA60Y5IfRApDLi1-PfcbhllbinCqAVlwMdK5fxEjctrxe6vhH-XGimOMZXRtKk4paKLxq8d" referrerPolicy="no-referrer" />
+        <div className="absolute inset-0 bg-gradient-to-t from-primary-900/80 via-transparent to-transparent"></div>
+        <div className="absolute bottom-8 left-8 right-8 flex justify-between items-end">
+          <div className="text-white">
+            <p className="text-[10px] uppercase tracking-[0.2em] opacity-80 mb-2 font-bold">Live Satellite Feed</p>
+            <h4 className="text-3xl font-extrabold tracking-tight">Thermal Analysis Map</h4>
+          </div>
+          <button className="bg-white/10 backdrop-blur-xl border border-white/20 text-white p-3 rounded-xl hover:bg-white/20 transition-all shadow-lg hover:scale-110">
+            <Maximize className="w-6 h-6" />
+          </button>
+        </div>
+        <div className="absolute top-8 left-8 bg-white/90 backdrop-blur-xl px-4 py-2 rounded-xl shadow-xl flex items-center gap-3 border border-white/50">
+          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
+          <span className="text-xs font-black text-emerald-700 uppercase tracking-widest">Active NDVI: 0.82</span>
+        </div>
+      </section>
+
+      {/* Sensor Monitoring Grid: Modern Light SaaS Design */}
+      {currentSensors && <SensorGrid data={currentSensors} />}
+
+      {/* Quick Actions Support Section */}
+      <section className="space-y-6">
+        <div className="bg-white/40 backdrop-blur-md border border-outline-variant/10 shadow-sm rounded-2xl p-8">
+          <h2 className="text-xl font-bold tracking-tight text-primary-900 mb-8 px-2">Quick Actions</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <button
+              onClick={() => navigate('/plots')}
+              className="relative flex flex-col items-center justify-center p-8 bg-white border border-slate-200 shadow-sm rounded-2xl hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-200/50 hover:border-emerald-200 group transition-all duration-300 overflow-hidden"
+            >
+              <div className="h-14 w-14 bg-emerald-50 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform mb-4">
+                <MapPin size={28} className="text-black/70 group-hover:text-emerald-500 transition-colors" />
+              </div>
+              <span className="text-sm font-bold text-slate-600 group-hover:text-slate-900 transition-colors">Manage Plots</span>
+              <div className="absolute bottom-0 left-0 h-[3px] w-full bg-emerald-500 scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></div>
+            </button>
+            <button
+              onClick={() => navigate('/market')}
+              className="relative flex flex-col items-center justify-center p-8 bg-white border border-slate-200 shadow-sm rounded-2xl hover:-translate-y-1 hover:shadow-xl hover:shadow-amber-200/50 hover:border-amber-200 group transition-all duration-300 overflow-hidden"
+            >
+              <div className="h-14 w-14 bg-amber-50 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform mb-4">
+                <IndianRupee size={28} className="text-black/70 group-hover:text-amber-500 transition-colors" />
+              </div>
+              <span className="text-sm font-bold text-slate-600 group-hover:text-slate-900 transition-colors">Market Prices</span>
+              <div className="absolute bottom-0 left-0 h-[3px] w-full bg-amber-500 scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></div>
+            </button>
+            <button
+              onClick={() => navigate('/assistant')}
+              className="relative flex flex-col items-center justify-center p-8 bg-white border border-slate-200 shadow-sm rounded-2xl hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-200/50 hover:border-blue-200 group transition-all duration-300 overflow-hidden"
+            >
+              <div className="h-14 w-14 bg-blue-50 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform mb-4">
+                <MessageSquare size={28} className="text-black/70 group-hover:text-blue-500 transition-colors" />
+              </div>
+              <span className="text-sm font-bold text-slate-600 group-hover:text-slate-900 transition-colors">Ask Assistant</span>
+              <div className="absolute bottom-0 left-0 h-[3px] w-full bg-blue-500 scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></div>
+            </button>
+            <button
+              onClick={() => navigate('/assistant')}
+              className="relative flex flex-col items-center justify-center p-8 bg-white border border-slate-200 shadow-sm rounded-2xl hover:-translate-y-1 hover:shadow-xl hover:shadow-purple-200/50 hover:border-purple-200 group transition-all duration-300 overflow-hidden"
+            >
+              <div className="h-14 w-14 bg-purple-50 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform mb-4">
+                <ImageIcon size={28} className="text-black/70 group-hover:text-purple-500 transition-colors" />
+              </div>
+              <span className="text-sm font-bold text-slate-600 group-hover:text-slate-900 transition-colors">Crop Scanner</span>
+              <div className="absolute bottom-0 left-0 h-[3px] w-full bg-purple-500 scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></div>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Refined AI Advisory Section */}
+      {latestAdvisory && (
+        <section className="bg-[#012d1d] p-8 sm:p-12 rounded-2xl relative overflow-hidden shadow-2xl">
+          {/* Abstract Texture Overlay */}
+          <div className="absolute inset-0 opacity-10 pointer-events-none">
+            <svg height="100%" width="100%" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <pattern height="40" id="grid" patternUnits="userSpaceOnUse" width="40">
+                  <path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" strokeWidth="1"></path>
+                </pattern>
+              </defs>
+              <rect fill="url(#grid)" height="100%" width="100%"></rect>
+            </svg>
+          </div>
+          <div className="relative z-10 flex flex-col lg:flex-row gap-8 lg:gap-12 items-center">
+            <div className="flex-grow space-y-6 text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#1b4332] text-emerald-200 rounded-full text-xs font-bold tracking-widest uppercase">
+                <Brain className="w-4 h-4" />
+                AI Advisory Insight
+              </div>
+              <h2 className="text-white text-3xl md:text-4xl font-extrabold tracking-tight leading-tight">
+                {latestAdvisory.title}
+              </h2>
+              <p className="text-emerald-100/70 max-w-xl text-lg leading-relaxed">
+                {latestAdvisory.description}
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
+              <button
+                onClick={() => toast.success('Irrigation sequence deployed.')}
+                className="px-8 py-4 bg-[#c1ecd4] text-[#002114] font-bold rounded-xl hover:scale-95 active:opacity-80 transition-all flex items-center justify-center gap-2 whitespace-nowrap"
+              >
+                Execute Recommendation
+                <Droplets className="w-5 h-5" />
+              </button>
+              <button className="px-8 py-4 bg-white/10 backdrop-blur-md border border-white/20 text-white font-bold rounded-xl hover:bg-white/20 transition-all whitespace-nowrap">
+                Review Details
+              </button>
+            </div>
+          </div>
+        </section>
       )}
+
+      {/* Bottom Section: Detailed Field Status */}
+      <section className="space-y-8">
+        <div className="flex justify-between items-end">
+          <h3 className="text-2xl font-bold text-primary-900 tracking-tight">System Status Log</h3>
+          <button className="text-emerald-600 font-bold text-sm hover:underline">View Full Logs</button>
+        </div>
+        <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/10 divide-y divide-outline-variant/10 overflow-hidden">
+          {mockAlerts.map((alert) => (
+            <div key={alert.id} className="p-6 flex flex-wrap items-center justify-between gap-4 hover:bg-slate-50 transition-colors">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center">
+                  <Radio className={`w-5 h-5 ${alert.severity === 'critical' ? 'text-red-500' : 'text-emerald-500'}`} />
+                </div>
+                <div>
+                  <h4 className="font-bold text-slate-900">{alert.title}</h4>
+                  <p className="text-xs text-on-surface-variant">{alert.message} • Sector {alert.plotId.slice(-2)}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-6">
+                <div className="text-right">
+                  <p className="text-xs text-on-surface-variant uppercase tracking-tighter">Status</p>
+                  <p className={`text-sm font-bold ${alert.severity === 'critical' ? 'text-red-500' : 'text-emerald-600'}`}>
+                    {alert.severity === 'critical' ? 'Critical' : 'Alert'}
+                  </p>
+                </div>
+                <span className={`px-3 py-1 rounded text-[10px] font-bold uppercase ${alert.severity === 'critical' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'
+                  }`}>
+                  Monitoring
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 };

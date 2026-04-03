@@ -1,0 +1,136 @@
+.gridContainer {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  width: 100%;
+  margin: 24px 0;
+}
+
+@media (max-width: 1024px) {
+  .gridContainer {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .gridContainer {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card {
+  background-color: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 20px;
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.leftBorder {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+}
+
+.topSection {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.iconLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94A3B8; /* Medium grey */
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.timestamp {
+  font-size: 10px;
+  color: #CBD5E1; /* Very light subtle grey */
+  font-weight: 400;
+}
+
+.metricSection {
+  margin: 8px 0 4px 0; /* Tight spacing above badge */
+  display: flex;
+  align-items: baseline;
+}
+
+.value {
+  font-size: 44px; /* Slightly smaller for refinement */
+  font-weight: 700;
+  color: #1E293B;
+  line-height: 1;
+}
+
+.unit {
+  font-size: 18px;
+  color: #64748B;
+  font-weight: 500;
+  margin-left: 2px;
+}
+
+.statusBadge {
+  display: inline-flex;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+}
+
+/* Micro-Bar Styling */
+.microBarTrack {
+  height: 2px;
+  background-color: #F1F5F9;
+  border-radius: 1px;
+  width: 100%;
+  overflow: hidden;
+  margin-top: auto;
+}
+
+.microBarFill {
+  height: 100%;
+  border-radius: 1px;
+  transition: width 0.5s ease;
+}
+
+/* Status Semantic Variants (Refined for Badges) */
+.criticalBorder { background-color: #EF4444; }
+.optimalBorder { background-color: #10B981; }
+.normalBorder { background-color: #3B82F6; }
+
+.badgeCritical { background-color: rgba(239, 68, 68, 0.1); color: #B91C1C; }
+.badgeOptimal { background-color: rgba(16, 185, 129, 0.1); color: #065F46; }
+.badgeNormal { background-color: rgba(59, 130, 246, 0.1); color: #1E40AF; }
+
+.fillCritical { background-color: #EF4444; }
+.fillOptimal { background-color: #10B981; }
+.fillNormal { background-color: #3B82F6; }
+
+.iconCritical { color: #EF4444; }
+.iconDefault { color: #94A3B8; }

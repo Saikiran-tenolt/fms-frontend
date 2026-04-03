@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Loader2, ShieldCheck, MapPin, User, Mail, Smartphone, ArrowRight } from 'lucide-react';
+import { ChevronLeft, Loader2, ShieldCheck, MapPin, User, Mail, Smartphone, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAppDispatch } from '../../hooks';
 import { login } from './authSlice';
 import { Button } from '../../components/ui';
@@ -25,6 +26,12 @@ export const LoginPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showProfile, setShowProfile] = useState(false);
 
+  // Smart PIN Logic State
+  const [pincode, setPincode] = useState('');
+  const [isFetchingLocation, setIsFetchingLocation] = useState(false);
+  const [isPinVerified, setIsPinVerified] = useState(false);
+  const [pinError, setPinError] = useState<string | null>(null);
+
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -39,6 +46,45 @@ export const LoginPage: React.FC = () => {
     }
     return () => clearInterval(interval);
   }, [resendTimer]);
+
+  // Handle PIN Code auto-fetch
+  useEffect(() => {
+    if (pincode.length === 6) {
+      handleFetchLocation(pincode);
+    } else {
+      setIsPinVerified(false);
+      setPinError(null);
+    }
+  }, [pincode]);
+
+  const handleFetchLocation = async (pin: string) => {
+    setIsFetchingLocation(true);
+    setPinError(null);
+    try {
+      const response = await fetch(`https://api.postalpincode.in/pincode/${pin}`);
+      const data = await response.json();
+      
+      if (data[0].Status === 'Success') {
+        const postOffice = data[0].PostOffice[0];
+        setLocation(prev => ({
+          ...prev,
+          district: postOffice.District,
+          state: postOffice.State
+        }));
+        setIsPinVerified(true);
+        setPinError(null);
+        toast.success(`Location detected: ${postOffice.District}, ${postOffice.State}`);
+      } else {
+        setPinError('Invalid PIN Code');
+        setIsPinVerified(false);
+      }
+    } catch (err) {
+      setPinError('Failed to fetch location');
+      setIsPinVerified(false);
+    } finally {
+      setIsFetchingLocation(false);
+    }
+  };
 
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -282,39 +328,96 @@ export const LoginPage: React.FC = () => {
                         />
                       </div>
 
-                      {/* Location Grid */}
-                      <div className="col-span-2 mt-4">
-                        <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-slate-500 mb-4">Farm Location</p>
-                        <div className="grid grid-cols-2 gap-4">
-                          <input
-                            type="text"
-                            value={location.village}
-                            onChange={(e) => setLocation({ ...location, village: e.target.value })}
-                            placeholder="Village"
-                            className="px-4 py-4 bg-white/5 border border-white/10 rounded-2xl outline-none focus:border-emerald-500 transition-all text-white text-sm"
-                          />
-                          <input
-                            type="text"
-                            value={location.block}
-                            onChange={(e) => setLocation({ ...location, block: e.target.value })}
-                            placeholder="Block"
-                            className="px-4 py-4 bg-white/5 border border-white/10 rounded-2xl outline-none focus:border-emerald-500 transition-all text-white text-sm"
-                          />
-                          <input
-                            type="text"
-                            value={location.district}
-                            onChange={(e) => setLocation({ ...location, district: e.target.value })}
-                            placeholder="District"
-                            className="px-4 py-4 bg-white/5 border border-white/10 rounded-2xl outline-none focus:border-emerald-500 transition-all text-white text-sm"
-                          />
-                          <input
-                            type="text"
-                            value={location.state}
-                            onChange={(e) => setLocation({ ...location, state: e.target.value })}
-                            placeholder="State"
-                            className="px-4 py-4 bg-white/5 border border-white/10 rounded-2xl outline-none focus:border-emerald-500 transition-all text-white text-sm"
-                          />
+                      {/* Smart Location Section */}
+                      <div className="col-span-2 mt-4 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-emerald-500">Smart Location</p>
                         </div>
+                        
+                        <div className="relative group">
+                          <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-3">
+                            <MapPin className={`h-4 w-4 ${isPinVerified ? 'text-emerald-500' : 'text-slate-500'}`} />
+                          </div>
+                          <input
+                            type="text"
+                            maxLength={6}
+                            value={pincode}
+                            onChange={(e) => setPincode(e.target.value.replace(/\D/g, ''))}
+                            placeholder="6-Digit PIN Code"
+                            className={`w-full pl-12 pr-12 py-4 bg-white/5 border ${pinError ? 'border-red-500/50' : isPinVerified ? 'border-emerald-500/50' : 'border-white/10'} rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all text-white text-sm tracking-widest placeholder:tracking-normal`}
+                          />
+                          <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                            {isFetchingLocation ? (
+                              <Loader2 className="h-4 w-4 animate-spin text-emerald-500" />
+                            ) : isPinVerified ? (
+                              <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                            ) : pinError ? (
+                              <AlertCircle className="h-4 w-4 text-red-500" />
+                            ) : null}
+                          </div>
+                        </div>
+
+                        {pinError && (
+                          <motion.p 
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="text-[10px] text-red-500 font-bold uppercase tracking-wider flex items-center gap-1 pl-1"
+                          >
+                            <AlertCircle className="h-3 w-3" />
+                            {pinError}
+                          </motion.p>
+                        )}
+
+                        <AnimatePresence>
+                          {isPinVerified && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: 'auto' }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ duration: 0.5, ease: "circOut" }}
+                              className="overflow-hidden"
+                            >
+                              <div className="pt-4 grid grid-cols-2 gap-4">
+                                <div className="col-span-2">
+                                  <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-slate-500 mb-4">Confirmed Area</p>
+                                </div>
+                                <input
+                                  type="text"
+                                  value={location.district}
+                                  readOnly
+                                  className="px-4 py-4 bg-slate-100/10 border border-white/5 rounded-2xl text-slate-400 text-sm cursor-not-allowed"
+                                  placeholder="District"
+                                />
+                                <input
+                                  type="text"
+                                  value={location.state}
+                                  readOnly
+                                  className="px-4 py-4 bg-slate-100/10 border border-white/5 rounded-2xl text-slate-400 text-sm cursor-not-allowed"
+                                  placeholder="State"
+                                />
+                                
+                                <div className="col-span-2 pt-2">
+                                  <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-emerald-500 mb-4">Final Specifics</p>
+                                </div>
+                                <input
+                                  type="text"
+                                  value={location.village}
+                                  onChange={(e) => setLocation({ ...location, village: e.target.value })}
+                                  placeholder="Village"
+                                  className="px-4 py-4 bg-white/10 border border-emerald-500/50 rounded-2xl outline-none focus:border-emerald-500 focus:bg-white/20 transition-all text-white text-sm"
+                                  autoFocus
+                                />
+                                <input
+                                  type="text"
+                                  value={location.block}
+                                  onChange={(e) => setLocation({ ...location, block: e.target.value })}
+                                  placeholder="Block"
+                                  className="px-4 py-4 bg-white/10 border border-emerald-500/50 rounded-2xl outline-none focus:border-emerald-500 focus:bg-white/20 transition-all text-white text-sm"
+                                />
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
                     </div>
                   </div>
