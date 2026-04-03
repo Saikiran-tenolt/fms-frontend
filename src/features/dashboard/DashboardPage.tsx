@@ -1,25 +1,25 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAppSelector, useAppDispatch } from '../../hooks';
+import { setSensorData, setTrendData } from '../sensors/sensorsSlice';
+import { setAdvisories } from '../advisories/advisoriesSlice';
+import { EmptyState, SkeletonCard, SkeletonChart } from '../../components/ui';
+import { toast } from 'sonner';
 import {
+  Droplets,
+  Thermometer,
+  Cloud,
+  Radio,
   AlertTriangle,
   MapPin,
   IndianRupee,
   MessageSquare,
   Image as ImageIcon,
-  Droplets,
-  Thermometer,
   Maximize,
   Brain,
-  Radio,
   ChevronDown,
   CloudRain
 } from 'lucide-react';
-import { useAppSelector, useAppDispatch } from '../../hooks';
-import { setSensorData, setTrendData } from '../sensors/sensorsSlice';
-import { setAdvisories } from '../advisories/advisoriesSlice';
-import { EmptyState, SkeletonCard, SkeletonChart } from '../../components/ui';
-import { SensorGrid } from '../sensors/components/SensorGrid';
-import { toast } from 'sonner';
 import {
   generateMockSensorData,
   generateMockTrendData,
@@ -32,10 +32,10 @@ import { selectPlot } from '../plots/plotsSlice';
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const { plots, selectedPlotId } = useAppSelector((state) => state.plots);
-  const { sensorData, trendData } = useAppSelector((state) => state.sensors);
-  const { notifications } = useAppSelector((state) => state.notifications);
-  const { advisories } = useAppSelector((state) => state.advisories);
+  const { plots, selectedPlotId } = useAppSelector((state: any) => state.plots);
+  const { sensorData, trendData } = useAppSelector((state: any) => state.sensors);
+  const { notifications } = useAppSelector((state: any) => state.notifications);
+  const { advisories } = useAppSelector((state: any) => state.advisories);
   const [loading, setLoading] = useState(true);
   const [weather, setWeather] = useState<any>(null);
   const hasShownNotifications = useRef(false);
@@ -101,6 +101,60 @@ export const DashboardPage: React.FC = () => {
   const soilMoistureTrend = selectedPlotId ? trendData[`${selectedPlotId}_soilMoisture`] : [];
   const temperatureTrend = selectedPlotId ? trendData[`${selectedPlotId}_temperature`] : [];
   const latestAdvisory = advisories[0];
+
+  // Refined Sensor Data Mapping & Logic
+  const getMetrics = () => {
+    if (!currentSensors) return [];
+    
+    return [
+      {
+        id: 'moisture',
+        label: 'Soil Moisture',
+        value: currentSensors.soilMoisture?.value || 0,
+        unit: '%',
+        icon: Droplets,
+        timestamp: 'Just now',
+        status: (currentSensors.soilMoisture?.value || 0) < 30 ? 'critical' : (currentSensors.soilMoisture?.value || 0) <= 70 ? 'optimal' : 'normal',
+        statusLabel: (currentSensors.soilMoisture?.value || 0) < 30 ? 'Needs Watering' : (currentSensors.soilMoisture?.value || 0) <= 70 ? 'Optimal' : 'Normal',
+        colorClass: (currentSensors.soilMoisture?.value || 0) < 30 ? 'rose' : (currentSensors.soilMoisture?.value || 0) <= 70 ? 'emerald' : 'blue',
+      },
+      {
+        id: 'temp',
+        label: 'Temperature',
+        value: currentSensors.temperature?.value || 0,
+        unit: '°C',
+        icon: Thermometer,
+        timestamp: '2 mins ago',
+        status: (currentSensors.temperature?.value || 0) >= 18 && (currentSensors.temperature?.value || 0) <= 28 ? 'optimal' : 'normal',
+        statusLabel: (currentSensors.temperature?.value || 0) >= 18 && (currentSensors.temperature?.value || 0) <= 28 ? 'Optimal' : 'Normal',
+        colorClass: (currentSensors.temperature?.value || 0) >= 18 && (currentSensors.temperature?.value || 0) <= 28 ? 'emerald' : 'blue',
+      },
+      {
+        id: 'humidity',
+        label: 'Humidity',
+        value: currentSensors.humidity?.value || 0,
+        unit: '%',
+        icon: Cloud,
+        timestamp: 'Just now',
+        status: (currentSensors.humidity?.value || 0) >= 40 && (currentSensors.humidity?.value || 0) <= 70 ? 'normal' : 'optimal',
+        statusLabel: (currentSensors.humidity?.value || 0) >= 40 && (currentSensors.humidity?.value || 0) <= 70 ? 'Normal' : 'Optimal',
+        colorClass: (currentSensors.humidity?.value || 0) >= 40 && (currentSensors.humidity?.value || 0) <= 70 ? 'blue' : 'emerald',
+      },
+      {
+        id: 'soil-temp',
+        label: 'Soil Temp',
+        value: currentSensors.soilTemperature?.value || 0,
+        unit: '°C',
+        icon: Radio,
+        timestamp: '5 mins ago',
+        status: (currentSensors.soilTemperature?.value || 0) >= 18 && (currentSensors.soilTemperature?.value || 0) <= 26 ? 'optimal' : 'normal',
+        statusLabel: (currentSensors.soilTemperature?.value || 0) >= 18 && (currentSensors.soilTemperature?.value || 0) <= 26 ? 'Optimal' : 'Normal',
+        colorClass: (currentSensors.soilTemperature?.value || 0) >= 18 && (currentSensors.soilTemperature?.value || 0) <= 26 ? 'emerald' : 'blue',
+      }
+    ];
+  };
+
+  const metrics = getMetrics();
 
   if (loading) {
     return (
@@ -197,8 +251,47 @@ export const DashboardPage: React.FC = () => {
         </div>
       </section>
 
-      {/* Sensor Monitoring Grid: Modern Light SaaS Design */}
-      {currentSensors && <SensorGrid data={currentSensors} />}
+      {/* Sensor Monitoring Grid: Pure Tailwind Tailwind Manual Logic */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full my-6">
+        {metrics.map((m) => {
+          const Icon = m.icon;
+          // Dynamically resolve Tailwind colors based on colorClass
+          const borderClass = m.colorClass === 'rose' ? 'border-l-rose-500' : m.colorClass === 'emerald' ? 'border-l-emerald-500' : 'border-l-blue-500';
+          const badgeClass = m.colorClass === 'rose' ? 'bg-rose-50 text-rose-700' : m.colorClass === 'emerald' ? 'bg-emerald-50 text-emerald-700' : 'bg-blue-50 text-blue-700';
+          const fillClass = m.colorClass === 'rose' ? 'bg-rose-500' : m.colorClass === 'emerald' ? 'bg-emerald-500' : 'bg-blue-500';
+          const iconClass = m.colorClass === 'rose' ? 'text-rose-500' : 'text-slate-400';
+          
+          return (
+            <div key={m.id} className={`relative bg-white border border-slate-200 border-l-[4px] ${borderClass} rounded-xl p-5 shadow-sm overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md h-[140px] flex flex-col justify-between group`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Icon size={16} className={iconClass} />
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">{m.label}</span>
+                </div>
+                <span className="text-[10px] text-slate-300 font-normal">{m.timestamp}</span>
+              </div>
+              
+              <div className="flex items-baseline gap-1 mt-2">
+                <span className="text-4xl font-bold text-slate-800 tracking-tight">{m.value}</span>
+                <span className="text-lg font-medium text-slate-500">{m.unit}</span>
+              </div>
+              
+              <div>
+                <div className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${badgeClass}`}>
+                  {m.statusLabel}
+                </div>
+              </div>
+              
+              <div className="mt-auto h-[2px] w-full bg-slate-100 rounded-full overflow-hidden">
+                <div 
+                  className={`h-full ${fillClass} rounded-full transition-all duration-700`}
+                  style={{ width: `${m.unit === '%' ? m.value : (m.value / 50) * 100}%` }}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
 
       {/* Quick Actions Support Section */}
       <section className="space-y-6">
