@@ -246,7 +246,7 @@ export const LoginPage: React.FC = () => {
         refreshToken: 'mock_admin_token'
       }));
       toast.success(`Authorized: Welcome ${adminName}`, { description: `Secure session established for ${adminBlock}.` });
-      navigate('/dashboard'); // Mock redirecting to main dashboard since /admin/dashboard isn't built yet
+      navigate('/admin/dashboard');
       setIsLoading(false);
     }, 1500);
   };

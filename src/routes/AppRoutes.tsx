@@ -12,6 +12,7 @@ import { NotificationsPage } from '../features/notifications/NotificationsPage';
 import { MarketPage } from '../features/market/MarketPage';
 import { AssistantPage } from '../features/assistant/AssistantPage';
 import { SettingsPage } from '../features/settings/SettingsPage';
+import { Overview as AdminDashboardPage } from '../admin/pages/Overview';
 import { ProtectedRoute } from './ProtectedRoute';
 
 export const AppRoutes: React.FC = () => {
@@ -31,6 +32,7 @@ export const AppRoutes: React.FC = () => {
         }
       >
         <Route index element={<Navigate to="/login" replace />} />
+        <Route path="admin/dashboard" element={<AdminDashboardPage />} />
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="plots" element={<PlotListPage />} />
         <Route path="plots/create" element={<AddPlotPage />} />

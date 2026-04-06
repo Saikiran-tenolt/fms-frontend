@@ -10,8 +10,9 @@ import {
   Settings,
   LogOut,
   X,
+  Users
 } from 'lucide-react';
-import { useAppDispatch } from '../../hooks';
+import { useAppSelector, useAppDispatch } from '../../hooks';
 import { logout } from '../../features/auth/authSlice';
 
 interface NavItem {
@@ -19,16 +20,6 @@ interface NavItem {
   path: string;
   icon: React.ReactNode;
 }
-
-const navItems: NavItem[] = [
-  { name: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
-  { name: 'Plots', path: '/plots', icon: <MapPin className="h-5 w-5" /> },
-  { name: 'Advisories', path: '/advisories', icon: <FileText className="h-5 w-5" /> },
-  { name: 'Notifications', path: '/notifications', icon: <Bell className="h-5 w-5" /> },
-  { name: 'Market', path: '/market', icon: <TrendingUp className="h-5 w-5" /> },
-  { name: 'Assistant', path: '/assistant', icon: <MessageSquare className="h-5 w-5" /> },
-  { name: 'Settings', path: '/settings', icon: <Settings className="h-5 w-5" /> },
-];
 
 interface SidebarProps {
   mobileOpen: boolean;
@@ -38,6 +29,19 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onMobileClose }) => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const { user } = useAppSelector((state: any) => state.auth);
+
+  const navItems: NavItem[] = user?.role === 'ADMIN' ? [
+    { name: 'Dashboard', path: '/admin/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
+    { name: 'Farmers', path: '/admin/farmers', icon: <Users className="h-5 w-5" /> },
+    { name: 'Alerts', path: '/admin/alerts', icon: <Bell className="h-5 w-5" /> },
+    { name: 'Settings', path: '/settings', icon: <Settings className="h-5 w-5" /> },
+  ] : [
+    { name: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
+    { name: 'Plots', path: '/plots', icon: <MapPin className="h-5 w-5" /> },
+    { name: 'Market', path: '/market', icon: <TrendingUp className="h-5 w-5" /> },
+    { name: 'Settings', path: '/settings', icon: <Settings className="h-5 w-5" /> },
+  ];
 
   const handleLogout = () => {
     dispatch(logout());
