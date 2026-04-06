@@ -33,7 +33,7 @@ export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { plots, selectedPlotId } = useAppSelector((state: any) => state.plots);
-  const { sensorData, trendData } = useAppSelector((state: any) => state.sensors);
+  const { sensorData } = useAppSelector((state: any) => state.sensors);
   const { notifications } = useAppSelector((state: any) => state.notifications);
   const { advisories } = useAppSelector((state: any) => state.advisories);
   const [loading, setLoading] = useState(true);
@@ -42,9 +42,9 @@ export const DashboardPage: React.FC = () => {
 
   useEffect(() => {
     if (!loading && notifications.length > 0 && !hasShownNotifications.current) {
-      const unread = notifications.filter(n => !n.isRead);
+      const unread = notifications.filter((n: any) => !n.isRead);
       if (unread.length > 0) {
-        unread.forEach((n, index) => {
+        unread.forEach((n: any, index: number) => {
           setTimeout(() => {
             toast(n.title, {
               description: n.message,
@@ -57,7 +57,7 @@ export const DashboardPage: React.FC = () => {
     }
   }, [loading, notifications]);
 
-  const selectedPlot = plots.find((p) => p.plotId === selectedPlotId);
+  const selectedPlot = plots.find((p: any) => p.plotId === selectedPlotId);
 
   useEffect(() => {
     if (plots.length > 0 && selectedPlotId) {
@@ -98,14 +98,12 @@ export const DashboardPage: React.FC = () => {
   }
 
   const currentSensors = selectedPlotId ? sensorData[selectedPlotId] : null;
-  const soilMoistureTrend = selectedPlotId ? trendData[`${selectedPlotId}_soilMoisture`] : [];
-  const temperatureTrend = selectedPlotId ? trendData[`${selectedPlotId}_temperature`] : [];
   const latestAdvisory = advisories[0];
 
   // Refined Sensor Data Mapping & Logic
   const getMetrics = () => {
     if (!currentSensors) return [];
-    
+
     return [
       {
         id: 'moisture',
@@ -205,7 +203,7 @@ export const DashboardPage: React.FC = () => {
                   onChange={(e) => dispatch(selectPlot(e.target.value))}
                   className="appearance-none flex items-center gap-2 pl-3 pr-8 py-1.5 bg-surface-container-low border border-outline-variant/30 rounded-lg text-sm font-bold text-primary-900 hover:bg-surface-container transition-colors cursor-pointer outline-none"
                 >
-                  {plots.map((plot) => (
+                  {plots.map((plot: any) => (
                     <option key={plot.plotId} value={plot.plotId}>
                       {plot.plotName}
                     </option>
@@ -260,7 +258,7 @@ export const DashboardPage: React.FC = () => {
           const badgeClass = m.colorClass === 'rose' ? 'bg-rose-50 text-rose-700' : m.colorClass === 'emerald' ? 'bg-emerald-50 text-emerald-700' : 'bg-blue-50 text-blue-700';
           const fillClass = m.colorClass === 'rose' ? 'bg-rose-500' : m.colorClass === 'emerald' ? 'bg-emerald-500' : 'bg-blue-500';
           const iconClass = m.colorClass === 'rose' ? 'text-rose-500' : 'text-slate-400';
-          
+
           return (
             <div key={m.id} className={`relative bg-white border border-slate-200 border-l-[4px] ${borderClass} rounded-xl p-5 shadow-sm overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md h-[140px] flex flex-col justify-between group`}>
               <div className="flex items-center justify-between">
@@ -270,20 +268,20 @@ export const DashboardPage: React.FC = () => {
                 </div>
                 <span className="text-[10px] text-slate-300 font-normal">{m.timestamp}</span>
               </div>
-              
+
               <div className="flex items-baseline gap-1 mt-2">
                 <span className="text-4xl font-bold text-slate-800 tracking-tight">{m.value}</span>
                 <span className="text-lg font-medium text-slate-500">{m.unit}</span>
               </div>
-              
+
               <div>
                 <div className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${badgeClass}`}>
                   {m.statusLabel}
                 </div>
               </div>
-              
+
               <div className="mt-auto h-[2px] w-full bg-slate-100 rounded-full overflow-hidden">
-                <div 
+                <div
                   className={`h-full ${fillClass} rounded-full transition-all duration-700`}
                   style={{ width: `${m.unit === '%' ? m.value : (m.value / 50) * 100}%` }}
                 />

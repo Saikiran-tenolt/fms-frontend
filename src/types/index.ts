@@ -3,6 +3,7 @@ export interface User {
   name: string;
   email: string;
   role: 'FARMER' | 'ADMIN';
+  assignedBlock?: string;
   permanentLocation?: {
     village: string;
     block: string;

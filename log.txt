@@ -1,0 +1,12 @@
+src/components/ui/Modal.tsx(3,1): error TS6133: 'Button' is declared but its value is never read.
+src/features/auth/LoginPage.tsx(3,10): error TS6133: 'ChevronLeft' is declared but its value is never read.
+src/features/auth/LoginPage.tsx(4,18): error TS6133: 'AnimatePresence' is declared but its value is never read.
+src/features/auth/LoginPage.tsx(244,84): error TS2353: Object literal may only specify known properties, and 'assignedBlock' does not exist in type 'User'.
+src/features/dashboard/DashboardPage.tsx(45,43): error TS7006: Parameter 'n' implicitly has an 'any' type.
+src/features/dashboard/DashboardPage.tsx(47,25): error TS7006: Parameter 'n' implicitly has an 'any' type.
+src/features/dashboard/DashboardPage.tsx(47,28): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/features/dashboard/DashboardPage.tsx(60,36): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/features/dashboard/DashboardPage.tsx(101,9): error TS6133: 'soilMoistureTrend' is declared but its value is never read.
+src/features/dashboard/DashboardPage.tsx(102,9): error TS6133: 'temperatureTrend' is declared but its value is never read.
+src/features/dashboard/DashboardPage.tsx(208,31): error TS7006: Parameter 'plot' implicitly has an 'any' type.
+src/services/mockData.ts(12,3): error TS6196: 'ChatMessage' is declared but never used.

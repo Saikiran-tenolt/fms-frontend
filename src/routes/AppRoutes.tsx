@@ -20,7 +20,7 @@ export const AppRoutes: React.FC = () => {
       {/* Public Routes */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
-      
+
       {/* Protected Routes */}
       <Route
         path="/"
@@ -46,7 +46,7 @@ export const AppRoutes: React.FC = () => {
           <Route path="security" element={<SettingsPage />} />
         </Route>
       </Route>
-      
+
       {/* Catch all - redirect to login */}
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
