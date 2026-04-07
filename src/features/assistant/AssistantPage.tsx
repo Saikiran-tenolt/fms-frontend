@@ -1,31 +1,60 @@
 import React, { useState, useRef } from 'react';
-import { Send, Image, X, Loader2, Bot } from 'lucide-react';
+import { Send, X, Loader2, Plus, Mic, Sparkles, Map, TrendingUp, Droplets, Info } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAppSelector, useAppDispatch } from '../../hooks';
 import { addMessage, setLoading, attachImage } from './assistantSlice';
-import { Button } from '../../components/ui';
 import { generateAIResponse, delay } from '../../services/mockData';
 import type { ChatMessage } from '../../types';
 
-const suggestedQueries = [
-  'Why is soil moisture low?',
-  'Should I irrigate today?',
-  'Explain today\'s advisory',
-  'What is the weather forecast?',
+interface SuggestionCard {
+  title: string;
+  desc: string;
+  query: string;
+  icon: React.ReactNode;
+  color: string;
+}
+
+const suggestionCards: SuggestionCard[] = [
+  {
+    title: 'Soil Moisture',
+    desc: 'Why is my field moisture low today?',
+    query: 'Can you analyze my current soil moisture readings and check if they are optimal?',
+    icon: <Droplets size={20} />,
+    color: 'bg-blue-50 text-blue-600 border-blue-100'
+  },
+  {
+    title: 'Crop Advisory',
+    desc: 'Explain today\'s pest and health advisory.',
+    query: 'Explain the latest agricultural advisory for my current crop cycle.',
+    icon: <Info size={20} />,
+    color: 'bg-emerald-50 text-emerald-600 border-emerald-100'
+  },
+  {
+    title: 'Irrigation Plan',
+    desc: 'Should I irrigate based on the forecast?',
+    query: 'Give me a recommended irrigation schedule based on today\'s weather and soil data.',
+    icon: <Map size={20} />,
+    color: 'bg-amber-50 text-amber-600 border-amber-100'
+  },
+  {
+    title: 'Market Trends',
+    desc: 'Check daily rates and market forecast.',
+    query: 'What are the current market prices and 7-day price trends for my crop?',
+    icon: <TrendingUp size={20} />,
+    color: 'bg-purple-50 text-purple-600 border-purple-100'
+  }
 ];
 
 export const AssistantPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const { messages, loading } = useAppSelector((state) => state.assistant);
-  const { plots, selectedPlotId } = useAppSelector((state) => state.plots);
-  const { sensorData } = useAppSelector((state) => state.sensors);
+  const { user } = useAppSelector((state: any) => state.auth);
+  const { isSidebarCollapsed } = useAppSelector((state) => state.ui);
 
   const [inputMessage, setInputMessage] = useState('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const selectedPlot = plots.find((p) => p.plotId === selectedPlotId);
-  const currentSensors = selectedPlotId ? sensorData[selectedPlotId] : null;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -63,7 +92,6 @@ export const AssistantPage: React.FC = () => {
   const handleSendMessage = async () => {
     if (!inputMessage.trim() && !imagePreview) return;
 
-    // Create user message
     const userMessage: ChatMessage = {
       id: `msg-${Date.now()}`,
       sender: 'user',
@@ -77,14 +105,13 @@ export const AssistantPage: React.FC = () => {
     setImagePreview(null);
     dispatch(attachImage(null));
 
-    // Simulate AI response
     dispatch(setLoading(true));
-    await delay(800);
+    await delay(1200);
 
     const aiResponse: ChatMessage = {
       id: `msg-${Date.now()}-ai`,
       sender: 'ai',
-      text: generateAIResponse(inputMessage),
+      text: generateAIResponse(userMessage.text || ''),
       timestamp: new Date().toISOString(),
     };
 
@@ -96,170 +123,171 @@ export const AssistantPage: React.FC = () => {
     setInputMessage(query);
   };
 
+  const firstName = user?.name ? user.name.split(' ')[0] : 'Farmer';
+
   return (
-    <div className="h-[calc(100vh-8rem)] flex flex-col max-w-5xl mx-auto space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900">Smart AI Assistant</h1>
-        <p className="text-sm font-medium text-slate-500 mt-1">
-          Instant agricultural intelligence and troubleshooting
-        </p>
+    <div className="flex flex-col min-h-[calc(100vh-8rem)] relative pb-32">
+      {/* Background Glows (Gemini Style) - Higher Z Index but behind content */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-purple-200/40 blur-[120px] rounded-full animate-pulse" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-emerald-200/40 blur-[120px] rounded-full animate-pulse" />
       </div>
 
-      {/* Context Bar */}
-      {selectedPlot && (
-        <div className="bg-white/70 backdrop-blur-md border border-gray shadow-sm rounded-2xl p-4 flex flex-wrap items-center gap-6">
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">Plot</p>
-            <p className="font-bold tracking-tight text-slate-900">{selectedPlot.plotName}</p>
-          </div>
-          <div className="w-px h-8 bg-slate-200 hidden sm:block"></div>
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">Crop</p>
-            <p className="font-bold tracking-tight text-slate-900">{selectedPlot.cropType}</p>
-          </div>
-          <div className="w-px h-8 bg-slate-200 hidden sm:block"></div>
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">Soil Moisture</p>
-            <p className="font-bold tracking-tight text-slate-900">
-              {currentSensors?.soilMoisture?.value || '--'}%
-            </p>
-          </div>
-          <div className="w-px h-8 bg-slate-200 hidden sm:block"></div>
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">Temperature</p>
-            <p className="font-bold tracking-tight text-slate-900">
-              {currentSensors?.temperature?.value || '--'}°C
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Chat Area */}
-      <div className="flex-1 flex flex-col overflow-hidden bg-white/40 backdrop-blur-md border border-gray shadow-lg rounded-3xl relative">
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      <div className="max-w-4xl mx-auto w-full px-4 sm:px-6 flex-1 flex flex-col relative z-10">
+        <AnimatePresence mode="wait">
           {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full">
-              <div className="h-16 w-16 bg-emerald-50 border border-emerald-100 rounded-full flex items-center justify-center mb-6 shadow-sm">
-                <Bot className="h-8 w-8 text-emerald-600" />
+            <motion.div
+              key="greeting"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="flex-1 flex flex-col justify-center py-12"
+            >
+              <div className="text-center sm:text-left mb-16">
+                <h1 className="text-5xl sm:text-7xl font-bold tracking-tight mb-4">
+                  <span className="bg-gradient-to-r from-indigo-500 via-purple-500 to-rose-500 bg-clip-text text-transparent">
+                    Hello, {firstName}
+                  </span>
+                </h1>
+                <p className="text-2xl sm:text-4xl font-medium text-slate-400 leading-tight">
+                  How can I help you today?
+                </p>
               </div>
-              <h2 className="text-xl font-bold tracking-tight text-slate-900 mb-2">How can I help you today?</h2>
-              <p className="text-slate-500 font-medium mb-8 text-center max-w-sm">
-                Ask me about optimal irrigation schedules, disease detection, or market price forecasts.
-              </p>
-              <div className="flex flex-wrap gap-3 justify-center max-w-2xl">
-                {suggestedQueries.map((query, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleSuggestedQuery(query)}
-                    className="px-4 py-2 bg-emerald-50 text-emerald-700 text-sm font-semibold rounded-full border border-transparent hover:border-emerald-300 hover:shadow-sm transition-all duration-200"
+
+              {/* Suggestion Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-5xl">
+                {suggestionCards.map((card, idx) => (
+                  <motion.button
+                    key={idx}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 + idx * 0.05 }}
+                    onClick={() => handleSuggestedQuery(card.query)}
+                    className="p-5 text-left bg-white/60 backdrop-blur-sm border border-slate-200 shadow-sm hover:shadow-md rounded-2xl transition-all group flex flex-col h-full"
                   >
-                    {query}
-                  </button>
+                    <div className={`p-2.5 rounded-xl border mb-4 w-fit ${card.color} group-hover:scale-110 transition-transform`}>
+                      {card.icon}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-bold text-slate-900 text-sm mb-1">{card.title}</p>
+                      <p className="text-[12px] text-slate-500 font-medium leading-relaxed">{card.desc}</p>
+                    </div>
+                    <Plus size={16} className="mt-4 text-slate-300 ml-auto group-hover:text-slate-800 transition-colors" />
+                  </motion.button>
                 ))}
               </div>
-            </div>
+            </motion.div>
           ) : (
-            <>
+            <div className="pt-8 space-y-12 pb-12">
               {messages.map((message) => (
-                <div
+                <motion.div
                   key={message.id}
-                  className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'
-                    }`}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`flex gap-4 ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   {message.sender === 'ai' && (
-                    <div className="h-8 w-8 bg-emerald-50 border border-emerald-100 rounded-full flex items-center justify-center mr-3 mt-1 shadow-sm flex-shrink-0">
-                      <Bot className="h-4 w-4 text-emerald-600" />
+                    <div className="h-10 w-10 flex-shrink-0 bg-white border border-slate-200 rounded-full flex items-center justify-center shadow-sm">
+                      <Sparkles className="h-5 w-5 text-indigo-500" />
                     </div>
                   )}
-                  <div
-                    className={`max-w-[75%] rounded-2xl px-5 py-3.5 shadow-sm ${message.sender === 'user'
-                      ? 'bg-emerald-600 text-white rounded-tr-sm'
-                      : 'bg-white text-slate-800 border border-slate-100 rounded-tl-sm'
-                      }`}
-                  >
-                    {message.imageUrl && (
-                      <img
-                        src={message.imageUrl}
-                        alt="Uploaded"
-                        className="rounded-xl mb-3 max-h-48 w-full object-cover shadow-sm border border-black/5"
-                      />
-                    )}
-                    {message.text && <p className="text-[15px] leading-relaxed font-medium">{message.text}</p>}
-                    <p
-                      className={`text-[10px] uppercase tracking-wider font-bold mt-2 ${message.sender === 'user' ? 'text-emerald-200' : 'text-slate-400'
-                        }`}
-                    >
-                      {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </p>
+                  <div className={`max-w-[85%] sm:max-w-[70%] ${message.sender === 'user' ? 'text-right' : 'text-left'}`}>
+                    <div className={`px-5 py-3.5 rounded-[2rem] inline-block ${message.sender === 'user' 
+                      ? 'bg-slate-100 text-slate-800 rounded-tr-sm' 
+                      : 'bg-white/40 backdrop-blur-sm border border-slate-200 text-slate-800 rounded-tl-sm'
+                    }`}>
+                      {message.imageUrl && (
+                        <img
+                          src={message.imageUrl}
+                          alt="Uploaded"
+                          className="rounded-2xl mb-3 max-h-64 sm:max-h-80 w-full object-cover shadow-sm border border-black/5 home-card-img"
+                        />
+                      )}
+                      <p className="text-[15px] sm:text-16px leading-relaxed whitespace-pre-wrap">
+                        {message.text}
+                      </p>
+                    </div>
                   </div>
-                </div>
+                </motion.div>
               ))}
               {loading && (
-                <div className="flex justify-start">
-                  <div className="h-8 w-8 bg-emerald-50 border border-emerald-100 rounded-full flex items-center justify-center mr-3 mt-1 shadow-sm flex-shrink-0">
-                    <Bot className="h-4 w-4 text-emerald-600" />
+                <div className="flex gap-4 items-start">
+                  <div className="h-10 w-10 flex-shrink-0 bg-white border border-slate-200 rounded-full flex items-center justify-center shadow-sm">
+                    <Sparkles className="h-5 w-5 text-indigo-500" />
                   </div>
-                  <div className="bg-white border border-slate-100 shadow-sm rounded-2xl rounded-tl-sm px-5 py-4">
-                    <Loader2 className="h-5 w-5 animate-spin text-emerald-600" />
+                  <div className="bg-white/40 backdrop-blur-sm border border-slate-100 shadow-sm rounded-[2rem] rounded-tl-sm px-6 py-4">
+                    <Loader2 className="h-5 w-5 animate-spin text-indigo-500" />
                   </div>
                 </div>
               )}
-              <div ref={messagesEndRef} />
-            </>
+              <div ref={messagesEndRef} className="h-1" />
+            </div>
           )}
-        </div>
+        </AnimatePresence>
+      </div>
 
-        {/* Input Area */}
-        <div className="p-6 bg-white/20 backdrop-blur-md rounded-b-3xl border-t border-gray">
+      {/* Floating Pill Input Bar - Side-aware */}
+      <div className={`fixed bottom-0 right-0 bg-gradient-to-t from-white via-white/80 to-transparent pt-10 pb-8 px-4 z-40 transition-all duration-300 ${isSidebarCollapsed ? 'left-20' : 'left-64'}`}>
+        <div className="max-w-4xl mx-auto">
           {imagePreview && (
-            <div className="mb-4 relative inline-block">
+            <div className="mb-4 relative inline-block animate-in slide-in-from-bottom-2 duration-300">
               <img
                 src={imagePreview}
                 alt="Preview"
-                className="h-24 w-24 object-cover rounded-xl border-2 border-gray shadow-md"
+                className="h-28 w-28 object-cover rounded-2xl border-4 border-white shadow-xl"
               />
               <button
                 onClick={handleRemoveImage}
-                className="absolute -top-3 -right-3 p-1.5 bg-rose-500 text-white rounded-full hover:bg-rose-600 shadow-sm transition-colors"
-                aria-label="Remove image"
+                className="absolute -top-3 -right-3 p-1.5 bg-slate-900 text-white rounded-full hover:bg-rose-500 shadow-md transition-colors"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
           )}
 
-          <div className="flex items-end gap-3 bg-white/80 backdrop-blur-xl border-2 border-gray shadow-md rounded-2xl p-2 transition-all focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-300">
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="p-3 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors"
-              aria-label="Attach image"
-            >
-              <Image className="h-5 w-5" />
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleImageSelect}
-              className="hidden"
-            />
-            <input
-              type="text"
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-              placeholder="Message Smart AI..."
-              className="flex-1 px-2 py-3 bg-transparent border-none focus:ring-0 outline-none text-slate-800 placeholder:text-slate-400 font-medium"
-            />
-            <Button
-              onClick={handleSendMessage}
-              disabled={!inputMessage.trim() && !imagePreview}
-              variant="primary"
-              className="rounded-xl px-4 py-3 bg-emerald-600 hover:bg-emerald-700 shadow-sm disabled:opacity-50 disabled:bg-slate-300"
-            >
-              <Send className="h-5 w-5" />
-            </Button>
+          <div className="relative group">
+            <div className={`flex items-center gap-2 bg-[#f0f4f9] border border-transparent shadow-sm rounded-full p-2 pl-4 transition-all focus-within:bg-white focus-within:shadow-xl focus-within:border-slate-300 min-h-[64px]`}>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="p-2.5 text-slate-500 hover:text-indigo-600 hover:bg-white rounded-full transition-all"
+                title="Upload image"
+              >
+                <Plus size={24} />
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageSelect}
+                className="hidden"
+              />
+              
+              <input
+                type="text"
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                placeholder="Enter a prompt here"
+                className="flex-1 bg-transparent border-none focus:ring-0 outline-none text-[16px] text-slate-800 placeholder:text-slate-500 ml-2"
+              />
+
+              <div className="flex items-center gap-1.5 pr-2">
+                <button className="p-2.5 text-slate-500 hover:text-indigo-600 hover:bg-white rounded-full transition-all hidden sm:flex">
+                  <Mic size={24} />
+                </button>
+                <button
+                  onClick={handleSendMessage}
+                  disabled={!inputMessage.trim() && !imagePreview}
+                  className="p-3 bg-indigo-600 text-white rounded-full shadow-lg hover:bg-indigo-700 disabled:opacity-30 disabled:shadow-none transition-all"
+                >
+                  <Send size={20} className={loading ? 'animate-pulse' : ''} />
+                </button>
+              </div>
+            </div>
+            
+            <p className="text-[11px] text-slate-400 text-center mt-3 font-medium">
+              FMS Pro Assistant can make mistakes. Check important information.
+            </p>
           </div>
         </div>
       </div>

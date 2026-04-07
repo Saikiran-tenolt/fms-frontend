@@ -6,6 +6,7 @@ import advisoriesReducer from '../features/advisories/advisoriesSlice';
 import notificationsReducer from '../features/notifications/notificationsSlice';
 import marketReducer from '../features/market/marketSlice';
 import assistantReducer from '../features/assistant/assistantSlice';
+import uiReducer from './uiSlice';
 
 export const store = configureStore({
   reducer: {
@@ -16,6 +17,7 @@ export const store = configureStore({
     notifications: notificationsReducer,
     market: marketReducer,
     assistant: assistantReducer,
+    ui: uiReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

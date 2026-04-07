@@ -12,7 +12,14 @@ import { NotificationsPage } from '../features/notifications/NotificationsPage';
 import { MarketPage } from '../features/market/MarketPage';
 import { AssistantPage } from '../features/assistant/AssistantPage';
 import { SettingsPage } from '../features/settings/SettingsPage';
+
+// Admin Pages
 import { Overview as AdminDashboardPage } from '../admin/pages/Overview';
+import { FarmersDirectory } from '../admin/pages/FarmersDirectory';
+import { Alerts as AdminAlertsPage } from '../admin/pages/Alerts';
+import { AdminProfile } from '../admin/pages/AdminProfile';
+import { AdminSettings } from '../admin/pages/AdminSettings';
+
 import { ProtectedRoute } from './ProtectedRoute';
 
 export const AppRoutes: React.FC = () => {
@@ -32,7 +39,15 @@ export const AppRoutes: React.FC = () => {
         }
       >
         <Route index element={<Navigate to="/login" replace />} />
+        
+        {/* Admin Routes */}
         <Route path="admin/dashboard" element={<AdminDashboardPage />} />
+        <Route path="admin/farmers" element={<FarmersDirectory />} />
+        <Route path="admin/alerts" element={<AdminAlertsPage />} />
+        <Route path="admin/profile" element={<AdminProfile />} />
+        <Route path="admin/settings" element={<AdminSettings />} />
+        
+        {/* Farmer/User Routes */}
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="plots" element={<PlotListPage />} />
         <Route path="plots/create" element={<AddPlotPage />} />
