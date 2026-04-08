@@ -279,7 +279,20 @@ export const AddPlotPage: React.FC = () => {
           longitude: parseFloat(formData.longitude || '0')
         },
         imageUrl: imageUrl || existingPlot?.imageUrl,
-        createdAt: existingPlot ? existingPlot.createdAt : new Date().toISOString()
+        createdAt: existingPlot ? existingPlot.createdAt : new Date().toISOString(),
+        hardwareStatus: {
+          battery: 100,
+          signal: 100,
+          lastSync: new Date().toISOString()
+        },
+        npkLevels: {
+          n: 100 + Math.floor(Math.random() * 50),
+          p: 40 + Math.floor(Math.random() * 20),
+          k: 30 + Math.floor(Math.random() * 20)
+        },
+        area: '5.0 Acres', // Default area for new plots
+        expectedHarvestDate: new Date(Date.now() + 86400000 * 90).toISOString(), // Default 90 days
+        scanHistory: []
       };
 
       // Artificial delay for better UX with toast.promise
@@ -308,7 +321,7 @@ export const AddPlotPage: React.FC = () => {
   const canProceed = () => {
     if (step === 1) return formData.name && formData.crop && formData.soil;
     if (step === 2) return true;
-    if (step === 3) return formData.locationMethod === 'manual' ? !!(formData.latitude && formData.longitude) : !!formData.latitude;
+    if (step === 3) return true; // Always allow proceeding from step 3 (location is now optional/auto-fallback)
     return true;
   };
 

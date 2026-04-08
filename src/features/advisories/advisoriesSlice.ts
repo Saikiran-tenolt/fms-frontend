@@ -17,6 +17,9 @@ const advisoriesSlice = createSlice({
     addAdvisory: (state, action: PayloadAction<Advisory>) => {
       state.advisories.unshift(action.payload);
     },
+    resolveAdvisory: (state, action: PayloadAction<string>) => {
+      state.advisories = state.advisories.filter(a => a.id !== action.payload);
+    },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload;
     },
@@ -26,5 +29,5 @@ const advisoriesSlice = createSlice({
   },
 });
 
-export const { setAdvisories, addAdvisory, setLoading, setError } = advisoriesSlice.actions;
+export const { setAdvisories, addAdvisory, resolveAdvisory, setLoading, setError } = advisoriesSlice.actions;
 export default advisoriesSlice.reducer;

@@ -18,14 +18,18 @@ import {
   Maximize,
   Brain,
   ChevronDown,
-  CloudRain
+  CloudRain,
+  Loader2,
+  Leaf,
+  CalendarClock,
+  CheckCircle2,
+  Clock
 } from 'lucide-react';
 import {
   generateMockSensorData,
   generateMockTrendData,
   generateMockWeather,
   mockAdvisories,
-  mockAlerts,
 } from '../../services/mockData';
 import { selectPlot } from '../plots/plotsSlice';
 
@@ -38,6 +42,7 @@ export const DashboardPage: React.FC = () => {
   const { advisories } = useAppSelector((state: any) => state.advisories);
   const [loading, setLoading] = useState(true);
   const [weather, setWeather] = useState<any>(null);
+  const [executingAdvisoryId, setExecutingAdvisoryId] = useState<string | null>(null);
   const hasShownNotifications = useRef(false);
 
   useEffect(() => {
@@ -292,10 +297,11 @@ export const DashboardPage: React.FC = () => {
       </div>
 
       {/* Quick Actions Support Section */}
-      <section className="space-y-6">
-        <div className="bg-white/40 backdrop-blur-md border border-outline-variant/10 shadow-sm rounded-2xl p-8">
-          <h2 className="text-xl font-bold tracking-tight text-primary-900 mb-8 px-2">Quick Actions</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <section className="space-y-8">
+        <div className="flex justify-between items-end">
+          <h3 className="text-2xl font-bold text-primary-900 tracking-tight">Quick Actions</h3>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <button
               onClick={() => navigate('/plots')}
               className="relative flex flex-col items-center justify-center p-8 bg-white border border-slate-200 shadow-sm rounded-2xl hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-200/50 hover:border-emerald-200 group transition-all duration-300 overflow-hidden"
@@ -336,7 +342,6 @@ export const DashboardPage: React.FC = () => {
               <span className="text-sm font-bold text-slate-600 group-hover:text-slate-900 transition-colors">Crop Scanner</span>
               <div className="absolute bottom-0 left-0 h-[3px] w-full bg-purple-500 scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></div>
             </button>
-          </div>
         </div>
       </section>
 
@@ -369,11 +374,33 @@ export const DashboardPage: React.FC = () => {
             </div>
             <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
               <button
-                onClick={() => toast.success('Irrigation sequence deployed.')}
-                className="px-8 py-4 bg-[#c1ecd4] text-[#002114] font-bold rounded-xl hover:scale-95 active:opacity-80 transition-all flex items-center justify-center gap-2 whitespace-nowrap"
+                disabled={executingAdvisoryId === latestAdvisory.id}
+                onClick={() => {
+                  setExecutingAdvisoryId(latestAdvisory.id);
+                  toast('Initializing sequence...', { duration: 2000 });
+                  setTimeout(() => {
+                    toast.success('Sequence deployed and optimized.');
+                    setExecutingAdvisoryId(null);
+                    navigate('/advisories');
+                  }, 2500);
+                }}
+                className={`px-8 py-4 ${
+                  executingAdvisoryId === latestAdvisory.id 
+                    ? 'bg-[#1b4332] text-emerald-200 cursor-wait' 
+                    : 'bg-[#c1ecd4] text-[#002114] hover:scale-95 active:opacity-80'
+                } font-bold rounded-xl transition-all flex items-center justify-center gap-2 whitespace-nowrap`}
               >
-                Execute Recommendation
-                <Droplets className="w-5 h-5" />
+                {executingAdvisoryId === latestAdvisory.id ? (
+                  <>
+                    Executing...
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  </>
+                ) : (
+                  <>
+                    Execute Recommendation
+                    <Droplets className="w-5 h-5" />
+                  </>
+                )}
               </button>
               <button className="px-8 py-4 bg-white/10 backdrop-blur-md border border-white/20 text-white font-bold rounded-xl hover:bg-white/20 transition-all whitespace-nowrap">
                 Review Details
@@ -383,38 +410,102 @@ export const DashboardPage: React.FC = () => {
         </section>
       )}
 
-      {/* Bottom Section: Detailed Field Status */}
-      <section className="space-y-8">
-        <div className="flex justify-between items-end">
-          <h3 className="text-2xl font-bold text-primary-900 tracking-tight">System Status Log</h3>
-          <button className="text-emerald-600 font-bold text-sm hover:underline">View Full Logs</button>
-        </div>
-        <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/10 divide-y divide-outline-variant/10 overflow-hidden">
-          {mockAlerts.map((alert) => (
-            <div key={alert.id} className="p-6 flex flex-wrap items-center justify-between gap-4 hover:bg-slate-50 transition-colors">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center">
-                  <Radio className={`w-5 h-5 ${alert.severity === 'critical' ? 'text-red-500' : 'text-emerald-500'}`} />
-                </div>
-                <div>
-                  <h4 className="font-bold text-slate-900">{alert.title}</h4>
-                  <p className="text-xs text-on-surface-variant">{alert.message} • Sector {alert.plotId.slice(-2)}</p>
-                </div>
+      {/* Bottom Section: Farmer Specific Panels */}
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Crop Health History */}
+        <div className="space-y-6">
+          <div className="flex justify-between items-end">
+            <h3 className="text-xl font-bold text-primary-900 tracking-tight">Crop Health History</h3>
+            <button className="text-emerald-600 font-bold text-sm hover:underline">View All Scans</button>
+          </div>
+          <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/10 p-8 flex flex-col gap-6">
+            
+            <div className="flex gap-4 relative">
+              <div className="absolute left-[19px] top-10 bottom-[-24px] w-0.5 bg-emerald-100"></div>
+              <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0 z-10 border-4 border-white shadow-sm">
+                <Leaf className="w-4 h-4 text-emerald-600" />
               </div>
-              <div className="flex items-center gap-6">
-                <div className="text-right">
-                  <p className="text-xs text-on-surface-variant uppercase tracking-tighter">Status</p>
-                  <p className={`text-sm font-bold ${alert.severity === 'critical' ? 'text-red-500' : 'text-emerald-600'}`}>
-                    {alert.severity === 'critical' ? 'Critical' : 'Alert'}
-                  </p>
-                </div>
-                <span className={`px-3 py-1 rounded text-[10px] font-bold uppercase ${alert.severity === 'critical' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'
-                  }`}>
-                  Monitoring
-                </span>
+              <div>
+                <h4 className="font-bold text-slate-900 text-sm">Harvest Ready Zone Detected</h4>
+                <p className="text-xs text-on-surface-variant mb-1">AI Prediction: 98% Confidence • Sector 4</p>
+                <span className="text-[10px] text-slate-400 font-medium tracking-wider uppercase">2 days ago</span>
               </div>
             </div>
-          ))}
+
+            <div className="flex gap-4 relative">
+              <div className="absolute left-[19px] top-10 bottom-[-24px] w-0.5 bg-blue-100"></div>
+              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 z-10 border-4 border-white shadow-sm">
+                <Leaf className="w-4 h-4 text-blue-600" />
+              </div>
+              <div>
+                <h4 className="font-bold text-slate-900 text-sm">Vegetative Stage Progressing</h4>
+                <p className="text-xs text-on-surface-variant mb-1">AI Prediction: Optimal Growth • Sector 1</p>
+                <span className="text-[10px] text-slate-400 font-medium tracking-wider uppercase">1 week ago</span>
+              </div>
+            </div>
+
+            <div className="flex gap-4 relative">
+              <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 z-10 border-4 border-white shadow-sm">
+                <AlertTriangle className="w-4 h-4 text-amber-600" />
+              </div>
+              <div>
+                <h4 className="font-bold text-slate-900 text-sm">Mild Leaf Blight Spotted</h4>
+                <p className="text-xs text-on-surface-variant mb-1">Action taken: Bio-fungicide applied • Sector 2</p>
+                <span className="text-[10px] text-slate-400 font-medium tracking-wider uppercase">3 weeks ago</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        {/* Upcoming Irrigation Schedule */}
+        <div className="space-y-6">
+          <div className="flex justify-between items-end">
+            <h3 className="text-xl font-bold text-primary-900 tracking-tight">Irrigation Schedule</h3>
+            <button className="text-emerald-600 font-bold text-sm hover:underline">Manage Rules</button>
+          </div>
+          <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/10 divide-y divide-outline-variant/10 overflow-hidden">
+            
+            <div className="p-6 flex items-center justify-between gap-4 bg-emerald-50/30">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-slate-900 text-sm line-through opacity-70">Morning Soak (Zone A)</h4>
+                  <p className="text-xs text-slate-500">Completed automatically at 05:30 AM</p>
+                </div>
+              </div>
+              <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-[10px] font-bold uppercase">Done</span>
+            </div>
+
+            <div className="p-6 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 border-2 border-blue-500 shadow-[0_0_0_4px_rgba(59,130,246,0.1)]">
+                  <Clock className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-slate-900 text-sm">Evening Refresh (Zone B)</h4>
+                  <p className="text-xs text-on-surface-variant">Scheduled for today • 06:00 PM</p>
+                </div>
+              </div>
+              <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-[10px] font-bold uppercase">Upcoming</span>
+            </div>
+
+            <div className="p-6 flex items-center justify-between gap-4 opacity-60 grayscale">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0">
+                  <CalendarClock className="w-5 h-5 text-slate-500" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-slate-900 text-sm">Deep Root Soak (Zone A)</h4>
+                  <p className="text-xs text-slate-500">Scheduled for tomorrow • 05:00 AM</p>
+                </div>
+              </div>
+              <span className="px-2 py-1 bg-slate-100 text-slate-600 rounded text-[10px] font-bold uppercase">Queued</span>
+            </div>
+
+          </div>
         </div>
       </section>
     </div>

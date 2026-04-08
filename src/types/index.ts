@@ -27,6 +27,21 @@ export interface PlotLocation {
   longitude: number;
 }
 
+export interface CropScan {
+  id: string;
+  timestamp: string;
+  status: 'Optimal' | 'Healthy' | 'Attention' | 'Critical';
+  confidence: number;
+  result: string;
+  imageUrl?: string;
+}
+
+export interface HardwareStatus {
+  battery: number;
+  signal: number; // 0-100
+  lastSync: string;
+}
+
 export interface Plot {
   plotId: string;
   plotName: string;
@@ -36,6 +51,15 @@ export interface Plot {
   location: PlotLocation;
   imageUrl?: string;
   createdAt: string;
+  hardwareStatus: HardwareStatus;
+  npkLevels: {
+    n: number;
+    p: number;
+    k: number;
+  };
+  area: string;
+  expectedHarvestDate: string;
+  scanHistory: CropScan[];
 }
 
 // Sensor Types

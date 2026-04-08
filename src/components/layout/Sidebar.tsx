@@ -22,8 +22,9 @@ import { toggleSidebarCollapsed } from '../../store/uiSlice';
 
 interface NavItem {
   name: string;
-  path: string;
+  path?: string;
   icon: React.ReactNode;
+  onClick?: () => void; // optional click handler for items like logout
 }
 
 interface NavGroup {
@@ -41,6 +42,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onMobileClose }) =
   const navigate = useNavigate();
   const { user } = useAppSelector((state: any) => state.auth);
   const { isSidebarCollapsed } = useAppSelector((state) => state.ui);
+
+  const handleLogout = () => {
+    dispatch(logout());
+    navigate('/login');
+  };
 
   const getNavGroups = (): NavGroup[] => {
     if (user?.role === 'ADMIN') {
@@ -63,6 +69,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onMobileClose }) =
           items: [
             { name: 'Profile', path: '/admin/profile', icon: <User className="h-4 w-4" /> },
             { name: 'Settings', path: '/admin/settings', icon: <Settings className="h-4 w-4" /> },
+            { name: 'Logout', icon: <LogOut className="h-4 w-4" />, onClick: handleLogout },
           ]
         }
       ];
@@ -93,6 +100,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onMobileClose }) =
         label: 'Account',
         items: [
           { name: 'Settings', path: '/settings', icon: <Settings className="h-4 w-4" /> },
+          { name: 'Logout', icon: <LogOut className="h-4 w-4" />, onClick: handleLogout },
         ]
       }
     ];
@@ -100,51 +108,75 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onMobileClose }) =
 
   const navGroups = getNavGroups();
 
-  const handleLogout = () => {
-    dispatch(logout());
-    navigate('/login');
-  };
-
   const handleNavClick = () => {
     if (window.innerWidth < 1024) {
       onMobileClose();
     }
   };
 
-  const NavLinkItem = ({ item }: { item: NavItem }) => (
-    <NavLink
-      key={item.path}
-      to={item.path}
-      onClick={handleNavClick}
-      title={isSidebarCollapsed ? item.name : undefined}
-      className={({ isActive }) =>
-        `group relative flex items-center transition-all duration-200 gap-3 rounded-lg py-2 ${
-          isSidebarCollapsed ? 'justify-center px-0 mx-2' : 'px-3 mx-3'
-        } ${
-          isActive
-            ? 'bg-emerald-50/80 text-emerald-700 font-semibold shadow-[inset_0_0_0_1px_rgba(16,185,129,0.1)]'
-            : 'text-slate-500 hover:bg-slate-100/80 hover:text-slate-900 font-medium'
-        }`
-      }
-    >
-      <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'w-full'}`}>
-        <div className={`flex-shrink-0 transition-colors duration-200`}>
+  const NavLinkItem = ({ item }: { item: NavItem }) => {
+    const commonClasses = `group relative flex items-center transition-all duration-[400ms] ease-[cubic-bezier(0.25,1,0.5,1)] rounded-lg ${
+      isSidebarCollapsed ? 'justify-center w-10 h-10 mx-auto p-0' : 'gap-3 py-2 px-3 mx-3'
+    }`;
+
+    const innerContent = (
+      <>
+        <div className="flex-shrink-0 transition-colors duration-200 flex items-center justify-center">
           {item.icon}
         </div>
-        {!isSidebarCollapsed && (
-          <span className="text-[13px] tracking-tight ml-3 animate-in fade-in duration-300">
-            {item.name}
-          </span>
-        )}
-      </div>
-      {/* Tooltip or indicator can go here */}
-    </NavLink>
-  );
+        <AnimatePresence>
+          {!isSidebarCollapsed && (
+            <motion.span
+              initial={{ opacity: 0, width: 0 }}
+              animate={{ opacity: 1, width: 'auto' }}
+              exit={{ opacity: 0, width: 0 }}
+              transition={{ type: "spring", stiffness: 400, damping: 35 }}
+              className="text-[13px] tracking-tight whitespace-nowrap overflow-hidden"
+            >
+              {item.name}
+            </motion.span>
+          )}
+        </AnimatePresence>
+      </>
+    );
+
+    if (item.onClick) {
+      return (
+        <button
+          onClick={() => {
+            item.onClick!();
+            handleNavClick();
+          }}
+          title={isSidebarCollapsed ? item.name : undefined}
+          className={`${commonClasses} text-slate-500 hover:bg-slate-100/80 hover:text-slate-900 font-medium text-left`}
+        >
+          {innerContent}
+        </button>
+      );
+    }
+
+    return (
+      <NavLink
+        to={item.path || '#'}
+        onClick={handleNavClick}
+        title={isSidebarCollapsed ? item.name : undefined}
+        className={({ isActive }) =>
+          `${commonClasses} ${
+            isActive
+              ? 'bg-emerald-50/80 text-emerald-700 font-semibold shadow-[inset_0_0_0_1px_rgba(16,185,129,0.1)]'
+              : 'text-slate-500 hover:bg-slate-100/80 hover:text-slate-900 font-medium'
+          }`
+        }
+      >
+        {innerContent}
+      </NavLink>
+    );
+  };
 
   const sidebarContent = (
-    <div className="flex flex-col h-full bg-[#fcfcfd] border-r border-slate-200/60 relative transition-all duration-300">
+    <div className="flex flex-col h-full bg-[#fcfcfd] border-r border-slate-200/60 relative w-full overflow-hidden">
       {/* Top Branding Section */}
-      <div className={`h-20 flex items-center transition-all duration-300 ${isSidebarCollapsed ? 'justify-center' : 'px-6'}`}>
+      <div className={`h-20 flex items-center transition-all duration-[400ms] ease-[cubic-bezier(0.25,1,0.5,1)] ${isSidebarCollapsed ? 'justify-center' : 'px-6'}`}>
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-600/20">
             <Sparkles className="text-white h-5 w-5" />
@@ -152,10 +184,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onMobileClose }) =
           <AnimatePresence>
             {!isSidebarCollapsed && (
               <motion.div
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                className="flex flex-col"
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: 'auto' }}
+                exit={{ opacity: 0, width: 0 }}
+                transition={{ type: "spring", stiffness: 400, damping: 35 }}
+                className="flex flex-col overflow-hidden whitespace-nowrap"
               >
                 <span className="text-sm font-bold text-slate-900 leading-tight">FMS Pro</span>
                 <span className="text-[10px] font-semibold text-slate-400 tracking-wider">WORKSPACE</span>
@@ -163,31 +196,30 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onMobileClose }) =
             )}
           </AnimatePresence>
         </div>
-        
-        {/* Toggle Collapse Button */}
-        {!mobileOpen && (
-          <button 
-            onClick={() => dispatch(toggleSidebarCollapsed())}
-            className="hidden lg:flex absolute -right-3.5 top-6 w-7 h-7 bg-white border border-slate-200 rounded-full items-center justify-center text-slate-600 shadow-sm transition-all z-50 hover:bg-slate-50 hover:shadow-md hover:scale-105"
-            aria-label={isSidebarCollapsed ? "Expand" : "Collapse"}
-          >
-            {isSidebarCollapsed ? <ChevronRight size={14} strokeWidth={2.5} /> : <ChevronLeft size={14} strokeWidth={2.5} />}
-          </button>
-        )}
       </div>
 
       {/* Navigation Groups */}
-      <div className="flex-1 overflow-y-auto pt-4 space-y-6 flex flex-col">
+      <div className="flex-1 overflow-hidden pt-4 space-y-3 flex flex-col">
         {navGroups.map((group, groupIdx) => (
           <div key={groupIdx} className="space-y-1">
-            {!isSidebarCollapsed && (
-              <div className="px-6 pb-2">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{group.label}</span>
-              </div>
-            )}
-            <div className="space-y-0.5">
+            <AnimatePresence>
+              {!isSidebarCollapsed && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 35 }}
+                  className="px-6 overflow-hidden whitespace-nowrap"
+                >
+                  <div className="pb-2">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{group.label}</span>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            <div className="space-y-0.5 flex flex-col items-stretch">
               {group.items.map((item) => (
-                <NavLinkItem key={item.path} item={item} />
+                <NavLinkItem key={item.path || item.name} item={item} />
               ))}
             </div>
           </div>
@@ -196,7 +228,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onMobileClose }) =
 
       {/* Premium User Profile Card */}
       <div className="p-4 border-t border-slate-100 bg-white/50">
-        <div className={`group relative flex items-center rounded-xl p-2 transition-all ${
+        <div className={`group relative flex items-center rounded-xl p-2 transition-all duration-[400ms] ease-[cubic-bezier(0.25,1,0.5,1)] ${
           isSidebarCollapsed ? 'justify-center p-0' : 'bg-slate-50/50 border border-slate-200/50 hover:bg-slate-50'
         }`}>
           {/* Avatar Badge */}
@@ -210,7 +242,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onMobileClose }) =
                 initial={{ opacity: 0, width: 0 }}
                 animate={{ opacity: 1, width: 'auto' }}
                 exit={{ opacity: 0, width: 0 }}
-                className="ml-3 flex-1 overflow-hidden"
+                transition={{ type: "spring", stiffness: 400, damping: 35 }}
+                className="ml-3 flex-1 overflow-hidden whitespace-nowrap"
               >
                 <div className="flex flex-col">
                   <span className="text-xs font-bold text-slate-900 truncate">{user?.name}</span>
@@ -242,9 +275,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onMobileClose }) =
 
   return (
     <>
-      <aside className={`hidden lg:flex ${isSidebarCollapsed ? 'w-[72px]' : 'w-64'} h-screen bg-white transition-all duration-300 ease-in-out`}>
+      <motion.aside
+        initial={false}
+        animate={{ width: isSidebarCollapsed ? 72 : 256 }}
+        transition={{ type: "spring", stiffness: 400, damping: 35 }}
+        className="hidden lg:flex h-full bg-white flex-shrink-0 relative z-40"
+      >
         {sidebarContent}
-      </aside>
+        {/* Toggle Collapse Button */}
+        <button 
+          onClick={() => dispatch(toggleSidebarCollapsed())}
+          className="hidden lg:flex absolute -right-3.5 top-6 w-7 h-7 bg-white border border-slate-200 rounded-full items-center justify-center text-slate-600 shadow-sm transition-all duration-[400ms] z-50 hover:bg-slate-50 hover:shadow-md hover:scale-105"
+          aria-label={isSidebarCollapsed ? "Expand" : "Collapse"}
+        >
+          {isSidebarCollapsed ? <ChevronRight size={14} strokeWidth={2.5} /> : <ChevronLeft size={14} strokeWidth={2.5} />}
+        </button>
+      </motion.aside>
 
       {mobileOpen && (
         <div
