@@ -54,6 +54,7 @@ interface PlotData {
   image: File | null;
   latitude?: string;
   longitude?: string;
+  farmSize: string;
 }
 
 // --- Components ---
@@ -193,7 +194,8 @@ export const AddPlotPage: React.FC = () => {
     locationMethod: 'current',
     image: null,
     latitude: '',
-    longitude: ''
+    longitude: '',
+    farmSize: '5.0'
   });
 
   React.useEffect(() => {
@@ -206,7 +208,8 @@ export const AddPlotPage: React.FC = () => {
         locationMethod: 'manual',
         image: null,
         latitude: existingPlot.location.latitude.toString(),
-        longitude: existingPlot.location.longitude.toString()
+        longitude: existingPlot.location.longitude.toString(),
+        farmSize: existingPlot.area.replace(/[^\d.]/g, '')
       });
     }
   }, [existingPlot]);
@@ -290,7 +293,7 @@ export const AddPlotPage: React.FC = () => {
           p: 40 + Math.floor(Math.random() * 20),
           k: 30 + Math.floor(Math.random() * 20)
         },
-        area: '5.0 Acres', // Default area for new plots
+        area: `${formData.farmSize} Acres`,
         expectedHarvestDate: new Date(Date.now() + 86400000 * 90).toISOString(), // Default 90 days
         scanHistory: []
       };
@@ -319,9 +322,9 @@ export const AddPlotPage: React.FC = () => {
   const prevStep = () => setStep(s => Math.max(s - 1, 1));
   
   const canProceed = () => {
-    if (step === 1) return formData.name && formData.crop && formData.soil;
+    if (step === 1) return formData.name && formData.crop && formData.soil && formData.farmSize;
     if (step === 2) return true;
-    if (step === 3) return true; // Always allow proceeding from step 3 (location is now optional/auto-fallback)
+    if (step === 3) return !!formData.latitude && !!formData.longitude;
     return true;
   };
 
@@ -384,25 +387,36 @@ export const AddPlotPage: React.FC = () => {
                         />
                       </div>
 
-                      <div className="space-y-2">
-                        <label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2 ml-1">
-                          <Info size={12} className="text-emerald-500" />
-                          Soil Composition <span className="text-emerald-500">*</span>
-                        </label>
-                        <div className="relative">
-                          <select 
-                            className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-sm appearance-none cursor-pointer shadow-sm"
-                            value={formData.soil}
-                            onChange={(e) => setFormData(p => ({ ...p, soil: e.target.value }))}
-                          >
-                            <option value="">Select soil profile</option>
-                            <option value="loamy">Loamy (High Nutrient)</option>
-                            <option value="clay">Clay (Water Retentive)</option>
-                            <option value="sandy">Sandy (High Drainage)</option>
-                            <option value="silty">Silty (Fine Texture)</option>
-                          </select>
-                          <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                            <ChevronRight size={16} className="rotate-90" />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <InputField 
+                          label="Farm Size (Acres)" 
+                          icon={Layers} 
+                          placeholder="e.g., 10.5" 
+                          type="number"
+                          value={formData.farmSize}
+                          onChange={(v: string) => setFormData(p => ({ ...p, farmSize: v }))}
+                          required
+                        />
+                         <div className="space-y-2">
+                          <label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2 ml-1">
+                            <Info size={12} className="text-emerald-500" />
+                            Soil Composition <span className="text-emerald-500">*</span>
+                          </label>
+                          <div className="relative">
+                            <select 
+                              className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-sm appearance-none cursor-pointer shadow-sm"
+                              value={formData.soil}
+                              onChange={(e) => setFormData(p => ({ ...p, soil: e.target.value }))}
+                            >
+                              <option value="">Select soil profile</option>
+                              <option value="loamy">Loamy (High Nutrient)</option>
+                              <option value="clay">Clay (Water Retentive)</option>
+                              <option value="sandy">Sandy (High Drainage)</option>
+                              <option value="silty">Silty (Fine Texture)</option>
+                            </select>
+                            <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                              <ChevronRight size={16} className="rotate-90" />
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -601,8 +615,14 @@ export const AddPlotPage: React.FC = () => {
                               className="bg-white p-6 rounded-[32px] border border-slate-200/60 shadow-lg shadow-slate-200/20 space-y-6"
                             >
                               <div className="space-y-1">
-                                <p className="text-sm font-bold text-slate-900">Interactive Map Selection</p>
-                                <p className="text-xs text-slate-400">Navigate the map and click to pin your plot's exact location.</p>
+                                <p className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                                  <MapPin size={16} className="text-emerald-500" />
+                                  Interactive Map Selection
+                                </p>
+                                <p className="text-xs text-slate-600 bg-emerald-50 p-2 rounded-lg border border-emerald-100 leading-relaxed">
+                                  <strong>How to set location:</strong> Click or tap anywhere on the map to drop a pin. You can also manually adjust the coordinates below. 
+                                  <span className="block mt-1 text-emerald-700 font-semibold">Step 3 requires coordinates to finalize the plot.</span>
+                                </p>
                               </div>
                               
                               <MapSelector 
@@ -742,7 +762,7 @@ export const AddPlotPage: React.FC = () => {
               <div className="flex gap-4 mt-12">
                 {!existingPlot && (
                   <button 
-                    onClick={() => { setIsSuccess(false); setStep(1); setFormData({ name: '', crop: '', soil: '', environment: 'open', locationMethod: 'current', image: null, latitude: '', longitude: '' }); }}
+                    onClick={() => { setIsSuccess(false); setStep(1); setFormData({ name: '', crop: '', soil: '', environment: 'open', locationMethod: 'current', image: null, latitude: '', longitude: '', farmSize: '5.0' }); }}
                     className="px-8 py-4 bg-slate-100 text-slate-900 rounded-2xl font-bold text-sm hover:bg-slate-200 transition-all"
                   >
                     Add Another

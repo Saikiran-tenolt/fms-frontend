@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../../hooks';
 import { setSensorData, setTrendData } from '../sensors/sensorsSlice';
-import { setAdvisories } from '../advisories/advisoriesSlice';
+import { setAdvisories, fetchWeatherAndAdvisories } from '../advisories/advisoriesSlice';
 import { EmptyState, SkeletonCard, SkeletonChart } from '../../components/ui';
 import { toast } from 'sonner';
 import {
@@ -39,7 +39,8 @@ export const DashboardPage: React.FC = () => {
   const { plots, selectedPlotId } = useAppSelector((state: any) => state.plots);
   const { sensorData } = useAppSelector((state: any) => state.sensors);
   const { notifications } = useAppSelector((state: any) => state.notifications);
-  const { advisories } = useAppSelector((state: any) => state.advisories);
+  const { user } = useAppSelector((state: any) => state.auth);
+  const { weatherData: realWeather, advisories } = useAppSelector((state: any) => state.advisories);
   const [loading, setLoading] = useState(true);
   const [weather, setWeather] = useState<any>(null);
   const [executingAdvisoryId, setExecutingAdvisoryId] = useState<string | null>(null);
@@ -80,8 +81,16 @@ export const DashboardPage: React.FC = () => {
       dispatch(setTrendData({ plotId: selectedPlot.plotId, sensor: 'soilMoisture', data: generateMockTrendData() }));
       dispatch(setTrendData({ plotId: selectedPlot.plotId, sensor: 'temperature', data: generateMockTrendData() }));
       dispatch(setTrendData({ plotId: selectedPlot.plotId, sensor: 'humidity', data: generateMockTrendData() }));
+      dispatch(setTrendData({ plotId: selectedPlot.plotId, sensor: 'humidity', data: generateMockTrendData() }));
       dispatch(setTrendData({ plotId: selectedPlot.plotId, sensor: 'soilTemperature', data: generateMockTrendData() }));
-      setWeather(generateMockWeather(selectedPlot.plotId));
+
+      // Fetch real weather using user's pincode
+      if (user?.pincode) {
+        dispatch(fetchWeatherAndAdvisories(user.pincode) as any);
+      } else {
+        setWeather(generateMockWeather(selectedPlot.plotId));
+      }
+
       dispatch(setAdvisories(mockAdvisories));
     }
 
@@ -195,8 +204,17 @@ export const DashboardPage: React.FC = () => {
             <div className="flex flex-col">
               <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1">Local Weather</span>
               <div className="flex items-center gap-2 text-primary-900 font-bold">
-                <CloudRain className="w-5 h-5 text-blue-500" />
-                <span className="text-xl">{weather?.temperature}°C</span>
+                {realWeather ? (
+                  <>
+                    <img src={`https://openweathermap.org/img/wn/${realWeather.weather[0].icon}.png`} alt="weather" className="w-8 h-8" />
+                    <span className="text-xl">{Math.round(realWeather.main.temp)}°C</span>
+                  </>
+                ) : (
+                  <>
+                    <CloudRain className="w-5 h-5 text-blue-500" />
+                    <span className="text-xl">{weather?.temperature}°C</span>
+                  </>
+                )}
               </div>
             </div>
             <div className="h-8 w-px bg-outline-variant/30 hidden xs:block"></div>
@@ -302,46 +320,46 @@ export const DashboardPage: React.FC = () => {
           <h3 className="text-2xl font-bold text-primary-900 tracking-tight">Quick Actions</h3>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <button
-              onClick={() => navigate('/plots')}
-              className="relative flex flex-col items-center justify-center p-8 bg-white border border-slate-200 shadow-sm rounded-2xl hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-200/50 hover:border-emerald-200 group transition-all duration-300 overflow-hidden"
-            >
-              <div className="h-14 w-14 bg-emerald-50 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform mb-4">
-                <MapPin size={28} className="text-black/70 group-hover:text-emerald-500 transition-colors" />
-              </div>
-              <span className="text-sm font-bold text-slate-600 group-hover:text-slate-900 transition-colors">Manage Plots</span>
-              <div className="absolute bottom-0 left-0 h-[3px] w-full bg-emerald-500 scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></div>
-            </button>
-            <button
-              onClick={() => navigate('/market')}
-              className="relative flex flex-col items-center justify-center p-8 bg-white border border-slate-200 shadow-sm rounded-2xl hover:-translate-y-1 hover:shadow-xl hover:shadow-amber-200/50 hover:border-amber-200 group transition-all duration-300 overflow-hidden"
-            >
-              <div className="h-14 w-14 bg-amber-50 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform mb-4">
-                <IndianRupee size={28} className="text-black/70 group-hover:text-amber-500 transition-colors" />
-              </div>
-              <span className="text-sm font-bold text-slate-600 group-hover:text-slate-900 transition-colors">Market Prices</span>
-              <div className="absolute bottom-0 left-0 h-[3px] w-full bg-amber-500 scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></div>
-            </button>
-            <button
-              onClick={() => navigate('/assistant')}
-              className="relative flex flex-col items-center justify-center p-8 bg-white border border-slate-200 shadow-sm rounded-2xl hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-200/50 hover:border-blue-200 group transition-all duration-300 overflow-hidden"
-            >
-              <div className="h-14 w-14 bg-blue-50 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform mb-4">
-                <MessageSquare size={28} className="text-black/70 group-hover:text-blue-500 transition-colors" />
-              </div>
-              <span className="text-sm font-bold text-slate-600 group-hover:text-slate-900 transition-colors">Ask Assistant</span>
-              <div className="absolute bottom-0 left-0 h-[3px] w-full bg-blue-500 scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></div>
-            </button>
-            <button
-              onClick={() => navigate('/assistant')}
-              className="relative flex flex-col items-center justify-center p-8 bg-white border border-slate-200 shadow-sm rounded-2xl hover:-translate-y-1 hover:shadow-xl hover:shadow-purple-200/50 hover:border-purple-200 group transition-all duration-300 overflow-hidden"
-            >
-              <div className="h-14 w-14 bg-purple-50 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform mb-4">
-                <ImageIcon size={28} className="text-black/70 group-hover:text-purple-500 transition-colors" />
-              </div>
-              <span className="text-sm font-bold text-slate-600 group-hover:text-slate-900 transition-colors">Crop Scanner</span>
-              <div className="absolute bottom-0 left-0 h-[3px] w-full bg-purple-500 scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></div>
-            </button>
+          <button
+            onClick={() => navigate('/plots')}
+            className="relative flex flex-col items-center justify-center p-8 bg-white border border-slate-200 shadow-sm rounded-2xl hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-200/50 hover:border-emerald-200 group transition-all duration-300 overflow-hidden"
+          >
+            <div className="h-14 w-14 bg-emerald-50 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform mb-4">
+              <MapPin size={28} className="text-black/70 group-hover:text-emerald-500 transition-colors" />
+            </div>
+            <span className="text-sm font-bold text-slate-600 group-hover:text-slate-900 transition-colors">Manage Plots</span>
+            <div className="absolute bottom-0 left-0 h-[3px] w-full bg-emerald-500 scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></div>
+          </button>
+          <button
+            onClick={() => navigate('/market')}
+            className="relative flex flex-col items-center justify-center p-8 bg-white border border-slate-200 shadow-sm rounded-2xl hover:-translate-y-1 hover:shadow-xl hover:shadow-amber-200/50 hover:border-amber-200 group transition-all duration-300 overflow-hidden"
+          >
+            <div className="h-14 w-14 bg-amber-50 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform mb-4">
+              <IndianRupee size={28} className="text-black/70 group-hover:text-amber-500 transition-colors" />
+            </div>
+            <span className="text-sm font-bold text-slate-600 group-hover:text-slate-900 transition-colors">Market Prices</span>
+            <div className="absolute bottom-0 left-0 h-[3px] w-full bg-amber-500 scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></div>
+          </button>
+          <button
+            onClick={() => navigate('/assistant')}
+            className="relative flex flex-col items-center justify-center p-8 bg-white border border-slate-200 shadow-sm rounded-2xl hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-200/50 hover:border-blue-200 group transition-all duration-300 overflow-hidden"
+          >
+            <div className="h-14 w-14 bg-blue-50 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform mb-4">
+              <MessageSquare size={28} className="text-black/70 group-hover:text-blue-500 transition-colors" />
+            </div>
+            <span className="text-sm font-bold text-slate-600 group-hover:text-slate-900 transition-colors">Ask Assistant</span>
+            <div className="absolute bottom-0 left-0 h-[3px] w-full bg-blue-500 scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></div>
+          </button>
+          <button
+            onClick={() => navigate('/assistant')}
+            className="relative flex flex-col items-center justify-center p-8 bg-white border border-slate-200 shadow-sm rounded-2xl hover:-translate-y-1 hover:shadow-xl hover:shadow-purple-200/50 hover:border-purple-200 group transition-all duration-300 overflow-hidden"
+          >
+            <div className="h-14 w-14 bg-purple-50 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform mb-4">
+              <ImageIcon size={28} className="text-black/70 group-hover:text-purple-500 transition-colors" />
+            </div>
+            <span className="text-sm font-bold text-slate-600 group-hover:text-slate-900 transition-colors">Crop Scanner</span>
+            <div className="absolute bottom-0 left-0 h-[3px] w-full bg-purple-500 scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></div>
+          </button>
         </div>
       </section>
 
@@ -384,11 +402,10 @@ export const DashboardPage: React.FC = () => {
                     navigate('/advisories');
                   }, 2500);
                 }}
-                className={`px-8 py-4 ${
-                  executingAdvisoryId === latestAdvisory.id 
-                    ? 'bg-[#1b4332] text-emerald-200 cursor-wait' 
+                className={`px-8 py-4 ${executingAdvisoryId === latestAdvisory.id
+                    ? 'bg-[#1b4332] text-emerald-200 cursor-wait'
                     : 'bg-[#c1ecd4] text-[#002114] hover:scale-95 active:opacity-80'
-                } font-bold rounded-xl transition-all flex items-center justify-center gap-2 whitespace-nowrap`}
+                  } font-bold rounded-xl transition-all flex items-center justify-center gap-2 whitespace-nowrap`}
               >
                 {executingAdvisoryId === latestAdvisory.id ? (
                   <>
@@ -419,7 +436,7 @@ export const DashboardPage: React.FC = () => {
             <button className="text-emerald-600 font-bold text-sm hover:underline">View All Scans</button>
           </div>
           <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/10 p-8 flex flex-col gap-6">
-            
+
             <div className="flex gap-4 relative">
               <div className="absolute left-[19px] top-10 bottom-[-24px] w-0.5 bg-emerald-100"></div>
               <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0 z-10 border-4 border-white shadow-sm">
@@ -465,7 +482,7 @@ export const DashboardPage: React.FC = () => {
             <button className="text-emerald-600 font-bold text-sm hover:underline">Manage Rules</button>
           </div>
           <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/10 divide-y divide-outline-variant/10 overflow-hidden">
-            
+
             <div className="p-6 flex items-center justify-between gap-4 bg-emerald-50/30">
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">

@@ -13,6 +13,7 @@ export interface VerifyPayload {
   name: string;
   email: string;
   permanentLocation: Location;
+  pincode?: string;
 }
 
 export interface AuthResponse {
@@ -51,6 +52,7 @@ const authService = {
       name: payload.name || backendUser.name || 'Farmer',
       email: payload.email || backendUser.email || '',
       role: backendUser.role || 'FARMER',
+      pincode: payload.pincode || backendUser.pincode,
       permanentLocation: payload.permanentLocation || backendUser.permanentLocation
     };
 

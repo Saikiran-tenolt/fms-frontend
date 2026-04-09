@@ -184,7 +184,14 @@ export const LoginPage: React.FC = () => {
     setIsLoading(true);
     setError(null);
 
-    const payload: VerifyPayload = { phone, otp: finalOtp, name, email, permanentLocation: location };
+    const payload: VerifyPayload = { 
+      phone, 
+      otp: finalOtp, 
+      name, 
+      email, 
+      permanentLocation: location,
+      pincode
+    };
 
     try {
       const response = await authService.verifyOtp(payload);
@@ -205,7 +212,14 @@ export const LoginPage: React.FC = () => {
       // Fallback Mock Reference
       setTimeout(() => {
         dispatch(login({
-          user: { id: 'farmer-' + phone, name: name, email: email, role: 'FARMER', permanentLocation: location },
+          user: { 
+            id: 'farmer-' + phone, 
+            name: name, 
+            email: email, 
+            role: 'FARMER', 
+            permanentLocation: location,
+            pincode
+          },
           accessToken: 'mock_farmer_token',
           refreshToken: 'mock_farmer_token'
         }));
@@ -354,7 +368,7 @@ export const LoginPage: React.FC = () => {
                           <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email Address" className="w-full pl-12 pr-4 py-3.5 bg-white border border-slate-300 rounded-xl focus:border-emerald-500 outline-none transition-all text-slate-900 shadow-sm font-medium" />
                         </div>
 
-                        {/* Location Smart Setup */}
+                        {/* Geographic Registration */}
                         <div className="pt-2">
                            <p className="text-xs uppercase tracking-wider font-bold text-emerald-700 mb-3">Geographic Registration</p>
                            <div className="relative">
@@ -376,7 +390,6 @@ export const LoginPage: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                    
                     <Button onClick={handleFarmerVerify} disabled={isLoading} className="w-full py-4 mt-6 bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-lg transition-all font-bold">
                       {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Complete Verification"}
                     </Button>

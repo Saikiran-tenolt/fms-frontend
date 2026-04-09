@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Search, TrendingUp, TrendingDown, Activity, DollarSign, RefreshCw, BarChart2, MapPin } from 'lucide-react';
+import { Search, TrendingUp, TrendingDown, Activity, IndianRupee, RefreshCw, BarChart2, MapPin, ChevronDown } from 'lucide-react';
 import { useAppSelector, useAppDispatch } from '../../hooks';
 import { setPrices } from './marketSlice';
 import { Badge, EmptyState } from '../../components/ui';
@@ -11,6 +11,13 @@ export const MarketPage: React.FC = () => {
   const { prices } = useAppSelector((state) => state.market);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCropId, setSelectedCropId] = useState<string | null>(null);
+  const [selectedMandi, setSelectedMandi] = useState('All Markets');
+  const [isMandiDropdownOpen, setIsMandiDropdownOpen] = useState(false);
+
+  const mandis = useMemo(() => {
+    const list = Array.from(new Set(prices.map((p) => p.mandiName)));
+    return ['All Markets', ...list];
+  }, [prices]);
 
   useEffect(() => {
     dispatch(setPrices(mockMarketPrices));
@@ -19,9 +26,12 @@ export const MarketPage: React.FC = () => {
     }
   }, [dispatch, selectedCropId]);
 
-  const filteredPrices = prices.filter((price) =>
-    price.cropName.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredPrices = prices.filter((price) => {
+    const matchesSearch = price.cropName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      price.mandiName.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesMandi = selectedMandi === 'All Markets' || price.mandiName === selectedMandi;
+    return matchesSearch && matchesMandi;
+  });
 
   const selectedCrop = prices.find((p) => p.id === selectedCropId);
 
@@ -57,66 +67,141 @@ export const MarketPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCrop]);
 
+  // Identify best prices for each crop type (Highest is best for seller)
+  const bestPriceMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    prices.forEach((p) => {
+      if (!map[p.cropName] || p.price > map[p.cropName]) {
+        map[p.cropName] = p.price;
+      }
+    });
+    return map;
+  }, [prices]);
+
   return (
     <div className="space-y-6 animate-fadeIn max-w-[1400px] mx-auto min-h-[calc(100vh-6rem)] flex flex-col font-inter">
-      <style>{`
-        @keyframes marquee {
-          0% { transform: translateX(0%); }
-          100% { transform: translateX(-50%); }
-        }
-        .animate-marquee {
-          animation: marquee 35s linear infinite;
-        }
-        .animate-marquee:hover {
-          animation-play-state: paused;
-        }
-      `}</style>
-      
-      {/* Header & Marquee Ticker */}
-      <div className="bg-slate-900 rounded-2xl overflow-hidden flex items-center shadow-lg border border-slate-800">
-        <div className="bg-emerald-500 text-slate-900 font-bold px-6 py-3 flex items-center gap-2 z-10 shadow-[4px_0_15px_rgba(0,0,0,0.5)]">
-          <Activity className="w-5 h-5" />
-          <span className="tracking-tight whitespace-nowrap">LIVE TICKER</span>
-        </div>
-        <div className="flex-1 overflow-hidden relative flex items-center">
-          <div className="flex w-max animate-marquee whitespace-nowrap">
-            {/* Double the array for seamless infinite scrolling */}
-            {[...prices, ...prices].map((price, i) => (
-              <div key={`${price.id}-${i}`} className="flex items-center gap-3 px-8 border-r border-slate-700/50">
-                <span className="font-semibold text-slate-200">{price.cropName}</span>
-                <span className="font-mono text-slate-400">₹{price.price}</span>
-                <span className={`text-xs font-bold font-mono flex items-center ${price.trend === 'up' ? 'text-emerald-400' : price.trend === 'down' ? 'text-rose-400' : 'text-slate-400'}`}>
-                   {price.trend === 'up' ? '▲' : price.trend === 'down' ? '▼' : '▬'} {Math.abs(price.change)}%
-                </span>
-              </div>
-            ))}
+
+      {/* Market Intelligence Dashboard */}
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Card 1: Regional Outlook */}
+        <div className="bg-white rounded-3xl border border-slate-200/60 p-6 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="p-2 bg-blue-50 rounded-xl"><TrendingUp size={18} className="text-blue-600" /></div>
+            <h3 className="text-sm font-bold text-slate-900 tracking-tight">Regional Outlook</h3>
+          </div>
+          <p className="text-2xl font-black text-slate-900 mb-1">
+            +{(prices.reduce((acc, p) => acc + p.change, 0) / prices.length).toFixed(1)}%
+          </p>
+          <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider bg-emerald-50 inline-block px-2 py-0.5 rounded">Bullish Week</p>
+          <div className="mt-4 pt-4 border-t border-slate-50 flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+            <span>Market Volume</span>
+            <span className="text-slate-900">High</span>
           </div>
         </div>
-      </div>
 
-      {/* Main Split Layout */}
-      <div className="flex-1 grid grid-cols-1 xl:grid-cols-3 gap-6 min-h-[600px]">
-        
-        {/* Left/Main Column: Dense Table */}
-        <div className="xl:col-span-2 flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          {/* Table Header Controls */}
-          <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50">
+        {/* Card 2: Top Performer in selected Mandi */}
+        <div className="bg-white rounded-3xl border border-slate-200/60 p-6 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="p-2 bg-emerald-50 rounded-xl"><Activity size={18} className="text-emerald-600" /></div>
+            <h3 className="text-sm font-bold text-slate-900 tracking-tight">Top Performer</h3>
+          </div>
+          <p className="text-2xl font-black text-slate-900 mb-1">
+            {filteredPrices.sort((a, b) => b.price - a.price)[0]?.cropName || 'N/A'}
+          </p>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+            ₹{filteredPrices.sort((a, b) => b.price - a.price)[0]?.price || '0'} / qtl
+          </p>
+          <div className="mt-4 pt-4 border-t border-slate-50 flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+            <span>Current Mandi</span>
+            <span className="text-emerald-600">{selectedMandi}</span>
+          </div>
+        </div>
+
+        {/* Card 3: AI Intelligence / Opportunity */}
+        <div className="bg-slate-900 rounded-3xl border border-slate-800 p-6 shadow-xl relative overflow-hidden group">
+          <div className="absolute -right-4 -top-4 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-all"></div>
+          <div className="flex items-center gap-2 mb-4 relative z-10">
+            <div className="p-2 bg-white/5 rounded-xl border border-white/10"><IndianRupee size={18} className="text-emerald-400" /></div>
+            <h3 className="text-sm font-bold text-white tracking-tight">Arbitrage Insight</h3>
+          </div>
+          <p className="text-sm font-medium text-slate-300 leading-relaxed mb-4 relative z-10">
+            Wheat prices are <span className="text-emerald-400 font-black">7.2% higher</span> in <span className="text-white">Azadpur</span> than your current local average.
+          </p>
+          <button className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] flex items-center gap-2 hover:translate-x-1 transition-transform">
+            Analyze Logistics Cost <TrendingUp size={10} />
+          </button>
+        </div>
+      </section>
+
+
+      {/* Market Navigator Bar */}
+      <section className="bg-white rounded-3xl border border-slate-200/60 p-4 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-4 w-full md:w-auto">
+          <div className="p-2 bg-emerald-50 rounded-xl">
+            <MapPin size={20} className="text-emerald-600" />
+          </div>
+          <div className="relative flex-1 md:flex-initial">
+            <button
+              onClick={() => setIsMandiDropdownOpen(!isMandiDropdownOpen)}
+              className="w-full md:w-64 flex items-center justify-between gap-3 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 hover:border-emerald-500 hover:bg-white transition-all group"
+            >
+              <span className="truncate">{selectedMandi}</span>
+              <ChevronDown size={16} className={`text-slate-400 transition-transform duration-300 ${isMandiDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {isMandiDropdownOpen && (
+              <>
+                <div className="fixed inset-0 z-20" onClick={() => setIsMandiDropdownOpen(false)} />
+                <div className="absolute top-full left-0 mt-2 w-full md:w-64 bg-white border border-slate-200 rounded-2xl shadow-2xl py-2 z-30 animate-in fade-in zoom-in duration-200 origin-top">
+                  {mandis.map((mandi) => (
+                    <button
+                      key={mandi}
+                      onClick={() => {
+                        setSelectedMandi(mandi);
+                        setIsMandiDropdownOpen(false);
+                      }}
+                      className={`w-full text-left px-5 py-3 text-sm font-bold transition-colors flex items-center justify-between ${selectedMandi === mandi
+                          ? 'bg-emerald-50 text-emerald-700'
+                          : 'text-slate-600 hover:bg-slate-50 hover:text-emerald-600'
+                        }`}
+                    >
+                      {mandi}
+                      {selectedMandi === mandi && <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        <div className="relative w-full md:w-96">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search crops, mandis, or assets..."
+            className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none shadow-sm transition-all text-sm font-medium text-slate-700"
+          />
+        </div>
+      </section>
+
+      <div className="flex flex-col gap-6">
+
+        {/* Full Width Progress Table */}
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+          <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/30">
             <div>
               <h2 className="text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
                 <BarChart2 className="w-5 h-5 text-emerald-600" />
-                Commodities Exchange
+                Asset Listings
               </h2>
-              <p className="text-xs text-slate-500 mt-1 font-medium">Real-time valuation from regional mandis</p>
+              <p className="text-xs text-slate-500 mt-1 font-medium">Real-time valuation across regional mandis</p>
             </div>
-            <div className="relative w-full sm:w-72">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search crops or mandis..."
-                className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none shadow-sm transition-all text-sm font-medium text-slate-700 placeholder:text-slate-400"
-              />
+            <div className="hidden sm:flex items-center gap-2">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pricing:</span>
+              <Badge variant="default" size="sm" className="bg-emerald-100 text-emerald-700 border-none">Live</Badge>
             </div>
           </div>
 
@@ -142,19 +227,19 @@ export const MarketPage: React.FC = () => {
                     const trendData = tableTrendMap[price.id] || [];
 
                     return (
-                      <tr 
-                        key={price.id} 
+                      <tr
+                        key={price.id}
                         onClick={() => setSelectedCropId(price.id)}
                         className={`group cursor-pointer transition-colors ${isSelected ? 'bg-emerald-50/50' : 'hover:bg-slate-50/80'}`}
                       >
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-3">
                             <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isSelected ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-500 group-hover:bg-emerald-50 group-hover:text-emerald-500'} transition-colors`}>
-                              <DollarSign className="w-4 h-4" />
+                              <IndianRupee className="w-4 h-4" />
                             </div>
                             <div>
                               <p className={`font-bold text-sm ${isSelected ? 'text-emerald-900' : 'text-slate-900'}`}>{price.cropName}</p>
-                              <p className="text-[10px] text-slate-400 font-medium">Vol: {Math.floor(Math.random()>>0 * 500) + 120} lots</p>
+                              <p className="text-[10px] text-slate-400 font-medium">Vol: {Math.floor(Math.random() >> 0 * 500) + 120} lots</p>
                             </div>
                           </div>
                         </td>
@@ -162,8 +247,13 @@ export const MarketPage: React.FC = () => {
                           <p className="text-xs font-semibold text-slate-600 tracking-tight">{price.mandiName}</p>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right">
-                          <span className="font-mono text-sm font-bold text-slate-900">₹{price.price.toLocaleString()}</span>
-                          <p className="text-[10px] text-slate-400 font-medium">per quintal</p>
+                          <div className="flex flex-col items-end">
+                            <span className="font-mono text-sm font-bold text-slate-900">₹{price.price.toLocaleString()}</span>
+                            {price.price === bestPriceMap[price.cropName] && (
+                              <span className="text-[8px] font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded uppercase tracking-tighter mt-0.5 animate-pulse">Best Sell Rate</span>
+                            )}
+                            <p className="text-[10px] text-slate-400 font-medium mt-0.5">per quintal</p>
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right">
                           <Badge
@@ -206,105 +296,60 @@ export const MarketPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Column: Pro Analytics Panel */}
-        <div className="xl:col-span-1 bg-[#0b1120] rounded-2xl border border-slate-800 shadow-2xl flex flex-col overflow-hidden text-slate-300 relative">
-          {selectedCrop ? (
-            <>
-              {/* Header */}
-              <div className="p-6 border-b border-slate-800/80 bg-slate-900/50 backdrop-blur-md relative z-10 flex flex-col gap-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="text-2xl font-black text-white tracking-tight">{selectedCrop.cropName}</h3>
-                    <p className="text-xs text-slate-400 font-medium tracking-wide uppercase mt-1 flex items-center gap-1">
-                      <MapPin className="w-3 h-3" /> {selectedCrop.mandiName}
-                    </p>
-                  </div>
-                  <div className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 ${selectedCrop.trend === 'up' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : selectedCrop.trend === 'down' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-slate-500/10 text-slate-400 border border-slate-500/20'}`}>
-                    {selectedCrop.trend === 'up' ? <TrendingUp className="w-3 h-3" /> : selectedCrop.trend === 'down' ? <TrendingDown className="w-3 h-3" /> : <Activity className="w-3 h-3" />}
-                    {selectedCrop.trend.toUpperCase()}
-                  </div>
-                </div>
-
-                <div className="flex items-end gap-3 mt-2">
-                  <span className="text-5xl font-black text-white font-mono tracking-tighter">₹{selectedCrop.price}</span>
-                  <div className="mb-2">
-                    <span className={`text-sm font-bold font-mono ${selectedCrop.trend === 'up' ? 'text-emerald-400' : selectedCrop.trend === 'down' ? 'text-rose-400' : 'text-slate-400'}`}>
-                      {selectedCrop.change > 0 ? '+' : ''}{selectedCrop.change}%
-                    </span>
-                  </div>
-                </div>
+        {/* Large Featured Chart Section */}
+        <section className="bg-[#0b1120] rounded-[32px] border border-slate-800 shadow-2xl overflow-hidden min-h-[400px] flex flex-col group">
+          <div className="p-8 border-b border-white/5 flex items-center justify-between bg-slate-900/40 backdrop-blur-xl">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Market Pulse Analytics</h3>
               </div>
-
-              {/* Chart */}
-              <div className="flex-1 p-6 flex flex-col relative z-0">
-                <div className="flex justify-between items-center mb-6 z-10">
-                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">30-Day Historical Trend</h4>
-                  <div className="flex gap-2">
-                    <button className="text-[10px] font-bold px-2 py-1 rounded bg-slate-800 text-white hover:bg-slate-700 transition">1W</button>
-                    <button className="text-[10px] font-bold px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">1M</button>
-                    <button className="text-[10px] font-bold px-2 py-1 rounded bg-slate-800 text-slate-400 hover:bg-slate-700 transition">3M</button>
-                  </div>
-                </div>
-                
-                <div className="flex-1 min-h-[250px] -ml-4">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={activeDetailData}>
-                      <defs>
-                        <linearGradient id="colorPro" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor={selectedCrop.trend === 'up' ? '#34d399' : selectedCrop.trend === 'down' ? '#fb7185' : '#94a3b8'} stopOpacity={0.4} />
-                          <stop offset="95%" stopColor={selectedCrop.trend === 'up' ? '#34d399' : selectedCrop.trend === 'down' ? '#fb7185' : '#94a3b8'} stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                      <XAxis dataKey="time" hide />
-                      <YAxis 
-                        domain={['auto', 'auto']} 
-                        axisLine={false} 
-                        tickLine={false} 
-                        tick={{ fill: '#64748b', fontSize: 10, fontFamily: 'monospace' }} 
-                        width={40}
-                      />
-                      <Tooltip 
-                        contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.5)' }} 
-                        itemStyle={{ color: '#fff', fontWeight: 'bold' }}
-                        labelStyle={{ color: '#64748b', fontSize: '12px', marginBottom: '4px' }}
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="value"
-                        name="Valuation (₹)"
-                        stroke={selectedCrop.trend === 'up' ? '#34d399' : selectedCrop.trend === 'down' ? '#fb7185' : '#94a3b8'}
-                        strokeWidth={3}
-                        fill="url(#colorPro)"
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-
-                {/* Sub Metadata under chart */}
-                <div className="mt-8 grid grid-cols-2 gap-4">
-                  <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
-                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Volume (24h)</p>
-                    <p className="text-lg font-mono font-semibold text-slate-200">1,245 <span className="text-xs text-slate-500">qtl</span></p>
-                  </div>
-                  <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
-                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Projected Peak</p>
-                    <p className="text-lg font-mono font-semibold text-emerald-400">₹{selectedCrop.price + Math.floor(Math.random() * 200) + 10}</p>
-                  </div>
-                </div>
-
-                <button className="mt-6 w-full py-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-black tracking-wide transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_25px_rgba(16,185,129,0.5)]">
-                  ANALYZE OPTIMAL SELL DATE
-                </button>
-              </div>
-            </>
-          ) : (
-            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-              <RefreshCw className="w-12 h-12 text-slate-700 animate-spin-slow mb-4" />
-              <p className="text-slate-400 font-medium">Loading market data...</p>
+              <p className="text-2xl font-black text-white tracking-tight">
+                {selectedCrop?.cropName} <span className="text-slate-500 text-lg font-normal">in {selectedMandi}</span>
+              </p>
             </div>
-          )}
-        </div>
+            <div className="flex gap-2">
+              <div className="px-4 py-2 bg-white/5 rounded-xl border border-white/10 text-xs font-bold text-slate-400">30D History</div>
+              <div className="px-4 py-2 bg-emerald-500 text-slate-900 rounded-xl text-xs font-black">Live Data Feed</div>
+            </div>
+          </div>
+
+          <div className="flex-1 p-8 pb-4 relative">
+            <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/5 to-transparent pointer-events-none"></div>
+            <ResponsiveContainer width="100%" height={350}>
+              <AreaChart data={activeDetailData}>
+                <defs>
+                  <linearGradient id="colorPulse" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                <XAxis dataKey="time" hide />
+                <YAxis
+                  domain={['auto', 'auto']}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#475569', fontSize: 11, fontWeight: 700, fontFamily: 'monospace' }}
+                  width={50}
+                />
+                <Tooltip
+                  contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.5)' }}
+                  itemStyle={{ color: '#fff', fontWeight: 'bold' }}
+                  labelStyle={{ color: '#64748b', fontSize: '10px', marginBottom: '4px' }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="value"
+                  stroke="#10b981"
+                  strokeWidth={4}
+                  fill="url(#colorPulse)"
+                  animationDuration={1500}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </section>
       </div>
     </div>
   );

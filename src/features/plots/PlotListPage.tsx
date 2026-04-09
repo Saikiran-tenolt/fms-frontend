@@ -218,7 +218,7 @@ export const PlotListPage: React.FC = () => {
           </div>
 
           <button
-            onClick={() => navigate('/plots/add')}
+            onClick={() => navigate('/plots/create')}
             className="flex items-center gap-3 px-10 py-5 bg-slate-900 text-white rounded-[2rem] font-black text-sm hover:bg-emerald-600 hover:-translate-y-1 transition-all shadow-xl shadow-slate-900/10 active:translate-y-0 whitespace-nowrap"
           >
             <Plus size={18} />

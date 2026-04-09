@@ -4,6 +4,7 @@ export interface User {
   email: string;
   role: 'FARMER' | 'ADMIN';
   assignedBlock?: string;
+  pincode?: string;
   permanentLocation?: {
     village: string;
     block: string;
