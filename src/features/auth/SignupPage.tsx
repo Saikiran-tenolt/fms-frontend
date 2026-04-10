@@ -17,47 +17,10 @@ export const SignupPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    
-    // Validation
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-    
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
-      return;
-    }
-    
-    setLoading(true);
-    
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      // Create mock user
-      const user: User = {
-        id: `user-${Date.now()}`,
-        name,
-        email,
-        role: 'FARMER',
-      };
-      
-      // Generate mock token
-      const token = `mock-token-${Date.now()}`;
-      
-      // Dispatch login action
-      dispatch(login({ user, accessToken: token, refreshToken: '' }));
-      
-      // Redirect to dashboard
-      navigate('/dashboard');
-    } catch (err) {
-      setError('An error occurred. Please try again.');
-      setLoading(false);
-    }
+    setError('Please use the dynamic login portal for OTP verification and registration.');
+    setTimeout(() => navigate('/login'), 2000);
   };
   
   return (

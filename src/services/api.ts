@@ -31,26 +31,52 @@ api.interceptors.response.use(
   (response) => {
     return response;
   },
-  (error) => {
+  async (error) => {
+    const originalRequest = error.config;
+
     if (error.response) {
-      // Server responded with error
       const status = error.response.status;
       const message = error.response.data?.message || 'An error occurred';
-      
-      if (status === 401) {
-        // Unauthorized - clear auth and redirect to login
+
+      // Handle 401 Unauthorized - Attempt Token Refresh
+      if (status === 401 && !originalRequest._retry) {
+        originalRequest._retry = true;
+        const refreshToken = localStorage.getItem('refreshToken');
+
+        if (refreshToken) {
+          try {
+            // Attempt to refresh token
+            const res = await axios.post(`${API_BASE_URL}/auth/refresh`, { refreshToken });
+
+            if (res.data.success) {
+              const { accessToken, refreshToken: newRefreshToken } = res.data.data;
+
+              // Store new tokens
+              localStorage.setItem('accessToken', accessToken);
+              localStorage.setItem('refreshToken', newRefreshToken);
+
+              // Update authorization header
+              originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+
+              // Retry original request
+              return api(originalRequest);
+            }
+          } catch (refreshError) {
+            console.error('Token refresh failed:', refreshError);
+          }
+        }
+
+        // If refresh fails or no token, clear auth and redirect
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('authUser');
         window.location.href = '/login';
       }
-      
+
       return Promise.reject(new Error(message));
     } else if (error.request) {
-      // Request made but no response
       return Promise.reject(new Error('No response from server'));
     } else {
-      // Something else happened
       return Promise.reject(error);
     }
   }
