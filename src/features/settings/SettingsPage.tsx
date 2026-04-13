@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User as UserIcon, Bell, Shield, Globe, Pencil, Loader2, Save, X, MapPin, CheckCircle2 } from 'lucide-react';
+import { User as UserIcon, Bell, Shield, Pencil, Loader2, Save, X, MapPin, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppSelector, useAppDispatch } from '../../hooks';
 import { updateUser } from '../auth/authSlice';

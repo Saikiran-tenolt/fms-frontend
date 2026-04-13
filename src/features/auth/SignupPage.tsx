@@ -1,10 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { UserPlus } from 'lucide-react';
-import { useAppDispatch } from '../../hooks';
-import { login } from './authSlice';
 import { Button } from '../../components/ui';
-import type { User } from '../../types';
 
 export const SignupPage: React.FC = () => {
   const [name, setName] = useState('');
@@ -12,9 +9,7 @@ export const SignupPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
   
-  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   
   const handleSubmit = (e: React.FormEvent) => {
@@ -112,9 +107,8 @@ export const SignupPage: React.FC = () => {
               type="submit"
               variant="primary"
               className="w-full"
-              disabled={loading}
             >
-              {loading ? 'Creating Account...' : 'Sign Up'}
+              Sign Up
             </Button>
           </form>
           

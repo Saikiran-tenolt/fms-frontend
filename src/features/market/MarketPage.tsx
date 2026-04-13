@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Search, TrendingUp, TrendingDown, Activity, IndianRupee, RefreshCw, BarChart2, MapPin, ChevronDown } from 'lucide-react';
+import { Search, TrendingUp, Activity, IndianRupee, BarChart2, MapPin, ChevronDown } from 'lucide-react';
 import { useAppSelector, useAppDispatch } from '../../hooks';
 import { setPrices } from './marketSlice';
 import { Badge, EmptyState } from '../../components/ui';

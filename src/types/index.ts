@@ -21,12 +21,14 @@ export interface AuthState {
   isAuthenticated: boolean;
 }
 
-// Plot Types
 export type EnvironmentType = 'OPEN_FIELD' | 'INDOOR';
+export type SoilType = 'SANDY' | 'LOAMY' | 'CLAY';
+export type CropStage = 'SOWED' | 'GROWING' | 'HARVEST_READY' | 'HARVESTED';
 
 export interface PlotLocation {
-  latitude: number;
-  longitude: number;
+  address: string;
+  lat: number;
+  lng: number;
 }
 
 export interface CropScan {
@@ -45,23 +47,31 @@ export interface HardwareStatus {
 }
 
 export interface Plot {
-  plotId: string;
+  _id: string;
+  userId: string;
   plotName: string;
-  cropType: string;
-  soilType: string;
+  cropType: 'PADDY';
+  soilType: SoilType;
   environmentType: EnvironmentType;
+  sowingDate: string;
+  expectedHarvestDate: string | null;
+  actualHarvestDate: string | null;
+  cropStage: CropStage;
   location: PlotLocation;
-  imageUrl?: string;
+  isActive: boolean;
   createdAt: string;
-  hardwareStatus: HardwareStatus;
-  npkLevels: {
+  updatedAt: string;
+  
+  // Frontend/Extended fields (might be merged later)
+  imageUrl?: string;
+  hardwareStatus?: HardwareStatus;
+  npkLevels?: {
     n: number;
     p: number;
     k: number;
   };
-  area: string;
-  expectedHarvestDate: string;
-  scanHistory: CropScan[];
+  farmSize: number; // Number as per spec
+  scanHistory?: CropScan[];
 }
 
 // Sensor Types

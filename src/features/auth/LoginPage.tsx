@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Loader2, ShieldCheck, MapPin, User, Mail, Smartphone, ArrowRight, CheckCircle2, AlertCircle, Edit2, Leaf } from 'lucide-react';
+import { Loader2, ShieldCheck, MapPin, User, Mail, Smartphone, ArrowRight, CheckCircle2, AlertCircle, Edit2, Leaf } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppDispatch } from '../../hooks';
 import { login } from './authSlice';
@@ -31,7 +31,7 @@ export const LoginPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isPinVerified, setIsPinVerified] = useState(false);
   const [isFetchingLocation, setIsFetchingLocation] = useState(false);
-  const [pinError, setPinError] = useState<string | null>(null);
+  // const [pinError, setPinError] = useState<string | null>(null);
 
   // --- ADMIN DATA ---
   const [adminEmail, setAdminEmail] = useState('');
@@ -53,12 +53,12 @@ export const LoginPage: React.FC = () => {
   // Pincode auto-fetch
   useEffect(() => {
     if (pincode.length === 6) handleFetchLocation(pincode, 'farmer');
-    else { setIsPinVerified(false); setPinError(null); }
+    else { setIsPinVerified(false); /* setPinError(null); */ }
   }, [pincode]);
 
   const handleFetchLocation = async (pin: string, type: 'farmer' | 'admin') => {
     try {
-      if (type === 'farmer') { setIsFetchingLocation(true); setPinError(null); }
+      if (type === 'farmer') { setIsFetchingLocation(true); /* setPinError(null); */ }
       const response = await fetch(`https://api.postalpincode.in/pincode/${pin}`);
       const data = await response.json();
       if (data[0].Status === 'Success') {
@@ -69,10 +69,10 @@ export const LoginPage: React.FC = () => {
         }
         toast.success(`Location identified: ${postOffice.District}`);
       } else {
-        if (type === 'farmer') setPinError('Invalid PIN Code');
+        if (type === 'farmer') { /* setPinError('Invalid PIN Code'); */ }
       }
     } catch (err) {
-      if (type === 'farmer') setPinError('Failed to fetch location');
+      if (type === 'farmer') { /* setPinError('Failed to fetch location'); */ }
     } finally {
       if (type === 'farmer') setIsFetchingLocation(false);
     }

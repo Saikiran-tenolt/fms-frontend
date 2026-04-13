@@ -1,54 +1,67 @@
 import React from 'react';
-import { Bell, User, Menu } from 'lucide-react';
-import { useAppSelector } from '../../hooks';
-import { Badge } from '../ui';
+import { Bell, User, Menu, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { useAppSelector, useAppDispatch } from '../../hooks';
 import { useNavigate } from 'react-router-dom';
+import { toggleSidebarCollapsed } from '../../store/uiSlice';
 
 interface NavbarProps {
   onMobileMenuToggle: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ onMobileMenuToggle }) => {
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { user } = useAppSelector((state) => state.auth);
   const { unreadCount } = useAppSelector((state) => state.notifications);
-  const appMode = import.meta.env.VITE_APP_MODE || 'simulation';
+  const { isSidebarCollapsed } = useAppSelector((state) => state.ui);
 
   return (
-    <nav className="bg-white/80 backdrop-blur-md border-b border-white/40 shadow-sm px-4 sm:px-6 py-4 sticky top-0 z-30">
-      <div className="flex items-center justify-between">
+    <nav className="bg-white/70 backdrop-blur-xl border-b border-slate-200/50 px-4 sm:px-8 py-3 sticky top-0 z-30 transition-all duration-300">
+      <div className="max-w-screen-2xl mx-auto flex items-center justify-between">
         {/* Left side - Hamburger (mobile) + Logo and title */}
-        <div className="flex items-center gap-3 sm:gap-4">
+        <div className="flex items-center gap-4">
           {/* Hamburger menu button (mobile only) */}
           <button
             onClick={onMobileMenuToggle}
-            className="lg:hidden p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
+            className="lg:hidden p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all active:scale-95"
             aria-label="Toggle menu"
           >
-            <Menu className="h-6 w-6" />
+            <Menu className="h-5 w-5" />
           </button>
 
-          <h1 className="text-lg sm:text-2xl font-bold text-[#1F2937]">
-            Smart Agriculture Monitoring
-          </h1>
-          {appMode === 'simulation' && (
-            <Badge variant="info" size="sm" className="hidden sm:inline-flex">
-              Mode: Simulation
-            </Badge>
-          )}
+          <div className="flex flex-col">
+            <h1 className="text-sm sm:text-lg font-black tracking-tighter text-slate-900 uppercase">
+              Farmer Monitoring <span className="text-emerald-600">Portal</span>
+            </h1>
+            <div className="flex items-center gap-2">
+               <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+               <p className="text-[9px] font-bold text-slate-400 tracking-widest uppercase">System Operational</p>
+            </div>
+          </div>
         </div>
 
-        {/* Right side - User info and notifications */}
-        <div className="flex items-center gap-2 sm:gap-4">
+        {/* Right side - User info, notifications and sidebar toggle */}
+        <div className="flex items-center gap-3">
+          {/* Sidebar Toggle - Top Right as requested */}
+          <button
+            onClick={() => dispatch(toggleSidebarCollapsed())}
+            className="hidden lg:flex w-10 h-10 rounded-xl border border-slate-200 flex items-center justify-center text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 hover:border-emerald-200 transition-all active:scale-95 group shadow-sm"
+            title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+          >
+            {isSidebarCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+          </button>
+
+          <div className="w-px h-6 bg-slate-200 mx-1 hidden lg:block" />
+
           {/* Notifications */}
           <button
             onClick={() => navigate('/notifications')}
-            className="relative w-10 h-10 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 transition-colors active:scale-95 shadow-sm"
+            className="relative w-10 h-10 rounded-xl border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 transition-all active:scale-95 shadow-sm"
             aria-label="Notifications"
           >
             <Bell size={18} />
             {unreadCount > 0 && (
-              <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white" />
+              <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white" />
             )}
           </button>
 

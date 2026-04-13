@@ -8,8 +8,6 @@ import type {
   Alert,
   Notification,
   MarketPrice,
-  PriceTrendData,
-  ChatMessage,
 } from '../types';
 
 // Mock User Data
@@ -26,13 +24,27 @@ export const mockUsers: User[] = [
 // Mock Plot Data
 export const mockPlots: Plot[] = [
   {
-    plotId: '1',
+    _id: '1',
+    userId: 'user1',
     plotName: 'North Field',
-    cropType: 'Wheat',
-    soilType: 'Loamy',
+    cropType: 'PADDY',
+    soilType: 'LOAMY',
     environmentType: 'OPEN_FIELD',
-    location: { latitude: 28.6139, longitude: 77.2090 },
+    location: { 
+      address: 'Punjab Sector 4, Ludhiana', 
+      state: 'Punjab',
+      district: 'Ludhiana',
+      coordinates: [77.2090, 28.6139],
+      lat: 28.6139, 
+      lng: 77.2090 
+    },
     createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    sowingDate: new Date(Date.now() - 86400000 * 30).toISOString(),
+    expectedHarvestDate: new Date(Date.now() + 86400000 * 60).toISOString(),
+    actualHarvestDate: null,
+    cropStage: 'GROWING',
+    isActive: true,
     hardwareStatus: {
       battery: 82,
       signal: 94,
@@ -43,8 +55,7 @@ export const mockPlots: Plot[] = [
       p: 55,
       k: 38,
     },
-    area: '4.5 Acres',
-    expectedHarvestDate: new Date(Date.now() + 86400000 * 12).toISOString(),
+    farmSize: 4.5,
     scanHistory: [
       {
         id: 's1',
@@ -63,13 +74,27 @@ export const mockPlots: Plot[] = [
     ],
   },
   {
-    plotId: '2',
+    _id: '2',
+    userId: 'user1',
     plotName: 'South Greenhouse',
-    cropType: 'Tomato',
-    soilType: 'Sandy Loam',
+    cropType: 'PADDY',
+    soilType: 'SANDY',
     environmentType: 'INDOOR',
-    location: { latitude: 28.6129, longitude: 77.2080 },
+    location: { 
+      address: 'South Agri-Park, Unit 12', 
+      state: 'Delhi',
+      district: 'South Delhi',
+      coordinates: [77.2080, 28.6129],
+      lat: 28.6129, 
+      lng: 77.2080 
+    },
     createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    sowingDate: new Date(Date.now() - 86400000 * 10).toISOString(),
+    expectedHarvestDate: new Date(Date.now() + 86400000 * 80).toISOString(),
+    actualHarvestDate: null,
+    cropStage: 'GROWING',
+    isActive: true,
     hardwareStatus: {
       battery: 45,
       signal: 68,
@@ -80,8 +105,7 @@ export const mockPlots: Plot[] = [
       p: 42,
       k: 60,
     },
-    area: '1.2 Acres',
-    expectedHarvestDate: new Date(Date.now() + 86400000 * 25).toISOString(),
+    farmSize: 1.2,
     scanHistory: [
       {
         id: 's3',
@@ -124,7 +148,6 @@ export const generateMockSensorData = (plotId: string, environmentType: 'OPEN_FI
     },
   };
 
-  // Add environment-specific sensors
   if (environmentType === 'INDOOR') {
     baseData.co2 = {
       value: Math.floor(Math.random() * 200) + 400,
@@ -147,7 +170,6 @@ export const generateMockSensorData = (plotId: string, environmentType: 'OPEN_FI
     };
   }
 
-  // Randomly set some sensors to warning or critical
   if (baseData.soilMoisture && baseData.soilMoisture.value < 35) {
     baseData.soilMoisture.status = 'warning';
   }
@@ -192,7 +214,7 @@ export const mockAdvisories: Advisory[] = [
     id: '1',
     plotId: '1',
     title: 'Irrigation Recommended',
-    description: 'Soil moisture levels are below optimal range for wheat cultivation.',
+    description: 'Soil moisture levels are below optimal range for rice cultivation.',
     severity: 'medium',
     recommendedAction: 'Irrigate the field tomorrow morning between 6-8 AM. Apply 25mm water.',
     timestamp: new Date(Date.now() - 3600000).toISOString(),
@@ -205,15 +227,6 @@ export const mockAdvisories: Advisory[] = [
     severity: 'high',
     recommendedAction: 'Increase ventilation and check cooling system operation.',
     timestamp: new Date(Date.now() - 7200000).toISOString(),
-  },
-  {
-    id: '3',
-    plotId: '1',
-    title: 'Pest Prevention',
-    description: 'Weather conditions favorable for pest activity in the coming days.',
-    severity: 'low',
-    recommendedAction: 'Inspect crops regularly and consider preventive spray if needed.',
-    timestamp: new Date(Date.now() - 86400000).toISOString(),
   },
 ];
 
@@ -257,170 +270,36 @@ export const mockNotifications: Notification[] = [
     isRead: false,
     timestamp: new Date(Date.now() - 7200000).toISOString(),
   },
-  {
-    id: '3',
-    title: 'Market Update',
-    message: 'Wheat prices increased by 5%',
-    priority: 'medium',
-    isRead: true,
-    timestamp: new Date(Date.now() - 86400000).toISOString(),
-  },
 ];
 
 // Mock Market Prices
 export const mockMarketPrices: MarketPrice[] = [
   {
     id: '1',
-    cropName: 'Wheat',
-    price: 2450,
+    cropName: 'Rice (Paddy)',
+    price: 3100,
     unit: '₹/quintal',
     change: 5.2,
     trend: 'up',
     mandiName: 'Azadpur Mandi',
     timestamp: new Date().toISOString(),
   },
-  {
-    id: '1-v2',
-    cropName: 'Wheat',
-    price: 2380,
-    unit: '₹/quintal',
-    change: 4.1,
-    trend: 'up',
-    mandiName: 'Bhubaneswar Mandi',
-    timestamp: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    cropName: 'Rice (Paddy)',
-    price: 3100,
-    unit: '₹/quintal',
-    change: -2.1,
-    trend: 'down',
-    mandiName: 'Warangal Enumamula',
-    timestamp: new Date().toISOString(),
-  },
-  {
-    id: '2-v2',
-    cropName: 'Rice (Paddy)',
-    price: 3150,
-    unit: '₹/quintal',
-    change: 1.2,
-    trend: 'up',
-    mandiName: 'Cuttack Mandi',
-    timestamp: new Date().toISOString(),
-  },
-  {
-    id: '3',
-    cropName: 'Tomato',
-    price: 1800,
-    unit: '₹/quintal',
-    change: 0.5,
-    trend: 'stable',
-    mandiName: 'Azadpur Mandi',
-    timestamp: new Date().toISOString(),
-  },
-  {
-    id: '3-v2',
-    cropName: 'Tomato',
-    price: 1750,
-    unit: '₹/quintal',
-    change: -1.5,
-    trend: 'down',
-    mandiName: 'Bhubaneswar Mandi',
-    timestamp: new Date().toISOString(),
-  },
-  {
-    id: '4',
-    cropName: 'Onion',
-    price: 2200,
-    unit: '₹/quintal',
-    change: 8.3,
-    trend: 'up',
-    mandiName: 'Lasalgaon Mandi',
-    timestamp: new Date().toISOString(),
-  },
-  {
-    id: '4-v2',
-    cropName: 'Onion',
-    price: 2150,
-    unit: '₹/quintal',
-    change: 6.2,
-    trend: 'up',
-    mandiName: 'Cuttack Mandi',
-    timestamp: new Date().toISOString(),
-  },
-  {
-    id: '5',
-    cropName: 'Maize',
-    price: 2050,
-    unit: '₹/quintal',
-    change: 1.4,
-    trend: 'up',
-    mandiName: 'Nizamabad Mandi',
-    timestamp: new Date().toISOString(),
-  },
-  {
-    id: '6',
-    cropName: 'Cotton',
-    price: 7200,
-    unit: '₹/quintal',
-    change: -4.5,
-    trend: 'down',
-    mandiName: 'Warangal Enumamula',
-    timestamp: new Date().toISOString(),
-  },
-  {
-    id: '7',
-    cropName: 'Soybean',
-    price: 4600,
-    unit: '₹/quintal',
-    change: 3.2,
-    trend: 'up',
-    mandiName: 'Latur Mandi',
-    timestamp: new Date().toISOString(),
-  },
-  {
-    id: '8',
-    cropName: 'Chana (Gram)',
-    price: 5400,
-    unit: '₹/quintal',
-    change: -0.8,
-    trend: 'down',
-    mandiName: 'Khammam Mandi',
-    timestamp: new Date().toISOString(),
-  },
 ];
-
-// Mock Price Trend Data
-export const generateMockPriceTrend = (): PriceTrendData[] => {
-  return Array.from({ length: 7 }, (_, i) => ({
-    date: `Day ${i + 1}`,
-    price: Math.floor(Math.random() * 500) + 2000,
-  }));
-};
 
 // Mock AI Responses
 export const mockAIResponses: Record<string, string> = {
   default: "Based on your plot data, I can help you with irrigation scheduling, pest management, and crop health monitoring. What specific aspect would you like to discuss?",
-  'soil moisture': "Your soil moisture is currently at {value}%. For wheat cultivation, the optimal range is 40-60%. I recommend irrigating within the next 24 hours to prevent crop stress.",
-  'irrigation': "Based on current soil moisture levels and weather forecast, I recommend irrigating tomorrow morning between 6-8 AM. Apply approximately 25mm of water. This will bring soil moisture to optimal levels.",
-  'advisory': "Today's advisory suggests irrigation for your North Field. The soil moisture has been declining over the past 3 days. Early morning irrigation is most efficient, reducing water loss to evaporation.",
-  'temperature': "The current temperature is {value}°C. This is within normal range for this season. However, if temperatures exceed 35°C, consider providing shade or increasing irrigation frequency.",
-  'fertilizer': "For wheat at current growth stage, consider applying NPK fertilizer in ratio 120:60:40 kg/ha. Apply nitrogen in split doses for better efficiency.",
-  'pest': "Regular field inspection is recommended. Look for signs of aphids or rust. Neem-based organic pesticides are effective for early-stage infestations.",
-  'weather': "The weather forecast shows {condition} conditions with temperature around {temp}°C. Humidity will be around {humidity}%. Good conditions for crop growth.",
+  'soil moisture': "Your soil moisture is currently at {value}%. For rice cultivation, the optimal range is 40-60%. I recommend irrigating within the next 24 hours to prevent crop stress.",
 };
 
 // Mock AI Response Generator
 export const generateAIResponse = (userMessage: string): string => {
   const lowerMessage = userMessage.toLowerCase();
-
   for (const [key, response] of Object.entries(mockAIResponses)) {
     if (lowerMessage.includes(key)) {
       return response;
     }
   }
-
   return mockAIResponses.default;
 };
 

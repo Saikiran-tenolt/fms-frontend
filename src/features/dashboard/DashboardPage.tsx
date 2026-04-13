@@ -12,31 +12,29 @@ import {
   Radio,
   AlertTriangle,
   MapPin,
-  IndianRupee,
-  MessageSquare,
-  Image as ImageIcon,
   Maximize,
   Brain,
   ChevronDown,
   CloudRain,
   Loader2,
-  Leaf,
-  CalendarClock,
   CheckCircle2,
-  Clock
+  Clock,
+  Activity,
+  Leaf
 } from 'lucide-react';
+import { motion } from 'framer-motion';
 import {
   generateMockSensorData,
   generateMockTrendData,
   generateMockWeather,
   mockAdvisories,
 } from '../../services/mockData';
-import { selectPlot } from '../plots/plotsSlice';
+import { selectPlot, fetchAllPlots } from '../plots/plotsSlice';
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const { plots, selectedPlotId } = useAppSelector((state: any) => state.plots);
+  const { plots, selectedPlotId, loading: plotsLoading } = useAppSelector((state: any) => state.plots);
   const { sensorData } = useAppSelector((state: any) => state.sensors);
   const { notifications } = useAppSelector((state: any) => state.notifications);
   const { user } = useAppSelector((state: any) => state.auth);
@@ -45,6 +43,12 @@ export const DashboardPage: React.FC = () => {
   const [weather, setWeather] = useState<any>(null);
   const [executingAdvisoryId, setExecutingAdvisoryId] = useState<string | null>(null);
   const hasShownNotifications = useRef(false);
+
+  useEffect(() => {
+    if (plots.length === 0 && !plotsLoading) {
+      dispatch(fetchAllPlots());
+    }
+  }, [dispatch, plots.length, plotsLoading]);
 
   useEffect(() => {
     if (!loading && notifications.length > 0 && !hasShownNotifications.current) {
@@ -63,7 +67,7 @@ export const DashboardPage: React.FC = () => {
     }
   }, [loading, notifications]);
 
-  const selectedPlot = plots.find((p: any) => p.plotId === selectedPlotId);
+  const selectedPlot = plots.find((p: any) => p._id === selectedPlotId);
 
   useEffect(() => {
     if (plots.length > 0 && selectedPlotId) {
@@ -76,19 +80,18 @@ export const DashboardPage: React.FC = () => {
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     if (selectedPlot) {
-      const sensors = generateMockSensorData(selectedPlot.plotId, selectedPlot.environmentType);
-      dispatch(setSensorData({ plotId: selectedPlot.plotId, data: sensors }));
-      dispatch(setTrendData({ plotId: selectedPlot.plotId, sensor: 'soilMoisture', data: generateMockTrendData() }));
-      dispatch(setTrendData({ plotId: selectedPlot.plotId, sensor: 'temperature', data: generateMockTrendData() }));
-      dispatch(setTrendData({ plotId: selectedPlot.plotId, sensor: 'humidity', data: generateMockTrendData() }));
-      dispatch(setTrendData({ plotId: selectedPlot.plotId, sensor: 'humidity', data: generateMockTrendData() }));
-      dispatch(setTrendData({ plotId: selectedPlot.plotId, sensor: 'soilTemperature', data: generateMockTrendData() }));
+      const sensors = generateMockSensorData(selectedPlot._id, selectedPlot.environmentType);
+      dispatch(setSensorData({ plotId: selectedPlot._id, data: sensors }));
+      dispatch(setTrendData({ plotId: selectedPlot._id, sensor: 'soilMoisture', data: generateMockTrendData() }));
+      dispatch(setTrendData({ plotId: selectedPlot._id, sensor: 'temperature', data: generateMockTrendData() }));
+      dispatch(setTrendData({ plotId: selectedPlot._id, sensor: 'humidity', data: generateMockTrendData() }));
+      dispatch(setTrendData({ plotId: selectedPlot._id, sensor: 'soilTemperature', data: generateMockTrendData() }));
 
       // Fetch real weather using user's pincode
       if (user?.pincode) {
         dispatch(fetchWeatherAndAdvisories(user.pincode) as any);
       } else {
-        setWeather(generateMockWeather(selectedPlot.plotId));
+        setWeather(generateMockWeather(selectedPlot._id));
       }
 
       dispatch(setAdvisories(mockAdvisories));
@@ -97,14 +100,23 @@ export const DashboardPage: React.FC = () => {
     setLoading(false);
   };
 
+  if (plotsLoading && plots.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full py-20 gap-4">
+        <Loader2 className="h-10 w-10 text-emerald-600 animate-spin" />
+        <p className="text-slate-400 font-bold text-xs uppercase tracking-widest">Establishing Satellite Uplink...</p>
+      </div>
+    );
+  }
+
   if (plots.length === 0) {
     return (
       <EmptyState
         icon={<MapPin className="h-20 w-20" />}
-        title="No plots found"
-        description="Add your first plot to start monitoring your farm and get real-time insights."
+        title="No units identified"
+        description="Add your first geospatial unit to start monitoring your assets and receive real-time intelligence."
         action={{
-          label: 'Add Your First Plot',
+          label: 'Deploy First Unit',
           onClick: () => navigate('/plots/create'),
         }}
       />
@@ -114,7 +126,6 @@ export const DashboardPage: React.FC = () => {
   const currentSensors = selectedPlotId ? sensorData[selectedPlotId] : null;
   const latestAdvisory = advisories[0];
 
-  // Refined Sensor Data Mapping & Logic
   const getMetrics = () => {
     if (!currentSensors) return [];
 
@@ -186,207 +197,136 @@ export const DashboardPage: React.FC = () => {
   }
 
   return (
-    <div className="px-4 sm:px-8 max-w-7xl mx-auto space-y-12 mt-8 pb-20 font-manrope">
-      {/* Hero Section: Real-time Field Overview */}
+    <div className="px-4 sm:px-8 max-w-7xl mx-auto space-y-12 mt-8 pb-20 font-inter">
+      {/* Hero */}
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-end">
         <div className="lg:col-span-7 space-y-4">
           <div className="flex items-center gap-3">
-            <span className="px-2 py-0.5 bg-secondary-container text-on-secondary-container text-[10px] font-bold tracking-widest uppercase rounded">Active Field</span>
-            <h3 className="text-on-surface-variant text-sm font-medium">Updated 2 mins ago</h3>
+             <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping" />
+            <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-black tracking-widest uppercase rounded">Signal Locked</span>
+            <h3 className="text-slate-400 text-[10px] font-bold uppercase tracking-widest leading-none">Updated 2 mins ago</h3>
           </div>
-          <h1 className="text-4xl lg:text-5xl font-extrabold text-primary-900 tracking-tighter leading-none">
-            {selectedPlot?.plotName} / <span className="text-primary-500">{selectedPlot?.cropType}</span>
+          <h1 className="text-4xl lg:text-5xl font-black text-slate-900 tracking-tighter leading-none uppercase">
+            {selectedPlot?.plotName} / <span className="text-emerald-600">{selectedPlot?.cropType}</span>
           </h1>
-          <p className="text-on-surface-variant max-w-lg leading-relaxed">
+          <p className="text-slate-500 font-medium max-w-lg leading-relaxed">
             Precision monitoring active across the field. Current vegetative stage indicates optimal progress.
           </p>
           <div className="flex items-center gap-8 mt-6">
             <div className="flex flex-col">
-              <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1">Local Weather</span>
-              <div className="flex items-center gap-2 text-primary-900 font-bold">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Atmosphere</span>
+              <div className="flex items-center gap-2 text-slate-900 font-black">
                 {realWeather ? (
                   <>
                     <img src={`https://openweathermap.org/img/wn/${realWeather.weather[0].icon}.png`} alt="weather" className="w-8 h-8" />
-                    <span className="text-xl">{Math.round(realWeather.main.temp)}°C</span>
+                    <span className="text-2xl">{Math.round(realWeather.main.temp)}°C</span>
                   </>
                 ) : (
                   <>
                     <CloudRain className="w-5 h-5 text-blue-500" />
-                    <span className="text-xl">{weather?.temperature}°C</span>
+                    <span className="text-2xl">{weather?.temperature}°C</span>
                   </>
                 )}
               </div>
             </div>
-            <div className="h-8 w-px bg-outline-variant/30 hidden xs:block"></div>
+            <div className="h-10 w-px bg-slate-100 hidden xs:block"></div>
             <div className="flex flex-col">
-              <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1">Switch Plot</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Deployment Unit</span>
               <div className="relative inline-block">
                 <select
                   value={selectedPlotId || ''}
                   onChange={(e) => dispatch(selectPlot(e.target.value))}
-                  className="appearance-none flex items-center gap-2 pl-3 pr-8 py-1.5 bg-surface-container-low border border-outline-variant/30 rounded-lg text-sm font-bold text-primary-900 hover:bg-surface-container transition-colors cursor-pointer outline-none"
+                  className="appearance-none flex items-center gap-2 pl-4 pr-10 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-black text-slate-900 hover:bg-white hover:border-emerald-200 transition-all cursor-pointer outline-none shadow-sm uppercase tracking-tight"
                 >
                   {plots.map((plot: any) => (
-                    <option key={plot.plotId} value={plot.plotId}>
+                    <option key={plot._id} value={plot._id}>
                       {plot.plotName}
                     </option>
                   ))}
                 </select>
-                <ChevronDown className="w-4 h-4 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-black/70" />
+                <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
               </div>
             </div>
           </div>
         </div>
         <div className="lg:col-span-5 flex flex-wrap gap-3 lg:justify-end">
           {currentSensors?.soilMoisture?.status && currentSensors.soilMoisture.status !== 'ok' && (
-            <div className="flex items-center gap-2 px-4 py-2 bg-error-container text-on-error-container rounded-lg text-xs font-bold">
+            <div className="flex items-center gap-2 px-4 py-2 bg-rose-50 text-rose-700 border border-rose-100 rounded-lg text-xs font-black uppercase tracking-widest">
               <AlertTriangle className="w-4 h-4" />
-              Soil Alert: {currentSensors.soilMoisture.status}
-            </div>
-          )}
-          {currentSensors?.temperature?.status && currentSensors.temperature.status !== 'ok' && (
-            <div className="flex items-center gap-2 px-4 py-2 bg-error-container text-on-error-container rounded-lg text-xs font-bold">
-              <Thermometer className="w-4 h-4" />
-              Temp Alert: {currentSensors.temperature.status}
+              Critical: Soil
             </div>
           )}
         </div>
       </section>
 
-      {/* Field Map View */}
-      <section className="rounded-2xl overflow-hidden bg-surface-container-lowest border border-outline-variant/10 shadow-md h-[400px] relative group">
-        <img className="w-full h-full object-cover grayscale-[0.2] group-hover:scale-105 transition-transform duration-1000" alt="Field sat" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDnEG46wjKTwfzJsI-5SiCNM3CtwZcMgI9qZUVzYUX1kKN0HjBXhYsfMRLt07pXnsIdyoX0lB0gxXsGqEyTUuZJMbMGHUNN6hLvGMRBAq_jJgDIqxgz-1jvincfTDkyjISLRky4LyV_bG12Hj8enTNsfYx8-qyabGe3kZxvNbCBahUpE_XHOd_24ddgYpkNm7TWPJJbOCA60Y5IfRApDLi1-PfcbhllbinCqAVlwMdK5fxEjctrxe6vhH-XGimOMZXRtKk4paKLxq8d" referrerPolicy="no-referrer" />
-        <div className="absolute inset-0 bg-gradient-to-t from-primary-900/80 via-transparent to-transparent"></div>
+      {/* Map View */}
+      <section className="rounded-3xl overflow-hidden bg-slate-50 border border-slate-100 shadow-xl h-[400px] relative group">
+        <img className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000" alt="Field sat" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDnEG46wjKTwfzJsI-5SiCNM3CtwZcMgI9qZUVzYUX1kKN0HjBXhYsfMRLt07pXnsIdyoX0lB0gxXsGqEyTUuZJMbMGHUNN6hLvGMRBAq_jJgDIqxgz-1jvincfTDkyjISLRky4LyV_bG12Hj8enTNsfYx8-qyabGe3kZxvNbCBahUpE_XHOd_24ddgYpkNm7TWPJJbOCA60Y5IfRApDLi1-PfcbhllbinCqAVlwMdK5fxEjctrxe6vhH-XGimOMZXRtKk4paKLxq8d" referrerPolicy="no-referrer" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent"></div>
         <div className="absolute bottom-8 left-8 right-8 flex justify-between items-end">
           <div className="text-white">
-            <p className="text-[10px] uppercase tracking-[0.2em] opacity-80 mb-2 font-bold">Live Satellite Feed</p>
-            <h4 className="text-3xl font-extrabold tracking-tight">Thermal Analysis Map</h4>
+            <p className="text-[10px] uppercase tracking-[0.4em] opacity-80 mb-2 font-black">NDVI Analytics Feed</p>
+            <h4 className="text-4xl font-black tracking-tighter uppercase">Geospatial Overlay</h4>
           </div>
-          <button className="bg-white/10 backdrop-blur-xl border border-white/20 text-white p-3 rounded-xl hover:bg-white/20 transition-all shadow-lg hover:scale-110">
+          <button className="bg-white/10 backdrop-blur-xl border border-white/20 text-white p-4 rounded-2xl hover:bg-white/20 transition-all shadow-lg hover:scale-110">
             <Maximize className="w-6 h-6" />
           </button>
         </div>
-        <div className="absolute top-8 left-8 bg-white/90 backdrop-blur-xl px-4 py-2 rounded-xl shadow-xl flex items-center gap-3 border border-white/50">
-          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
-          <span className="text-xs font-black text-emerald-700 uppercase tracking-widest">Active NDVI: 0.82</span>
-        </div>
       </section>
 
-      {/* Sensor Monitoring Grid: Pure Tailwind Tailwind Manual Logic */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full my-6">
+      {/* Metrics */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full my-6">
         {metrics.map((m) => {
           const Icon = m.icon;
-          // Dynamically resolve Tailwind colors based on colorClass
           const borderClass = m.colorClass === 'rose' ? 'border-l-rose-500' : m.colorClass === 'emerald' ? 'border-l-emerald-500' : 'border-l-blue-500';
           const badgeClass = m.colorClass === 'rose' ? 'bg-rose-50 text-rose-700' : m.colorClass === 'emerald' ? 'bg-emerald-50 text-emerald-700' : 'bg-blue-50 text-blue-700';
-          const fillClass = m.colorClass === 'rose' ? 'bg-rose-500' : m.colorClass === 'emerald' ? 'bg-emerald-500' : 'bg-blue-500';
-          const iconClass = m.colorClass === 'rose' ? 'text-rose-500' : 'text-slate-400';
+          // const fillClass = m.colorClass === 'rose' ? 'bg-rose-500' : m.colorClass === 'emerald' ? 'bg-emerald-500' : 'bg-blue-500';
 
           return (
-            <div key={m.id} className={`relative bg-white border border-slate-200 border-l-[4px] ${borderClass} rounded-xl p-5 shadow-sm overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md h-[140px] flex flex-col justify-between group`}>
+            <div key={m.id} className={`relative bg-white border border-slate-200 border-l-[4px] ${borderClass} rounded-2xl p-6 shadow-sm overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-xl h-[160px] flex flex-col justify-between group`}>
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Icon size={16} className={iconClass} />
-                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">{m.label}</span>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-slate-50 rounded-xl group-hover:bg-slate-100 transition-colors">
+                     <Icon size={16} className="text-slate-400 group-hover:text-slate-900 transition-colors" />
+                  </div>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{m.label}</span>
                 </div>
-                <span className="text-[10px] text-slate-300 font-normal">{m.timestamp}</span>
               </div>
 
-              <div className="flex items-baseline gap-1 mt-2">
-                <span className="text-4xl font-bold text-slate-800 tracking-tight">{m.value}</span>
-                <span className="text-lg font-medium text-slate-500">{m.unit}</span>
+              <div className="flex items-baseline gap-1 mt-4">
+                <span className="text-5xl font-black text-slate-900 tracking-tighter leading-none">{m.value}</span>
+                <span className="text-xl font-bold text-slate-400">{m.unit}</span>
               </div>
 
-              <div>
-                <div className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${badgeClass}`}>
+              <div className="mt-4">
+                <div className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest ${badgeClass}`}>
                   {m.statusLabel}
                 </div>
-              </div>
-
-              <div className="mt-auto h-[2px] w-full bg-slate-100 rounded-full overflow-hidden">
-                <div
-                  className={`h-full ${fillClass} rounded-full transition-all duration-700`}
-                  style={{ width: `${m.unit === '%' ? m.value : (m.value / 50) * 100}%` }}
-                />
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* Quick Actions Support Section */}
-      <section className="space-y-8">
-        <div className="flex justify-between items-end">
-          <h3 className="text-2xl font-bold text-primary-900 tracking-tight">Quick Actions</h3>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <button
-            onClick={() => navigate('/plots')}
-            className="relative flex flex-col items-center justify-center p-8 bg-white border border-slate-200 shadow-sm rounded-2xl hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-200/50 hover:border-emerald-200 group transition-all duration-300 overflow-hidden"
-          >
-            <div className="h-14 w-14 bg-emerald-50 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform mb-4">
-              <MapPin size={28} className="text-black/70 group-hover:text-emerald-500 transition-colors" />
-            </div>
-            <span className="text-sm font-bold text-slate-600 group-hover:text-slate-900 transition-colors">Manage Plots</span>
-            <div className="absolute bottom-0 left-0 h-[3px] w-full bg-emerald-500 scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></div>
-          </button>
-          <button
-            onClick={() => navigate('/market')}
-            className="relative flex flex-col items-center justify-center p-8 bg-white border border-slate-200 shadow-sm rounded-2xl hover:-translate-y-1 hover:shadow-xl hover:shadow-amber-200/50 hover:border-amber-200 group transition-all duration-300 overflow-hidden"
-          >
-            <div className="h-14 w-14 bg-amber-50 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform mb-4">
-              <IndianRupee size={28} className="text-black/70 group-hover:text-amber-500 transition-colors" />
-            </div>
-            <span className="text-sm font-bold text-slate-600 group-hover:text-slate-900 transition-colors">Market Prices</span>
-            <div className="absolute bottom-0 left-0 h-[3px] w-full bg-amber-500 scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></div>
-          </button>
-          <button
-            onClick={() => navigate('/assistant')}
-            className="relative flex flex-col items-center justify-center p-8 bg-white border border-slate-200 shadow-sm rounded-2xl hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-200/50 hover:border-blue-200 group transition-all duration-300 overflow-hidden"
-          >
-            <div className="h-14 w-14 bg-blue-50 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform mb-4">
-              <MessageSquare size={28} className="text-black/70 group-hover:text-blue-500 transition-colors" />
-            </div>
-            <span className="text-sm font-bold text-slate-600 group-hover:text-slate-900 transition-colors">Ask Assistant</span>
-            <div className="absolute bottom-0 left-0 h-[3px] w-full bg-blue-500 scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></div>
-          </button>
-          <button
-            onClick={() => navigate('/assistant')}
-            className="relative flex flex-col items-center justify-center p-8 bg-white border border-slate-200 shadow-sm rounded-2xl hover:-translate-y-1 hover:shadow-xl hover:shadow-purple-200/50 hover:border-purple-200 group transition-all duration-300 overflow-hidden"
-          >
-            <div className="h-14 w-14 bg-purple-50 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform mb-4">
-              <ImageIcon size={28} className="text-black/70 group-hover:text-purple-500 transition-colors" />
-            </div>
-            <span className="text-sm font-bold text-slate-600 group-hover:text-slate-900 transition-colors">Crop Scanner</span>
-            <div className="absolute bottom-0 left-0 h-[3px] w-full bg-purple-500 scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></div>
-          </button>
-        </div>
-      </section>
-
-      {/* Refined AI Advisory Section */}
+      {/* AI Advisory */}
       {latestAdvisory && (
-        <section className="bg-[#012d1d] p-8 sm:p-12 rounded-2xl relative overflow-hidden shadow-2xl">
-          {/* Abstract Texture Overlay */}
-          <div className="absolute inset-0 opacity-10 pointer-events-none">
-            <svg height="100%" width="100%" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <pattern height="40" id="grid" patternUnits="userSpaceOnUse" width="40">
-                  <path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" strokeWidth="1"></path>
-                </pattern>
-              </defs>
-              <rect fill="url(#grid)" height="100%" width="100%"></rect>
-            </svg>
-          </div>
-          <div className="relative z-10 flex flex-col lg:flex-row gap-8 lg:gap-12 items-center">
+        <section className="bg-emerald-950 p-10 sm:p-14 rounded-[3rem] relative overflow-hidden shadow-2xl group">
+          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10" />
+          <motion.div 
+             animate={{ scale: [1, 1.2, 1], rotate: [0, 5, 0] }}
+             transition={{ duration: 15, repeat: Infinity }}
+             className="absolute -right-20 -top-20 w-64 h-64 bg-emerald-500/10 rounded-full blur-[100px]" 
+          />
+          <div className="relative z-10 flex flex-col lg:flex-row gap-12 items-center">
             <div className="flex-grow space-y-6 text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#1b4332] text-emerald-200 rounded-full text-xs font-bold tracking-widest uppercase">
+              <div className="inline-flex items-center gap-3 px-4 py-1.5 bg-emerald-900/50 text-emerald-400 rounded-full text-[10px] font-black tracking-widest uppercase border border-white/5">
                 <Brain className="w-4 h-4" />
-                AI Advisory Insight
+                Intelligence Feed
               </div>
-              <h2 className="text-white text-3xl md:text-4xl font-extrabold tracking-tight leading-tight">
+              <h2 className="text-white text-4xl sm:text-5xl font-black tracking-tighter leading-tight uppercase">
                 {latestAdvisory.title}
               </h2>
-              <p className="text-emerald-100/70 max-w-xl text-lg leading-relaxed">
+              <p className="text-emerald-100/60 max-w-xl text-lg font-medium leading-relaxed">
                 {latestAdvisory.description}
               </p>
             </div>
@@ -395,133 +335,99 @@ export const DashboardPage: React.FC = () => {
                 disabled={executingAdvisoryId === latestAdvisory.id}
                 onClick={() => {
                   setExecutingAdvisoryId(latestAdvisory.id);
-                  toast('Initializing sequence...', { duration: 2000 });
+                  toast('Initializing Command Feed...', { duration: 2000 });
                   setTimeout(() => {
-                    toast.success('Sequence deployed and optimized.');
+                    toast.success('Sequence Optimized & Deployed.');
                     setExecutingAdvisoryId(null);
                     navigate('/advisories');
                   }, 2500);
                 }}
-                className={`px-8 py-4 ${executingAdvisoryId === latestAdvisory.id
-                    ? 'bg-[#1b4332] text-emerald-200 cursor-wait'
-                    : 'bg-[#c1ecd4] text-[#002114] hover:scale-95 active:opacity-80'
-                  } font-bold rounded-xl transition-all flex items-center justify-center gap-2 whitespace-nowrap`}
+                className={`px-10 py-5 ${executingAdvisoryId === latestAdvisory.id
+                    ? 'bg-emerald-900 text-emerald-400 cursor-wait'
+                    : 'bg-emerald-400 text-emerald-950 hover:bg-white hover:-translate-y-1'
+                  } font-black text-xs uppercase tracking-widest rounded-2xl transition-all flex items-center justify-center gap-3 shadow-xl active:scale-95`}
               >
                 {executingAdvisoryId === latestAdvisory.id ? (
-                  <>
-                    Executing...
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  </>
+                  <Loader2 className="w-5 h-5 animate-spin" />
                 ) : (
                   <>
-                    Execute Recommendation
-                    <Droplets className="w-5 h-5" />
+                    Execute Optimization
+                    <Droplets size={18} />
                   </>
                 )}
-              </button>
-              <button className="px-8 py-4 bg-white/10 backdrop-blur-md border border-white/20 text-white font-bold rounded-xl hover:bg-white/20 transition-all whitespace-nowrap">
-                Review Details
               </button>
             </div>
           </div>
         </section>
       )}
 
-      {/* Bottom Section: Farmer Specific Panels */}
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Crop Health History */}
-        <div className="space-y-6">
+      {/* Secondary Panels */}
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        <div className="space-y-8">
           <div className="flex justify-between items-end">
-            <h3 className="text-xl font-bold text-primary-900 tracking-tight">Crop Health History</h3>
-            <button className="text-emerald-600 font-bold text-sm hover:underline">View All Scans</button>
+            <div className="space-y-1">
+                <h3 className="text-2xl font-black text-slate-900 tracking-tighter uppercase">Health History</h3>
+                <p className="text-xs text-slate-400 font-medium">Sat-link crop vitality verification log.</p>
+            </div>
           </div>
-          <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/10 p-8 flex flex-col gap-6">
-
-            <div className="flex gap-4 relative">
-              <div className="absolute left-[19px] top-10 bottom-[-24px] w-0.5 bg-emerald-100"></div>
-              <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0 z-10 border-4 border-white shadow-sm">
-                <Leaf className="w-4 h-4 text-emerald-600" />
+          <div className="bg-white rounded-[2.5rem] border border-slate-200 p-10 flex flex-col gap-8 shadow-sm">
+            <div className="flex gap-6 relative">
+              <div className="absolute left-[21px] top-10 bottom-[-32px] w-0.5 bg-slate-50"></div>
+              <div className="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0 z-10 border-4 border-white shadow-xl shadow-emerald-600/5">
+                <Leaf className="w-5 h-5" />
               </div>
-              <div>
-                <h4 className="font-bold text-slate-900 text-sm">Harvest Ready Zone Detected</h4>
-                <p className="text-xs text-on-surface-variant mb-1">AI Prediction: 98% Confidence • Sector 4</p>
-                <span className="text-[10px] text-slate-400 font-medium tracking-wider uppercase">2 days ago</span>
-              </div>
-            </div>
-
-            <div className="flex gap-4 relative">
-              <div className="absolute left-[19px] top-10 bottom-[-24px] w-0.5 bg-blue-100"></div>
-              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 z-10 border-4 border-white shadow-sm">
-                <Leaf className="w-4 h-4 text-blue-600" />
-              </div>
-              <div>
-                <h4 className="font-bold text-slate-900 text-sm">Vegetative Stage Progressing</h4>
-                <p className="text-xs text-on-surface-variant mb-1">AI Prediction: Optimal Growth • Sector 1</p>
-                <span className="text-[10px] text-slate-400 font-medium tracking-wider uppercase">1 week ago</span>
+              <div className="pt-1">
+                <h4 className="font-black text-slate-900 text-base tracking-tight uppercase leading-none">Harvest Ready Unit Identified</h4>
+                <p className="text-xs text-slate-500 font-medium mt-1.5">NDVI Signature: 0.98 Peak • Region B4</p>
+                <div className="mt-2.5 px-3 py-1 bg-slate-50 rounded-lg inline-block text-[9px] font-black text-slate-400 uppercase tracking-widest">TS: 2D AGO</div>
               </div>
             </div>
 
-            <div className="flex gap-4 relative">
-              <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 z-10 border-4 border-white shadow-sm">
-                <AlertTriangle className="w-4 h-4 text-amber-600" />
+            <div className="flex gap-6 relative">
+              <div className="w-11 h-11 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0 z-10 border-4 border-white shadow-xl shadow-blue-600/5">
+                <Activity className="w-5 h-5" />
               </div>
-              <div>
-                <h4 className="font-bold text-slate-900 text-sm">Mild Leaf Blight Spotted</h4>
-                <p className="text-xs text-on-surface-variant mb-1">Action taken: Bio-fungicide applied • Sector 2</p>
-                <span className="text-[10px] text-slate-400 font-medium tracking-wider uppercase">3 weeks ago</span>
+              <div className="pt-1">
+                <h4 className="font-black text-slate-900 text-base tracking-tight uppercase leading-none">Biosphere Normalization</h4>
+                <p className="text-xs text-slate-500 font-medium mt-1.5">Optimal progress maintained across deployment.</p>
+                <div className="mt-2.5 px-3 py-1 bg-slate-50 rounded-lg inline-block text-[9px] font-black text-slate-400 uppercase tracking-widest">TS: 1W AGO</div>
               </div>
             </div>
-
           </div>
         </div>
 
-        {/* Upcoming Irrigation Schedule */}
-        <div className="space-y-6">
+        <div className="space-y-8">
           <div className="flex justify-between items-end">
-            <h3 className="text-xl font-bold text-primary-900 tracking-tight">Irrigation Schedule</h3>
-            <button className="text-emerald-600 font-bold text-sm hover:underline">Manage Rules</button>
+            <div className="space-y-1">
+                <h3 className="text-2xl font-black text-slate-900 tracking-tighter uppercase">Deployment Log</h3>
+                <p className="text-xs text-slate-400 font-medium">Automated system optimization events.</p>
+            </div>
           </div>
-          <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/10 divide-y divide-outline-variant/10 overflow-hidden">
-
-            <div className="p-6 flex items-center justify-between gap-4 bg-emerald-50/30">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+          <div className="bg-white rounded-[2.5rem] border border-slate-200 overflow-hidden shadow-sm">
+            <div className="p-8 flex items-center justify-between gap-4 bg-emerald-50/20">
+              <div className="flex items-center gap-6">
+                <div className="w-11 h-11 rounded-2xl bg-emerald-100 flex items-center justify-center shadow-lg shadow-emerald-600/10">
+                  <CheckCircle2 size={24} className="text-emerald-700" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-slate-900 text-sm line-through opacity-70">Morning Soak (Zone A)</h4>
-                  <p className="text-xs text-slate-500">Completed automatically at 05:30 AM</p>
+                  <h4 className="font-black text-slate-900 text-sm uppercase tracking-tight opacity-50 line-through">Precision Irrigation (Main)</h4>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Status: Optimized Execution • 05:30 AM</p>
                 </div>
               </div>
-              <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-[10px] font-bold uppercase">Done</span>
             </div>
 
-            <div className="p-6 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 border-2 border-blue-500 shadow-[0_0_0_4px_rgba(59,130,246,0.1)]">
-                  <Clock className="w-5 h-5 text-blue-600" />
+            <div className="p-8 flex items-center justify-between gap-4 border-t border-slate-50">
+              <div className="flex items-center gap-6">
+                <div className="w-11 h-11 rounded-2xl bg-white border-2 border-emerald-500 flex items-center justify-center shadow-xl shadow-emerald-500/20">
+                  <Clock size={24} className="text-emerald-600" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-slate-900 text-sm">Evening Refresh (Zone B)</h4>
-                  <p className="text-xs text-on-surface-variant">Scheduled for today • 06:00 PM</p>
+                  <h4 className="font-black text-slate-900 text-sm uppercase tracking-tight">System Refresh Cycle</h4>
+                  <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-widest mt-1">Status: Scheduled • 06:00 PM Today</p>
                 </div>
               </div>
-              <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-[10px] font-bold uppercase">Upcoming</span>
+              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
             </div>
-
-            <div className="p-6 flex items-center justify-between gap-4 opacity-60 grayscale">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0">
-                  <CalendarClock className="w-5 h-5 text-slate-500" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-slate-900 text-sm">Deep Root Soak (Zone A)</h4>
-                  <p className="text-xs text-slate-500">Scheduled for tomorrow • 05:00 AM</p>
-                </div>
-              </div>
-              <span className="px-2 py-1 bg-slate-100 text-slate-600 rounded text-[10px] font-bold uppercase">Queued</span>
-            </div>
-
           </div>
         </div>
       </section>
