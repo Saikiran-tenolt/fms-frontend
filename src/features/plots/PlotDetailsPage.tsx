@@ -97,8 +97,9 @@ export const PlotDetailsPage: React.FC = () => {
     );
   }
 
-  const lat = plot.location.coordinates?.[1] ?? plot.location.lat ?? 0;
-  const lon = plot.location.coordinates?.[0] ?? plot.location.lng ?? 0;
+  const loc = plot.location as any;
+  const lat = loc.coordinates?.coordinates?.[1] ?? loc.lat ?? 0;
+  const lon = loc.coordinates?.coordinates?.[0] ?? loc.lng ?? 0;
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
   
   const daysToHarvest = plot.expectedHarvestDate 

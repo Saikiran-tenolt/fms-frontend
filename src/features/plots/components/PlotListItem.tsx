@@ -12,9 +12,10 @@ interface PlotListItemProps {
   onDelete: (e: React.MouseEvent) => void;
 }
 
-export const PlotListItem: React.FC<PlotListItemProps> = ({ plot, onClick, onEdit, onDelete }) => {
+export const PlotListItem = React.forwardRef<HTMLDivElement, PlotListItemProps>(({ plot, onClick, onEdit, onDelete }, ref) => {
   return (
     <motion.div
+      ref={ref}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ scale: 1.002, backgroundColor: 'rgba(248, 250, 252, 0.5)' }}
@@ -87,4 +88,4 @@ export const PlotListItem: React.FC<PlotListItemProps> = ({ plot, onClick, onEdi
       </div>
     </motion.div>
   );
-};
+});

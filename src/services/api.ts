@@ -26,53 +26,86 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor - handle errors
+// Response interceptor - handle token refresh on 401
+let isRefreshing = false;
+let failedQueue: { resolve: (token: string) => void; reject: (error: any) => void }[] = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach(({ resolve, reject }) => {
+    if (error) reject(error);
+    else resolve(token!);
+  });
+  failedQueue = [];
+};
+
 api.interceptors.response.use(
-  (response) => {
-    return response;
-  },
+  (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response) {
-      const status = error.response.status;
-      const message = error.response.data?.message || 'An error occurred';
-
-      // Handle 401 Unauthorized - Attempt Token Refresh
-      if (status === 401 && !originalRequest._retry) {
-        originalRequest._retry = true;
-        const refreshToken = localStorage.getItem('refreshToken');
-
-        if (refreshToken) {
-          try {
-            // Attempt to refresh token
-            const res = await axios.post(`${API_BASE_URL}/auth/refresh`, { refreshToken });
-
-            if (res.data.success) {
-              const { accessToken, refreshToken: newRefreshToken } = res.data.data;
-
-              // Store new tokens
-              localStorage.setItem('accessToken', accessToken);
-              localStorage.setItem('refreshToken', newRefreshToken);
-
-              // Update authorization header
-              originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-
-              // Retry original request
-              return api(originalRequest);
-            }
-          } catch (refreshError) {
-            console.error('Token refresh failed:', refreshError);
-          }
-        }
-
-        // If refresh fails or no token, clear auth and redirect
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('authUser');
-        window.location.href = '/login';
+    // If it's a 401 and we haven't retried yet
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      // If we're already refreshing, queue this request
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({
+            resolve: (token: string) => {
+              originalRequest.headers.Authorization = `Bearer ${token}`;
+              resolve(api(originalRequest));
+            },
+            reject,
+          });
+        });
       }
 
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      const refreshToken = localStorage.getItem('refreshToken');
+
+      if (refreshToken) {
+        try {
+          console.log('[API] Access token expired, refreshing...');
+          const res = await axios.post(`${API_BASE_URL}/auth/refresh`, { refreshToken });
+
+          if (res.data.success) {
+            const { accessToken, refreshToken: newRefreshToken } = res.data.data;
+
+            // Store new tokens in localStorage
+            localStorage.setItem('accessToken', accessToken);
+            localStorage.setItem('refreshToken', newRefreshToken);
+
+            console.log('[API] Token refreshed successfully');
+
+            // Update the failed request's auth header
+            originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+
+            // Process any queued requests
+            processQueue(null, accessToken);
+            isRefreshing = false;
+
+            // Retry the original request
+            return api(originalRequest);
+          }
+        } catch (refreshError) {
+          console.error('[API] Token refresh failed:', refreshError);
+          processQueue(refreshError, null);
+          isRefreshing = false;
+        }
+      }
+
+      // If refresh fails or no refresh token, clear auth and redirect
+      console.log('[API] Session expired, redirecting to login...');
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('authUser');
+      window.location.href = '/login';
+      return Promise.reject(new Error('Session expired'));
+    }
+
+    // For non-401 errors
+    if (error.response) {
+      const message = error.response.data?.message || 'An error occurred';
       return Promise.reject(new Error(message));
     } else if (error.request) {
       return Promise.reject(new Error('No response from server'));

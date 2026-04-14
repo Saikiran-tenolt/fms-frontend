@@ -1,17 +1,19 @@
 import api from './api';
-import type { Plot, SoilType, EnvironmentType, CropStage } from '../types';
+import type { Plot, SoilType, EnvironmentType, CropStage, CropType } from '../types';
 
 export interface CreatePlotPayload {
   plotName: string;
   farmSize: number;
   soilType: SoilType;
+  cropType: CropType;
   environmentType?: EnvironmentType;
   sowingDate: string;
   location: {
     address: string;
     state: string;
     district: string;
-    coordinates: number[]; // [lng, lat]
+    lat: number;
+    lng: number;
   };
   expectedHarvestDate?: string | null;
   actualHarvestDate?: string | null;
@@ -44,13 +46,24 @@ const plotService = {
     const apiPayload = { ...data };
     delete apiPayload.imageUrl;
     
-    const response = await api.post('/plot', apiPayload);
+    console.log('[PlotService] Creating plot with payload:', JSON.stringify(apiPayload, null, 2));
     
-    // Attach the image locally to the returned data so the UI continues to show it
-    if (response.data?.success && data.imageUrl && response.data.data) {
-      response.data.data.imageUrl = data.imageUrl;
+    try {
+      const response = await api.post('/plot', apiPayload);
+      
+      // Attach the image locally to the returned data so the UI continues to show it
+      if (response.data?.success && data.imageUrl && response.data.data) {
+        response.data.data.imageUrl = data.imageUrl;
+      }
+      return response.data;
+    } catch (err: any) {
+      console.error('[PlotService] Server error response:', err.response?.status, err.response?.data);
+      console.error('[PlotService] Full error:', err.message);
+      if (err.response?.status === 401) {
+        throw new Error('Session expired. Please log out and log back in.');
+      }
+      throw err;
     }
-    return response.data;
   },
 
   updatePlot: async (id: string, data: UpdatePlotPayload): Promise<{ success: boolean; message: string; data: Plot }> => {

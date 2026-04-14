@@ -32,7 +32,7 @@ export const AddPlotPage: React.FC = () => {
         await dispatch(createNewPlot(payload)).unwrap();
         toast.success(`"${payload.plotName}" deployed successfully`);
       }
-      navigate('/plots');
+      navigate('/dashboard');
     } catch (err: any) {
       toast.error(err || "Failed to save plot intelligence");
     } finally {

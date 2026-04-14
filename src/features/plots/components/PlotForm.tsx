@@ -2,10 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Layers, MapPin, Calendar, Info, 
   Map as MapIcon, Globe, Warehouse, 
-  Navigation, Save, Camera, X, Image as ImageIcon, Plus
+  Navigation, Save, Camera, X, Image as ImageIcon, Plus, ChevronDown
 } from 'lucide-react';
 import { toast } from 'sonner';
-import type { SoilType, EnvironmentType, Plot } from '../../../types';
+import type { SoilType, EnvironmentType, Plot, CropStage, CropType } from '../../../types';
 
 interface PlotFormProps {
   initialData?: Plot;
@@ -29,6 +29,8 @@ export const PlotForm: React.FC<PlotFormProps> = ({ initialData, onSubmit, onCan
       lat: '',
       lng: ''
     },
+    cropStage: 'SOWED' as CropStage,
+    actualHarvestDate: '',
     imageUrl: ''
   });
 
@@ -48,9 +50,11 @@ export const PlotForm: React.FC<PlotFormProps> = ({ initialData, onSubmit, onCan
           address: initialData.location.address || '',
           state: initialData.location.state || '',
           district: initialData.location.district || '',
-          lat: (initialData.location.lat ?? initialData.location.coordinates?.[1] ?? '').toString(),
-          lng: (initialData.location.lng ?? initialData.location.coordinates?.[0] ?? '').toString()
+          lat: ((initialData.location as any).coordinates?.coordinates?.[1] ?? initialData.location.lat ?? '').toString(),
+          lng: ((initialData.location as any).coordinates?.coordinates?.[0] ?? initialData.location.lng ?? '').toString()
         },
+        cropStage: initialData.cropStage || 'SOWED',
+        actualHarvestDate: initialData.actualHarvestDate ? initialData.actualHarvestDate.split('T')[0] : '',
         imageUrl: initialData.imageUrl || ''
       });
       if (initialData.imageUrl) {
@@ -119,7 +123,7 @@ export const PlotForm: React.FC<PlotFormProps> = ({ initialData, onSubmit, onCan
     const latNum = parseFloat(formData.location.lat) || 0;
     const lngNum = parseFloat(formData.location.lng) || 0;
 
-    // Prepare API payload (safely handling empty optional dates or NaN coords)
+    // Prepare API payload (Constructed strictly based on backend allowed fields)
     const payload: any = {
       plotName: formData.plotName || 'Unnamed Plot',
       farmSize: parseFloat(formData.farmSize) || 0,
@@ -130,21 +134,29 @@ export const PlotForm: React.FC<PlotFormProps> = ({ initialData, onSubmit, onCan
         address: formData.location.address || 'Unknown',
         state: formData.location.state || 'Unknown',
         district: formData.location.district || 'Unknown',
-        type: 'Point',
-        coordinates: [lngNum, latNum], // Mapping user input to GeoJSON Point [lng, lat]
-        lat: latNum,
-        lng: lngNum
-      }
+        coordinates: {
+          type: 'Point',
+          coordinates: [lngNum, latNum]
+        }
+      },
+      cropStage: formData.cropStage,
+      cropType: 'PADDY' as CropType,
+      imageUrl: formData.imageUrl
     };
 
     if (formData.expectedHarvestDate) {
       payload.expectedHarvestDate = new Date(formData.expectedHarvestDate).toISOString();
+    } else {
+      payload.expectedHarvestDate = null;
+    }
+    
+    if (formData.actualHarvestDate) {
+      payload.actualHarvestDate = new Date(formData.actualHarvestDate).toISOString();
+    } else {
+      payload.actualHarvestDate = null;
     }
 
-    if (formData.imageUrl) {
-      payload.imageUrl = formData.imageUrl;
-    }
-
+    // Note: plotService.ts will handle stripping imageUrl for the final API call
     onSubmit(payload);
   };
 
@@ -219,6 +231,36 @@ export const PlotForm: React.FC<PlotFormProps> = ({ initialData, onSubmit, onCan
           </div>
         </div>
       </div>
+      
+      {initialData && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-6 border-t border-slate-100">
+           <div className="space-y-1">
+             <label className={labelClasses}>Crop Stage</label>
+             <div className="relative">
+               <select
+                 value={formData.cropStage}
+                 onChange={(e) => setFormData(p => ({ ...p, cropStage: e.target.value as CropStage }))}
+                 className={inputClasses}
+               >
+                 <option value="SOWED">Sowed</option>
+                 <option value="GROWING">Growing</option>
+                 <option value="HARVEST_READY">Harvest Ready</option>
+                 <option value="HARVESTED">Harvested</option>
+               </select>
+               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+             </div>
+           </div>
+           <div className="space-y-1">
+             <label className={labelClasses}>Actual Harvest Date</label>
+             <input
+               type="date"
+               value={formData.actualHarvestDate}
+               onChange={(e) => setFormData(p => ({ ...p, actualHarvestDate: e.target.value }))}
+               className={inputClasses}
+             />
+           </div>
+        </div>
+      )}
 
       {/* section: Image Upload (Reference: Assistant module) */}
       <div className="pt-4 border-t border-slate-100">

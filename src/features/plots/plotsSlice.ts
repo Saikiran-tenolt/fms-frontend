@@ -143,9 +143,7 @@ const plotsSlice = createSlice({
     // --- Create ---
     builder.addCase(createNewPlot.fulfilled, (state, action) => {
       state.plots.unshift(action.payload); // Add to beginning (sorted by latest)
-      if (state.plots.length === 1) {
-        state.selectedPlotId = action.payload._id;
-      }
+      state.selectedPlotId = action.payload._id;
     });
 
     // --- Update ---

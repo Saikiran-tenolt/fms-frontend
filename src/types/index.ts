@@ -24,9 +24,12 @@ export interface AuthState {
 export type EnvironmentType = 'OPEN_FIELD' | 'INDOOR';
 export type SoilType = 'SANDY' | 'LOAMY' | 'CLAY';
 export type CropStage = 'SOWED' | 'GROWING' | 'HARVEST_READY' | 'HARVESTED';
+export type CropType = 'PADDY';
 
 export interface PlotLocation {
   address: string;
+  state: string;
+  district: string;
   lat: number;
   lng: number;
 }

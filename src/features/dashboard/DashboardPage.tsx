@@ -10,7 +10,6 @@ import {
   Thermometer,
   Cloud,
   Radio,
-  AlertTriangle,
   MapPin,
   Maximize,
   Brain,
@@ -87,9 +86,15 @@ export const DashboardPage: React.FC = () => {
       dispatch(setTrendData({ plotId: selectedPlot._id, sensor: 'humidity', data: generateMockTrendData() }));
       dispatch(setTrendData({ plotId: selectedPlot._id, sensor: 'soilTemperature', data: generateMockTrendData() }));
 
-      // Fetch real weather using user's pincode
-      if (user?.pincode) {
-        dispatch(fetchWeatherAndAdvisories(user.pincode) as any);
+      // Fetch weather based on plot coordinates
+      const loc = selectedPlot.location as any;
+      const lat = loc.coordinates?.coordinates?.[1] ?? loc.lat;
+      const lon = loc.coordinates?.coordinates?.[0] ?? loc.lng;
+
+      if (lat !== undefined && lon !== undefined) {
+        dispatch(fetchWeatherAndAdvisories({ lat, lon }) as any);
+      } else if (user?.pincode) {
+        dispatch(fetchWeatherAndAdvisories({ pincode: user.pincode }) as any);
       } else {
         setWeather(generateMockWeather(selectedPlot._id));
       }
@@ -198,45 +203,68 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <div className="px-4 sm:px-8 max-w-7xl mx-auto space-y-12 mt-8 pb-20 font-inter">
-      {/* Hero */}
-      <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-end">
-        <div className="lg:col-span-7 space-y-4">
-          <div className="flex items-center gap-3">
-             <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping" />
-            <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-black tracking-widest uppercase rounded">Signal Locked</span>
-            <h3 className="text-slate-400 text-[10px] font-bold uppercase tracking-widest leading-none">Updated 2 mins ago</h3>
+      {/* section: Matured Hero Section */}
+      <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="lg:col-span-8 space-y-6">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 px-3 py-1 bg-emerald-50 border border-emerald-100/50 rounded-full">
+              <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+              <span className="text-[10px] font-bold tracking-wider text-emerald-700 uppercase">System Active</span>
+            </div>
+            <span className="text-slate-400 text-[10px] font-semibold uppercase tracking-widest bg-slate-100 px-2 py-1 rounded-md">
+              Refreshed: {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
           </div>
-          <h1 className="text-4xl lg:text-5xl font-black text-slate-900 tracking-tighter leading-none uppercase">
-            {selectedPlot?.plotName} / <span className="text-emerald-600">{selectedPlot?.cropType}</span>
-          </h1>
-          <p className="text-slate-500 font-medium max-w-lg leading-relaxed">
-            Precision monitoring active across the field. Current vegetative stage indicates optimal progress.
+          
+          <div className="space-y-2">
+            <h1 className="text-4xl lg:text-6xl font-bold text-slate-900 tracking-tight leading-tight">
+              {selectedPlot?.plotName}
+              <span className="block text-2xl lg:text-3xl text-slate-400 font-medium mt-1">
+                Prime <span className="text-emerald-600/80 italic font-semibold">{selectedPlot?.cropType}</span> Sector
+              </span>
+            </h1>
+            {selectedPlot?.location && (
+              <div className="flex items-center gap-2 text-slate-500">
+                <div className="p-1.5 bg-slate-100 rounded-lg">
+                  <MapPin size={14} className="text-slate-600" />
+                </div>
+                <p className="text-sm font-semibold tracking-tight">
+                  {selectedPlot.location.district}, {selectedPlot.location.state}
+                </p>
+              </div>
+            )}
+          </div>
+
+          <p className="text-slate-600 text-lg font-medium max-w-2xl leading-relaxed">
+            Real-time geospatial analytics and sensor telemetry for 
+            <span className="text-slate-900 font-bold mx-1">{selectedPlot?.plotName}</span>. 
+            Automated monitoring is currently optimizing for climate-specific yield variables.
           </p>
-          <div className="flex items-center gap-8 mt-6">
-            <div className="flex flex-col">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Atmosphere</span>
-              <div className="flex items-center gap-2 text-slate-900 font-black">
-                {realWeather ? (
-                  <>
-                    <img src={`https://openweathermap.org/img/wn/${realWeather.weather[0].icon}.png`} alt="weather" className="w-8 h-8" />
-                    <span className="text-2xl">{Math.round(realWeather.main.temp)}°C</span>
-                  </>
-                ) : (
-                  <>
-                    <CloudRain className="w-5 h-5 text-blue-500" />
-                    <span className="text-2xl">{weather?.temperature}°C</span>
-                  </>
-                )}
+
+          <div className="flex flex-wrap items-center gap-6 pt-4">
+            <div className="flex items-center gap-4 bg-white p-3 pr-6 rounded-2xl border border-slate-200/60 shadow-sm">
+              <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
+                 {realWeather ? (
+                    <img src={`https://openweathermap.org/img/wn/${realWeather.weather[0].icon}.png`} alt="weather" className="w-10 h-10 object-contain" />
+                 ) : <CloudRain size={24} />}
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Local Climate</span>
+                <span className="text-2xl font-bold text-slate-900 leading-none">
+                  {realWeather ? Math.round(realWeather.main.temp) : weather?.temperature}°C
+                </span>
               </div>
             </div>
-            <div className="h-10 w-px bg-slate-100 hidden xs:block"></div>
-            <div className="flex flex-col">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Deployment Unit</span>
-              <div className="relative inline-block">
+
+            <div className="h-12 w-px bg-slate-200 hidden sm:block" />
+
+            <div className="flex flex-col min-w-[200px]">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Switch Deployment</span>
+              <div className="relative group">
                 <select
                   value={selectedPlotId || ''}
                   onChange={(e) => dispatch(selectPlot(e.target.value))}
-                  className="appearance-none flex items-center gap-2 pl-4 pr-10 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-black text-slate-900 hover:bg-white hover:border-emerald-200 transition-all cursor-pointer outline-none shadow-sm uppercase tracking-tight"
+                  className="w-full appearance-none pl-4 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 transition-all cursor-pointer outline-none"
                 >
                   {plots.map((plot: any) => (
                     <option key={plot._id} value={plot._id}>
@@ -244,186 +272,232 @@ export const DashboardPage: React.FC = () => {
                     </option>
                   ))}
                 </select>
-                <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
+                <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 group-hover:text-emerald-500 transition-colors" />
               </div>
             </div>
           </div>
         </div>
-        <div className="lg:col-span-5 flex flex-wrap gap-3 lg:justify-end">
-          {currentSensors?.soilMoisture?.status && currentSensors.soilMoisture.status !== 'ok' && (
-            <div className="flex items-center gap-2 px-4 py-2 bg-rose-50 text-rose-700 border border-rose-100 rounded-lg text-xs font-black uppercase tracking-widest">
-              <AlertTriangle className="w-4 h-4" />
-              Critical: Soil
-            </div>
-          )}
-        </div>
-      </section>
 
-      {/* Map View */}
-      <section className="rounded-3xl overflow-hidden bg-slate-50 border border-slate-100 shadow-xl h-[400px] relative group">
-        <img className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000" alt="Field sat" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDnEG46wjKTwfzJsI-5SiCNM3CtwZcMgI9qZUVzYUX1kKN0HjBXhYsfMRLt07pXnsIdyoX0lB0gxXsGqEyTUuZJMbMGHUNN6hLvGMRBAq_jJgDIqxgz-1jvincfTDkyjISLRky4LyV_bG12Hj8enTNsfYx8-qyabGe3kZxvNbCBahUpE_XHOd_24ddgYpkNm7TWPJJbOCA60Y5IfRApDLi1-PfcbhllbinCqAVlwMdK5fxEjctrxe6vhH-XGimOMZXRtKk4paKLxq8d" referrerPolicy="no-referrer" />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent"></div>
-        <div className="absolute bottom-8 left-8 right-8 flex justify-between items-end">
-          <div className="text-white">
-            <p className="text-[10px] uppercase tracking-[0.4em] opacity-80 mb-2 font-black">NDVI Analytics Feed</p>
-            <h4 className="text-4xl font-black tracking-tighter uppercase">Geospatial Overlay</h4>
+        <div className="lg:col-span-4 flex flex-col gap-3 lg:items-end">
+          <div className="bg-emerald-600 text-white p-6 rounded-3xl shadow-lg shadow-emerald-600/20 w-full max-w-sm">
+             <div className="flex items-center justify-between mb-4">
+                <div className="p-2 bg-white/20 rounded-lg">
+                  <Activity size={20} />
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-widest opacity-80">Health Index</span>
+             </div>
+             <div className="flex items-baseline gap-2">
+                <span className="text-4xl font-bold">94</span>
+                <span className="text-xl font-medium opacity-60">/100</span>
+             </div>
+             <div className="mt-4 h-1.5 bg-white/20 rounded-full overflow-hidden">
+                <div className="h-full bg-white w-[94%]" />
+             </div>
           </div>
-          <button className="bg-white/10 backdrop-blur-xl border border-white/20 text-white p-4 rounded-2xl hover:bg-white/20 transition-all shadow-lg hover:scale-110">
-            <Maximize className="w-6 h-6" />
-          </button>
         </div>
       </section>
 
-      {/* Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full my-6">
-        {metrics.map((m) => {
-          const Icon = m.icon;
-          const borderClass = m.colorClass === 'rose' ? 'border-l-rose-500' : m.colorClass === 'emerald' ? 'border-l-emerald-500' : 'border-l-blue-500';
-          const badgeClass = m.colorClass === 'rose' ? 'bg-rose-50 text-rose-700' : m.colorClass === 'emerald' ? 'bg-emerald-50 text-emerald-700' : 'bg-blue-50 text-blue-700';
-          // const fillClass = m.colorClass === 'rose' ? 'bg-rose-500' : m.colorClass === 'emerald' ? 'bg-emerald-500' : 'bg-blue-500';
-
-          return (
-            <div key={m.id} className={`relative bg-white border border-slate-200 border-l-[4px] ${borderClass} rounded-2xl p-6 shadow-sm overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-xl h-[160px] flex flex-col justify-between group`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-slate-50 rounded-xl group-hover:bg-slate-100 transition-colors">
-                     <Icon size={16} className="text-slate-400 group-hover:text-slate-900 transition-colors" />
-                  </div>
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{m.label}</span>
-                </div>
-              </div>
-
-              <div className="flex items-baseline gap-1 mt-4">
-                <span className="text-5xl font-black text-slate-900 tracking-tighter leading-none">{m.value}</span>
-                <span className="text-xl font-bold text-slate-400">{m.unit}</span>
-              </div>
-
-              <div className="mt-4">
-                <div className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest ${badgeClass}`}>
-                  {m.statusLabel}
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* AI Advisory */}
-      {latestAdvisory && (
-        <section className="bg-emerald-950 p-10 sm:p-14 rounded-[3rem] relative overflow-hidden shadow-2xl group">
-          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10" />
-          <motion.div 
-             animate={{ scale: [1, 1.2, 1], rotate: [0, 5, 0] }}
-             transition={{ duration: 15, repeat: Infinity }}
-             className="absolute -right-20 -top-20 w-64 h-64 bg-emerald-500/10 rounded-full blur-[100px]" 
+      {/* section: Polished Map View */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between px-2">
+          <div>
+            <h3 className="text-xl font-bold text-slate-900 tracking-tight">Geospatial Topology</h3>
+            <p className="text-xs text-slate-400 font-medium">Sat-link NDVI vegetative coverage analysis.</p>
+          </div>
+        </div>
+        <div className="rounded-[2.5rem] overflow-hidden bg-slate-100 border border-slate-200 shadow-sm h-[400px] relative group">
+          <img 
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[2000ms]" 
+            alt="Field sat" 
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuDnEG46wjKTwfzJsI-5SiCNM3CtwZcMgI9qZUVzYUX1kKN0HjBXhYsfMRLt07pXnsIdyoX0lB0gxXsGqEyTUuZJMbMGHUNN6hLvGMRBAq_jJgDIqxgz-1jvincfTDkyjISLRky4LyV_bG12Hj8enTNsfYx8-qyabGe3kZxvNbCBahUpE_XHOd_24ddgYpkNm7TWPJJbOCA60Y5IfRApDLi1-PfcbhllbinCqAVlwMdK5fxEjctrxe6vhH-XGimOMZXRtKk4paKLxq8d" 
+            referrerPolicy="no-referrer" 
           />
-          <div className="relative z-10 flex flex-col lg:flex-row gap-12 items-center">
-            <div className="flex-grow space-y-6 text-center lg:text-left">
-              <div className="inline-flex items-center gap-3 px-4 py-1.5 bg-emerald-900/50 text-emerald-400 rounded-full text-[10px] font-black tracking-widest uppercase border border-white/5">
-                <Brain className="w-4 h-4" />
-                Intelligence Feed
-              </div>
-              <h2 className="text-white text-4xl sm:text-5xl font-black tracking-tighter leading-tight uppercase">
-                {latestAdvisory.title}
-              </h2>
-              <p className="text-emerald-100/60 max-w-xl text-lg font-medium leading-relaxed">
-                {latestAdvisory.description}
-              </p>
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 via-transparent to-transparent opacity-60" />
+          
+          {/* Glass Controls */}
+          <div className="absolute top-6 left-6 flex flex-col gap-2">
+             <div className="px-3 py-1.5 bg-white/60 backdrop-blur-md border border-white/40 rounded-xl shadow-lg flex items-center gap-2">
+                <div className="w-2 h-2 bg-emerald-500 rounded-full" />
+                <span className="text-[10px] font-bold text-slate-900 uppercase">Live Feed</span>
+             </div>
+          </div>
+
+          <div className="absolute bottom-8 left-8 right-8 flex justify-between items-end">
+            <div className="text-white drop-shadow-md">
+              <p className="text-[10px] uppercase tracking-[0.3em] opacity-90 mb-1 font-bold">Spectral Analysis</p>
+              <h4 className="text-3xl font-bold tracking-tight">Sector Coverage</h4>
             </div>
-            <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
-              <button
-                disabled={executingAdvisoryId === latestAdvisory.id}
-                onClick={() => {
-                  setExecutingAdvisoryId(latestAdvisory.id);
-                  toast('Initializing Command Feed...', { duration: 2000 });
-                  setTimeout(() => {
-                    toast.success('Sequence Optimized & Deployed.');
-                    setExecutingAdvisoryId(null);
-                    navigate('/advisories');
-                  }, 2500);
-                }}
-                className={`px-10 py-5 ${executingAdvisoryId === latestAdvisory.id
-                    ? 'bg-emerald-900 text-emerald-400 cursor-wait'
-                    : 'bg-emerald-400 text-emerald-950 hover:bg-white hover:-translate-y-1'
-                  } font-black text-xs uppercase tracking-widest rounded-2xl transition-all flex items-center justify-center gap-3 shadow-xl active:scale-95`}
+            <button className="bg-white/80 backdrop-blur-xl border border-white text-slate-900 p-4 rounded-2xl hover:bg-white transition-all shadow-xl hover:scale-110 active:scale-95 group">
+              <Maximize className="w-5 h-5 group-hover:text-emerald-600 transition-colors" />
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* section: Matured Metrics Grid */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+            Sensor Network
+            <span className="text-xs font-medium text-slate-400 ml-2">Real-time Data</span>
+          </h2>
+          <button className="text-xs font-bold text-emerald-600 hover:text-emerald-700 uppercase tracking-widest underline underline-offset-4 decoration-2">Calibration History</button>
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {metrics.map((m) => {
+            const Icon = m.icon;
+            const accentColor = m.colorClass === 'rose' ? 'rose' : m.colorClass === 'emerald' ? 'emerald' : 'blue';
+            
+            return (
+              <motion.div 
+                key={m.id}
+                whileHover={{ y: -4 }}
+                className="group relative bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-xl hover:border-slate-300 transition-all duration-300"
               >
-                {executingAdvisoryId === latestAdvisory.id ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <>
-                    Execute Optimization
-                    <Droplets size={18} />
-                  </>
-                )}
-              </button>
+                <div className="flex items-start justify-between mb-6">
+                  <div className={`p-3 rounded-xl bg-${accentColor}-50 text-${accentColor}-600 group-hover:bg-${accentColor}-600 group-hover:text-white transition-all duration-300`}>
+                     <Icon size={20} />
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-${accentColor}-50 text-${accentColor}-700 border border-${accentColor}-100`}>
+                      {m.statusLabel}
+                    </span>
+                    <span className="text-[10px] text-slate-400 mt-1 font-medium">{m.timestamp}</span>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">{m.label}</p>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-4xl font-bold text-slate-900 tracking-tight">{m.value}</span>
+                    <span className="text-lg font-bold text-slate-400">{m.unit}</span>
+                  </div>
+                </div>
+                
+                {/* Subtle Progress Bar */}
+                <div className="mt-4 h-1 bg-slate-50 rounded-full overflow-hidden">
+                   <div 
+                    className={`h-full bg-${accentColor}-500 transition-all duration-1000`} 
+                    style={{ width: `${m.value}%` }}
+                   />
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* section: Intelligence Advisory Overlay */}
+      {latestAdvisory && (
+        <section className="relative group">
+          <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent" />
+          <div className="bg-white border border-slate-200 rounded-[2.5rem] p-10 sm:p-14 overflow-hidden relative shadow-sm hover:shadow-xl transition-all duration-500">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-50/50 rounded-full -mr-48 -mt-48 blur-3xl opacity-50 group-hover:opacity-100 transition-opacity" />
+            
+            <div className="relative z-10 flex flex-col lg:flex-row gap-12 items-center">
+              <div className="flex-grow space-y-6 text-center lg:text-left">
+                <div className="inline-flex items-center gap-3 px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full text-[10px] font-bold tracking-widest uppercase border border-emerald-100/50">
+                  <Brain className="w-4 h-4" />
+                  AI Optimization Feed
+                </div>
+                <h2 className="text-slate-900 text-4xl font-bold tracking-tight leading-tight">
+                  {latestAdvisory.title}
+                </h2>
+                <p className="text-slate-500 max-w-xl text-lg font-medium leading-relaxed">
+                  {latestAdvisory.description}
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
+                <button
+                  disabled={executingAdvisoryId === latestAdvisory.id}
+                  onClick={() => {
+                    setExecutingAdvisoryId(latestAdvisory.id);
+                    toast('Linking Command Protocol...', { icon: <Activity className="text-emerald-500" /> });
+                    setTimeout(() => {
+                      toast.success('Sequence Optimized & Dispatched');
+                      setExecutingAdvisoryId(null);
+                      navigate('/advisories');
+                    }, 2000);
+                  }}
+                  className={`px-10 py-5 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-3 shadow-lg active:scale-95 ${
+                    executingAdvisoryId === latestAdvisory.id
+                      ? 'bg-slate-100 text-slate-400 cursor-wait'
+                      : 'bg-slate-900 text-white hover:bg-emerald-600 hover:shadow-emerald-600/20'
+                  }`}
+                >
+                  {executingAdvisoryId === latestAdvisory.id ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <>
+                      Execute Command
+                      <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </section>
       )}
 
-      {/* Secondary Panels */}
+      {/* section: Secondary Intelligence Panels */}
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-        <div className="space-y-8">
-          <div className="flex justify-between items-end">
-            <div className="space-y-1">
-                <h3 className="text-2xl font-black text-slate-900 tracking-tighter uppercase">Health History</h3>
-                <p className="text-xs text-slate-400 font-medium">Sat-link crop vitality verification log.</p>
+        <div className="space-y-6">
+          <div className="flex justify-between items-center px-2">
+            <div>
+              <h3 className="text-xl font-bold text-slate-900 tracking-tight">Vitality History</h3>
+              <p className="text-xs text-slate-400 font-medium">Historical health signature logs.</p>
             </div>
           </div>
-          <div className="bg-white rounded-[2.5rem] border border-slate-200 p-10 flex flex-col gap-8 shadow-sm">
-            <div className="flex gap-6 relative">
-              <div className="absolute left-[21px] top-10 bottom-[-32px] w-0.5 bg-slate-50"></div>
-              <div className="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0 z-10 border-4 border-white shadow-xl shadow-emerald-600/5">
-                <Leaf className="w-5 h-5" />
+          <div className="bg-white rounded-3xl border border-slate-200 p-8 flex flex-col gap-8 shadow-sm">
+            {[
+              { title: "Harvest Window Identified", sub: "NDVI Peak: 0.98 • Sector A", time: "28 HRS AGO", icon: Leaf, color: "emerald" },
+              { title: "Biosphere Calibrated", sub: "Telemetry normalized across all nodes.", time: "4 DAYS AGO", icon: Activity, color: "blue" }
+            ].map((item, idx) => (
+              <div key={idx} className="flex gap-6 relative group">
+                {idx === 0 && <div className="absolute left-[21px] top-10 bottom-[-32px] w-0.5 bg-slate-100"></div>}
+                <div className={`w-11 h-11 rounded-xl bg-${item.color}-50 text-${item.color}-600 flex items-center justify-center flex-shrink-0 z-10 border-2 border-white shadow-md group-hover:bg-${item.color}-600 group-hover:text-white transition-all`}>
+                  <item.icon size={20} />
+                </div>
+                <div className="pt-0.5">
+                  <h4 className="font-bold text-slate-900 text-sm tracking-tight">{item.title}</h4>
+                  <p className="text-xs text-slate-500 font-medium mt-1">{item.sub}</p>
+                  <span className="mt-2 text-[9px] font-bold text-slate-400 uppercase tracking-widest block">{item.time}</span>
+                </div>
               </div>
-              <div className="pt-1">
-                <h4 className="font-black text-slate-900 text-base tracking-tight uppercase leading-none">Harvest Ready Unit Identified</h4>
-                <p className="text-xs text-slate-500 font-medium mt-1.5">NDVI Signature: 0.98 Peak • Region B4</p>
-                <div className="mt-2.5 px-3 py-1 bg-slate-50 rounded-lg inline-block text-[9px] font-black text-slate-400 uppercase tracking-widest">TS: 2D AGO</div>
-              </div>
-            </div>
-
-            <div className="flex gap-6 relative">
-              <div className="w-11 h-11 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0 z-10 border-4 border-white shadow-xl shadow-blue-600/5">
-                <Activity className="w-5 h-5" />
-              </div>
-              <div className="pt-1">
-                <h4 className="font-black text-slate-900 text-base tracking-tight uppercase leading-none">Biosphere Normalization</h4>
-                <p className="text-xs text-slate-500 font-medium mt-1.5">Optimal progress maintained across deployment.</p>
-                <div className="mt-2.5 px-3 py-1 bg-slate-50 rounded-lg inline-block text-[9px] font-black text-slate-400 uppercase tracking-widest">TS: 1W AGO</div>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
 
-        <div className="space-y-8">
-          <div className="flex justify-between items-end">
-            <div className="space-y-1">
-                <h3 className="text-2xl font-black text-slate-900 tracking-tighter uppercase">Deployment Log</h3>
-                <p className="text-xs text-slate-400 font-medium">Automated system optimization events.</p>
+        <div className="space-y-6">
+          <div className="flex justify-between items-center px-2">
+            <div>
+              <h3 className="text-xl font-bold text-slate-900 tracking-tight">System Events</h3>
+              <p className="text-xs text-slate-400 font-medium">Automated optimization routine logs.</p>
             </div>
           </div>
-          <div className="bg-white rounded-[2.5rem] border border-slate-200 overflow-hidden shadow-sm">
-            <div className="p-8 flex items-center justify-between gap-4 bg-emerald-50/20">
+          <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
+            <div className="p-8 flex items-center justify-between gap-4 bg-slate-50/50">
               <div className="flex items-center gap-6">
-                <div className="w-11 h-11 rounded-2xl bg-emerald-100 flex items-center justify-center shadow-lg shadow-emerald-600/10">
-                  <CheckCircle2 size={24} className="text-emerald-700" />
+                <div className="w-11 h-11 rounded-xl bg-white border border-slate-200 flex items-center justify-center shadow-sm">
+                  <CheckCircle2 size={24} className="text-slate-300" />
                 </div>
                 <div>
-                  <h4 className="font-black text-slate-900 text-sm uppercase tracking-tight opacity-50 line-through">Precision Irrigation (Main)</h4>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Status: Optimized Execution • 05:30 AM</p>
+                  <h4 className="font-bold text-slate-800 text-sm line-through opacity-40">Precision Nutrients Phase 1</h4>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Status: Completed • 08:00 AM</p>
                 </div>
               </div>
             </div>
 
-            <div className="p-8 flex items-center justify-between gap-4 border-t border-slate-50">
+            <div className="p-8 flex items-center justify-between gap-4 border-t border-slate-100">
               <div className="flex items-center gap-6">
-                <div className="w-11 h-11 rounded-2xl bg-white border-2 border-emerald-500 flex items-center justify-center shadow-xl shadow-emerald-500/20">
+                <div className="w-11 h-11 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center shadow-md">
                   <Clock size={24} className="text-emerald-600" />
                 </div>
                 <div>
-                  <h4 className="font-black text-slate-900 text-sm uppercase tracking-tight">System Refresh Cycle</h4>
-                  <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-widest mt-1">Status: Scheduled • 06:00 PM Today</p>
+                  <h4 className="font-bold text-slate-900 text-sm">Calibration Cycle</h4>
+                  <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-widest mt-1">Status: Pending • 10:00 PM</p>
                 </div>
               </div>
               <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />

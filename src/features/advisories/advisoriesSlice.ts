@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
-import { fetchWeatherByPincode } from '../../services/weatherService';
+import { fetchWeatherByPincode, fetchCurrentWeather } from '../../services/weatherService';
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from 'sonner';
 import type { AdvisoriesState, Advisory } from '../../types';
@@ -38,10 +38,18 @@ const advisoriesSlice = createSlice({
 
 export const fetchWeatherAndAdvisories = createAsyncThunk(
   'advisories/fetchWeatherAndAdvisories',
-  async (pincode: string, { dispatch }) => {
+  async (params: { pincode?: string; lat?: number; lon?: number }, { dispatch }) => {
     dispatch(setLoading(true));
     try {
-      const weather = await fetchWeatherByPincode(pincode);
+      let weather;
+      if (params.lat !== undefined && params.lon !== undefined) {
+        weather = await fetchCurrentWeather(params.lat, params.lon);
+      } else if (params.pincode) {
+        weather = await fetchWeatherByPincode(params.pincode);
+      } else {
+        throw new Error('No location parameters provided');
+      }
+
       dispatch(setWeatherData(weather));
 
       // Generate a Risk Advisory if it's raining or storming

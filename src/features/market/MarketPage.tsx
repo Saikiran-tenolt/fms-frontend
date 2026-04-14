@@ -78,6 +78,42 @@ export const MarketPage: React.FC = () => {
     return map;
   }, [prices]);
 
+  // Dynamic Arbitrage Calculation
+  const arbitrageInsight = useMemo(() => {
+    if (prices.length < 2) return null;
+    
+    // Group prices by crop
+    const cropGroups: Record<string, typeof prices> = {};
+    prices.forEach(p => {
+      if (!cropGroups[p.cropName]) cropGroups[p.cropName] = [];
+      cropGroups[p.cropName].push(p);
+    });
+
+    let bestDiff = -1;
+    let insight: { crop: string; highMandi: string; lowMandi: string; diffPct: string } | null = null;
+
+    Object.entries(cropGroups).forEach(([crop, list]) => {
+      if (list.length > 1) {
+        const sorted = [...list].sort((a, b) => a.price - b.price);
+        const min = sorted[0];
+        const max = sorted[sorted.length - 1];
+        const diffPct = ((max.price - min.price) / min.price) * 100;
+        
+        if (diffPct > bestDiff) {
+          bestDiff = diffPct;
+          insight = {
+            crop,
+            highMandi: max.mandiName,
+            lowMandi: min.mandiName,
+            diffPct: diffPct.toFixed(1)
+          };
+        }
+      }
+    });
+
+    return insight;
+  }, [prices]);
+
   return (
     <div className="space-y-6 animate-fadeIn max-w-[1400px] mx-auto min-h-[calc(100vh-6rem)] flex flex-col font-inter">
 
@@ -90,7 +126,7 @@ export const MarketPage: React.FC = () => {
             <h3 className="text-sm font-bold text-slate-900 tracking-tight">Regional Outlook</h3>
           </div>
           <p className="text-2xl font-black text-slate-900 mb-1">
-            +{(prices.reduce((acc, p) => acc + p.change, 0) / prices.length).toFixed(1)}%
+            +{(prices.reduce((acc, p) => acc + p.change, 0) / (prices.length || 1)).toFixed(1)}%
           </p>
           <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider bg-emerald-50 inline-block px-2 py-0.5 rounded">Bullish Week</p>
           <div className="mt-4 pt-4 border-t border-slate-50 flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest">
@@ -109,7 +145,7 @@ export const MarketPage: React.FC = () => {
             {filteredPrices.sort((a, b) => b.price - a.price)[0]?.cropName || 'N/A'}
           </p>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-            ₹{filteredPrices.sort((a, b) => b.price - a.price)[0]?.price || '0'} / qtl
+            ₹{filteredPrices.sort((a, b) => b.price - a.price)[0]?.price.toLocaleString() || '0'} / qtl
           </p>
           <div className="mt-4 pt-4 border-t border-slate-50 flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest">
             <span>Current Mandi</span>
@@ -125,7 +161,13 @@ export const MarketPage: React.FC = () => {
             <h3 className="text-sm font-bold text-white tracking-tight">Arbitrage Insight</h3>
           </div>
           <p className="text-sm font-medium text-slate-300 leading-relaxed mb-4 relative z-10">
-            Wheat prices are <span className="text-emerald-400 font-black">7.2% higher</span> in <span className="text-white">Azadpur</span> than your current local average.
+            {arbitrageInsight ? (
+              <>
+                {arbitrageInsight.crop} prices are <span className="text-emerald-400 font-black">{arbitrageInsight.diffPct}% higher</span> in <span className="text-white">{arbitrageInsight.highMandi}</span> than in {arbitrageInsight.lowMandi}.
+              </>
+            ) : (
+              <>Global market volatility is low. Current local prices represent <span className="text-emerald-400 font-black">optimal value</span> for deployment.</>
+            )}
           </p>
           <button className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] flex items-center gap-2 hover:translate-x-1 transition-transform">
             Analyze Logistics Cost <TrendingUp size={10} />

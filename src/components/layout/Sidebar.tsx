@@ -282,13 +282,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onMobileClose }) =
         className="hidden lg:flex h-full bg-white flex-shrink-0 relative z-40"
       >
         {sidebarContent}
-        {/* Toggle Collapse Button */}
+        {/* Toggle Collapse Button - Premium Glassmorphism with Enhanced Borders */}
         <button 
           onClick={() => dispatch(toggleSidebarCollapsed())}
-          className="hidden lg:flex absolute -right-3.5 top-6 w-7 h-7 bg-white border border-slate-200 rounded-full items-center justify-center text-slate-600 shadow-sm transition-all duration-[400ms] z-50 hover:bg-slate-50 hover:shadow-md hover:scale-105"
+          className="hidden lg:flex absolute -right-4 top-6 w-8 h-8 bg-white/60 backdrop-blur-xl border-2 border-white shadow-xl rounded-full items-center justify-center text-slate-900 z-50 hover:bg-white hover:scale-110 active:scale-95 group transition-all duration-300 ring-4 ring-black/5"
           aria-label={isSidebarCollapsed ? "Expand" : "Collapse"}
         >
-          {isSidebarCollapsed ? <ChevronRight size={14} strokeWidth={2.5} /> : <ChevronLeft size={14} strokeWidth={2.5} />}
+          {isSidebarCollapsed ? 
+            <ChevronRight size={16} strokeWidth={3} className="group-hover:text-emerald-600 transition-colors" /> : 
+            <ChevronLeft size={16} strokeWidth={3} className="group-hover:text-emerald-600 transition-colors" />
+          }
         </button>
       </motion.aside>
 
