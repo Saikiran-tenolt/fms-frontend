@@ -4,7 +4,8 @@ import { useAppSelector, useAppDispatch } from '../../hooks';
 import { setPrices } from './marketSlice';
 import { Badge, EmptyState } from '../../components/ui';
 import { mockMarketPrices } from '../../services/mockData';
-import { AreaChart, Area, ResponsiveContainer, YAxis, Tooltip, XAxis, CartesianGrid } from 'recharts';
+import { AreaChart, Area, ResponsiveContainer } from 'recharts';
+import { toast } from 'sonner';
 
 export const MarketPage: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -33,7 +34,7 @@ export const MarketPage: React.FC = () => {
     return matchesSearch && matchesMandi;
   });
 
-  const selectedCrop = prices.find((p) => p.id === selectedCropId);
+  // Removed unused selectedCrop
 
   // Helper to generate a realistic-looking sparkline trend array
   const generateTrendData = (price: number, trend: 'up' | 'down' | 'stable', changePct: number, points: number = 10) => {
@@ -60,12 +61,6 @@ export const MarketPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prices]);
 
-  // Pre-compute detailed trend data for the active side-panel chart
-  const activeDetailData = useMemo(() => {
-    if (!selectedCrop) return [];
-    return generateTrendData(selectedCrop.price, selectedCrop.trend, selectedCrop.change, 30);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCrop]);
 
   // Identify best prices for each crop type (Highest is best for seller)
   const bestPriceMap = useMemo(() => {
@@ -79,7 +74,7 @@ export const MarketPage: React.FC = () => {
   }, [prices]);
 
   // Dynamic Arbitrage Calculation
-  const arbitrageInsight = useMemo(() => {
+  const arbitrageInsight = useMemo<{ crop: string; highMandi: string; lowMandi: string; diffPct: string } | null>(() => {
     if (prices.length < 2) return null;
     
     // Group prices by crop
@@ -169,7 +164,10 @@ export const MarketPage: React.FC = () => {
               <>Global market volatility is low. Current local prices represent <span className="text-emerald-400 font-black">optimal value</span> for deployment.</>
             )}
           </p>
-          <button className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] flex items-center gap-2 hover:translate-x-1 transition-transform">
+          <button 
+            onClick={() => toast.success('Calculating route efficiency... Check logistics dashboard for full breakdown.')}
+            className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] flex items-center gap-2 hover:translate-x-1 transition-transform"
+          >
             Analyze Logistics Cost <TrendingUp size={10} />
           </button>
         </div>
@@ -194,7 +192,7 @@ export const MarketPage: React.FC = () => {
             {isMandiDropdownOpen && (
               <>
                 <div className="fixed inset-0 z-20" onClick={() => setIsMandiDropdownOpen(false)} />
-                <div className="absolute top-full left-0 mt-2 w-full md:w-64 bg-white border border-slate-200 rounded-2xl shadow-2xl py-2 z-30 animate-in fade-in zoom-in duration-200 origin-top">
+                <div className="absolute top-full left-0 mt-2 w-full md:w-64 bg-white border border-slate-200 rounded-2xl shadow-2xl py-2 z-30 animate-in fade-in zoom-in duration-200 origin-top max-h-64 overflow-y-auto">
                   {mandis.map((mandi) => (
                     <button
                       key={mandi}
@@ -231,7 +229,8 @@ export const MarketPage: React.FC = () => {
 
       <div className="flex flex-col gap-6">
 
-        {/* Full Width Progress Table */}
+
+        {/* Full Width Progress Table  */}
         <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
           <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/30">
             <div>
@@ -337,61 +336,6 @@ export const MarketPage: React.FC = () => {
             )}
           </div>
         </div>
-
-        {/* Large Featured Chart Section */}
-        <section className="bg-[#0b1120] rounded-[32px] border border-slate-800 shadow-2xl overflow-hidden min-h-[400px] flex flex-col group">
-          <div className="p-8 border-b border-white/5 flex items-center justify-between bg-slate-900/40 backdrop-blur-xl">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Market Pulse Analytics</h3>
-              </div>
-              <p className="text-2xl font-black text-white tracking-tight">
-                {selectedCrop?.cropName} <span className="text-slate-500 text-lg font-normal">in {selectedMandi}</span>
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <div className="px-4 py-2 bg-white/5 rounded-xl border border-white/10 text-xs font-bold text-slate-400">30D History</div>
-              <div className="px-4 py-2 bg-emerald-500 text-slate-900 rounded-xl text-xs font-black">Live Data Feed</div>
-            </div>
-          </div>
-
-          <div className="flex-1 p-8 pb-4 relative">
-            <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/5 to-transparent pointer-events-none"></div>
-            <ResponsiveContainer width="100%" height={350}>
-              <AreaChart data={activeDetailData}>
-                <defs>
-                  <linearGradient id="colorPulse" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                <XAxis dataKey="time" hide />
-                <YAxis
-                  domain={['auto', 'auto']}
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: '#475569', fontSize: 11, fontWeight: 700, fontFamily: 'monospace' }}
-                  width={50}
-                />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.5)' }}
-                  itemStyle={{ color: '#fff', fontWeight: 'bold' }}
-                  labelStyle={{ color: '#64748b', fontSize: '10px', marginBottom: '4px' }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="value"
-                  stroke="#10b981"
-                  strokeWidth={4}
-                  fill="url(#colorPulse)"
-                  animationDuration={1500}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </section>
       </div>
     </div>
   );

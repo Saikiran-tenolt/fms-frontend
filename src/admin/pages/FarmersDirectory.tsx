@@ -1,8 +1,12 @@
+import { useState } from 'react';
 import { Card } from '../../components/ui/Card';
-import { Search, Filter } from 'lucide-react';
+import { Modal } from '../../components/ui/Modal';
+import { Search, Filter, PhoneCall, Calendar, CheckCircle, Sprout } from 'lucide-react';
 import { recentFarmersData } from '../data/mockData';
 
 export function FarmersDirectory() {
+  const [selectedFarmer, setSelectedFarmer] = useState<any>(null);
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 font-inter">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -58,7 +62,12 @@ export function FarmersDirectory() {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button className="text-emerald-600 hover:text-emerald-700 font-semibold text-xs uppercase tracking-wider">View Profile</button>
+                    <button 
+                      onClick={() => setSelectedFarmer(farmer)}
+                      className="text-emerald-600 hover:text-emerald-700 font-semibold text-xs uppercase tracking-wider transition-colors"
+                    >
+                      View Profile
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -66,6 +75,86 @@ export function FarmersDirectory() {
           </table>
         </div>
       </Card>
+
+      {/* Farmer Details Modal */}
+      <Modal 
+        isOpen={!!selectedFarmer} 
+        onClose={() => setSelectedFarmer(null)} 
+        title="Beneficiary Profile Insights" 
+        size="xl"
+      >
+        {selectedFarmer && (
+          <div className="space-y-8">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-slate-50 p-5 rounded-2xl border border-slate-200">
+              <div className="space-y-1">
+                <div className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                  <PhoneCall className="w-3 h-3 text-slate-400" /> Phone Number
+                </div>
+                <div className="text-sm font-bold text-slate-900">{selectedFarmer.phone}</div>
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                  <Calendar className="w-3 h-3 text-slate-400" /> Joined Platform
+                </div>
+                <div className="text-sm font-bold text-slate-900">{selectedFarmer.joinDate}</div>
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                  <CheckCircle className="w-3 h-3 text-emerald-500" /> Account Status
+                </div>
+                <div className="text-sm font-bold text-emerald-600">{selectedFarmer.status}</div>
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                  <Sprout className="w-3 h-3 text-amber-500" /> Historical Yield Avg
+                </div>
+                <div className="text-sm font-bold text-slate-900">{selectedFarmer.yieldAverage}</div>
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-sm font-bold text-slate-900">Registered Crop Harvesting History</h4>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-100 px-2.5 py-1 rounded-md">{selectedFarmer.cropHistory?.length || 0} Seasons Logged</span>
+              </div>
+              
+              <div className="overflow-hidden rounded-xl border border-slate-200 shadow-sm">
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500 font-bold border-b border-slate-200">
+                    <tr>
+                      <th className="px-4 py-3">Season</th>
+                      <th className="px-4 py-3">Crop Planted</th>
+                      <th className="px-4 py-3 text-right">Harvest Yield</th>
+                      <th className="px-4 py-3 text-right">Estimated Revenue</th>
+                      <th className="px-4 py-3 text-center">Outcome Rating</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 bg-white">
+                    {selectedFarmer.cropHistory?.map((history: any, idx: number) => (
+                      <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="px-4 py-3 font-semibold text-slate-800">{history.season}</td>
+                        <td className="px-4 py-3 text-slate-600">{history.crop}</td>
+                        <td className="px-4 py-3 text-right font-medium text-slate-900">{history.yield}</td>
+                        <td className="px-4 py-3 text-right font-medium text-emerald-600">{history.revenue}</td>
+                        <td className="px-4 py-3 text-center">
+                          <span className={`inline-flex px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                            history.rating === 'Outstanding' ? 'bg-indigo-50 text-indigo-700' :
+                            history.rating === 'Excellent' ? 'bg-emerald-50 text-emerald-700' :
+                            history.rating === 'Good' ? 'bg-blue-50 text-blue-700' :
+                            history.rating === 'Average' ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700'
+                          }`}>
+                            {history.rating}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

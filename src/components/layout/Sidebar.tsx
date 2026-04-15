@@ -12,7 +12,8 @@ import {
   User,
   ChevronLeft,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  Cloud
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -69,7 +70,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onMobileClose }) =
           items: [
             { name: 'Profile', path: '/admin/profile', icon: <User className="h-4 w-4" /> },
             { name: 'Settings', path: '/admin/settings', icon: <Settings className="h-4 w-4" /> },
-            { name: 'Logout', icon: <LogOut className="h-4 w-4" />, onClick: handleLogout },
           ]
         }
       ];
@@ -87,6 +87,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onMobileClose }) =
         items: [
           { name: 'Market', path: '/market', icon: <TrendingUp className="h-4 w-4" /> },
           { name: 'Advisory', path: '/advisories', icon: <FileText className="h-4 w-4" /> },
+          { name: 'Weather', path: '/weather', icon: <Cloud className="h-4 w-4" /> },
         ]
       },
       {
@@ -254,13 +255,25 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onMobileClose }) =
           </AnimatePresence>
 
           {!isSidebarCollapsed && (
-            <button 
-              onClick={handleLogout}
-              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
-              title="Logout"
-            >
-              <LogOut size={16} />
-            </button>
+            <div className="flex items-center gap-1">
+              <button 
+                onClick={() => {
+                  navigate(user?.role === 'ADMIN' ? '/admin/settings' : '/settings');
+                  handleNavClick();
+                }}
+                className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+                title="Settings"
+              >
+                <Settings size={16} />
+              </button>
+              <button 
+                onClick={handleLogout}
+                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
+                title="Logout"
+              >
+                <LogOut size={16} />
+              </button>
+            </div>
           )}
 
           {isSidebarCollapsed && (

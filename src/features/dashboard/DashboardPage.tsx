@@ -16,12 +16,12 @@ import {
   ChevronDown,
   CloudRain,
   Loader2,
-  CheckCircle2,
-  Clock,
   Activity,
-  Leaf
+  Droplet,
+  ArrowRight
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import {
   generateMockSensorData,
   generateMockTrendData,
@@ -34,7 +34,7 @@ export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { plots, selectedPlotId, loading: plotsLoading } = useAppSelector((state: any) => state.plots);
-  const { sensorData } = useAppSelector((state: any) => state.sensors);
+  const { sensorData, trendData } = useAppSelector((state: any) => state.sensors);
   const { notifications } = useAppSelector((state: any) => state.notifications);
   const { user } = useAppSelector((state: any) => state.auth);
   const { weatherData: realWeather, advisories } = useAppSelector((state: any) => state.advisories);
@@ -347,7 +347,24 @@ export const DashboardPage: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {metrics.map((m) => {
             const Icon = m.icon;
-            const accentColor = m.colorClass === 'rose' ? 'rose' : m.colorClass === 'emerald' ? 'emerald' : 'blue';
+            
+            const styles = {
+              rose: {
+                iconContainer: 'bg-rose-50 text-rose-600 group-hover:bg-rose-600',
+                badge: 'bg-rose-50 text-rose-700 border-rose-100',
+                progress: 'bg-rose-500'
+              },
+              emerald: {
+                iconContainer: 'bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600',
+                badge: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+                progress: 'bg-emerald-500'
+              },
+              blue: {
+                iconContainer: 'bg-blue-50 text-blue-600 group-hover:bg-blue-600',
+                badge: 'bg-blue-50 text-blue-700 border-blue-100',
+                progress: 'bg-blue-500'
+              }
+            }[m.colorClass as 'rose' | 'emerald' | 'blue'];
             
             return (
               <motion.div 
@@ -356,11 +373,11 @@ export const DashboardPage: React.FC = () => {
                 className="group relative bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-xl hover:border-slate-300 transition-all duration-300"
               >
                 <div className="flex items-start justify-between mb-6">
-                  <div className={`p-3 rounded-xl bg-${accentColor}-50 text-${accentColor}-600 group-hover:bg-${accentColor}-600 group-hover:text-white transition-all duration-300`}>
+                  <div className={`p-3 rounded-xl ${styles.iconContainer} group-hover:text-white transition-all duration-300`}>
                      <Icon size={20} />
                   </div>
                   <div className="flex flex-col items-end">
-                    <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-${accentColor}-50 text-${accentColor}-700 border border-${accentColor}-100`}>
+                    <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${styles.badge} border`}>
                       {m.statusLabel}
                     </span>
                     <span className="text-[10px] text-slate-400 mt-1 font-medium">{m.timestamp}</span>
@@ -378,7 +395,7 @@ export const DashboardPage: React.FC = () => {
                 {/* Subtle Progress Bar */}
                 <div className="mt-4 h-1 bg-slate-50 rounded-full overflow-hidden">
                    <div 
-                    className={`h-full bg-${accentColor}-500 transition-all duration-1000`} 
+                    className={`h-full ${styles.progress} transition-all duration-1000`} 
                     style={{ width: `${m.value}%` }}
                    />
                 </div>
@@ -441,70 +458,118 @@ export const DashboardPage: React.FC = () => {
         </section>
       )}
 
-      {/* section: Secondary Intelligence Panels */}
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-        <div className="space-y-6">
-          <div className="flex justify-between items-center px-2">
+      {/* section: Soil Moisture Trend Chart */}
+      {selectedPlotId && trendData[`${selectedPlotId}_soilMoisture`]?.length > 0 && (
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-xl font-bold text-slate-900 tracking-tight">Vitality History</h3>
-              <p className="text-xs text-slate-400 font-medium">Historical health signature logs.</p>
+              <h2 className="text-xl font-bold text-slate-900 tracking-tight">Soil Moisture Trend</h2>
+              <p className="text-xs text-slate-400 font-medium">7-day saturation index from IoT sensor network.</p>
+            </div>
+            <button
+              onClick={() => navigate('/plots')}
+              className="flex items-center gap-2 text-xs font-bold text-emerald-600 hover:text-emerald-700 uppercase tracking-widest"
+            >
+              View Plots <ArrowRight size={13} />
+            </button>
+          </div>
+          <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
+            <div className="h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={trendData[`${selectedPlotId}_soilMoisture`]}>
+                  <defs>
+                    <linearGradient id="moistureGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10B981" stopOpacity={0.15} />
+                      <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
+                  <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#94A3B8', fontSize: 10, fontWeight: 700 }} dy={12} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94A3B8', fontSize: 10, fontWeight: 700 }} dx={-8} domain={[0, 100]} unit="%" />
+                  <Tooltip
+                    formatter={(val: any) => [`${val}%`, 'Soil Moisture']}
+                    contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 40px -8px rgba(0,0,0,0.1)', fontSize: '11px', fontWeight: 700, padding: '12px 16px' }}
+                  />
+                  <Area type="monotone" dataKey="value" stroke="#10B981" strokeWidth={3} fillOpacity={1} fill="url(#moistureGradient)" dot={{ r: 4, fill: '#10B981', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 7, strokeWidth: 0 }} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex items-center justify-center gap-8 mt-4 pt-4 border-t border-slate-50">
+              {[{ label: 'Critical', color: 'bg-rose-500', range: '< 30%' }, { label: 'Optimal', color: 'bg-emerald-500', range: '30–70%' }, { label: 'High', color: 'bg-blue-500', range: '> 70%' }].map((l) => (
+                <div key={l.label} className="flex items-center gap-2">
+                  <div className={`w-2.5 h-2.5 rounded-full ${l.color}`} />
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{l.label} {l.range}</span>
+                </div>
+              ))}
             </div>
           </div>
-          <div className="bg-white rounded-3xl border border-slate-200 p-8 flex flex-col gap-8 shadow-sm">
-            {[
-              { title: "Harvest Window Identified", sub: "NDVI Peak: 0.98 • Sector A", time: "28 HRS AGO", icon: Leaf, color: "emerald" },
-              { title: "Biosphere Calibrated", sub: "Telemetry normalized across all nodes.", time: "4 DAYS AGO", icon: Activity, color: "blue" }
-            ].map((item, idx) => (
-              <div key={idx} className="flex gap-6 relative group">
-                {idx === 0 && <div className="absolute left-[21px] top-10 bottom-[-32px] w-0.5 bg-slate-100"></div>}
-                <div className={`w-11 h-11 rounded-xl bg-${item.color}-50 text-${item.color}-600 flex items-center justify-center flex-shrink-0 z-10 border-2 border-white shadow-md group-hover:bg-${item.color}-600 group-hover:text-white transition-all`}>
-                  <item.icon size={20} />
-                </div>
-                <div className="pt-0.5">
-                  <h4 className="font-bold text-slate-900 text-sm tracking-tight">{item.title}</h4>
-                  <p className="text-xs text-slate-500 font-medium mt-1">{item.sub}</p>
-                  <span className="mt-2 text-[9px] font-bold text-slate-400 uppercase tracking-widest block">{item.time}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        </section>
+      )}
 
-        <div className="space-y-6">
-          <div className="flex justify-between items-center px-2">
+      {/* section: Irrigation Advisory */}
+      {currentSensors && (
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-xl font-bold text-slate-900 tracking-tight">System Events</h3>
-              <p className="text-xs text-slate-400 font-medium">Automated optimization routine logs.</p>
+              <h2 className="text-xl font-bold text-slate-900 tracking-tight">Irrigation Advisory</h2>
+              <p className="text-xs text-slate-400 font-medium">Real-time recommendation based on soil moisture + weather.</p>
             </div>
           </div>
-          <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
-            <div className="p-8 flex items-center justify-between gap-4 bg-slate-50/50">
-              <div className="flex items-center gap-6">
-                <div className="w-11 h-11 rounded-xl bg-white border border-slate-200 flex items-center justify-center shadow-sm">
-                  <CheckCircle2 size={24} className="text-slate-300" />
+          {(() => {
+            const moisture = currentSensors.soilMoisture?.value || 0;
+            const isRaining = (realWeather?.weather[0]?.main || '').toLowerCase().includes('rain');
+            const shouldWater = moisture < 40 && !isRaining;
+            const windowStart = shouldWater ? '05:30 AM' : '—';
+            const windowEnd = shouldWater ? '07:30 AM' : '—';
+            return (
+              <div className={`rounded-3xl border-2 p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-8 ${
+                shouldWater
+                  ? 'bg-blue-50 border-blue-200'
+                  : 'bg-emerald-50 border-emerald-200'
+              }`}>
+                <div className="flex items-center gap-6">
+                  <div className={`p-5 rounded-2xl shadow-lg ${
+                    shouldWater ? 'bg-blue-600 text-white' : 'bg-emerald-600 text-white'
+                  }`}>
+                    <Droplet size={28} />
+                  </div>
+                  <div className="space-y-2">
+                    <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                      shouldWater ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'
+                    }`}>
+                      <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${
+                        shouldWater ? 'bg-blue-500' : 'bg-emerald-500'
+                      }`} />
+                      Smart Irrigation
+                    </div>
+                    <h3 className="text-2xl font-bold text-slate-900 tracking-tight">
+                      {shouldWater ? '💧 Water Now' : '✅ Wait — No Irrigation Needed'}
+                    </h3>
+                    <p className="text-slate-600 font-medium text-sm">
+                      {shouldWater
+                        ? `Soil moisture at ${moisture}% — below optimal threshold. ${isRaining ? '' : 'No rain expected.'}`
+                        : isRaining
+                          ? `Rain detected in area. Natural precipitation is sufficient (${moisture}% moisture).`
+                          : `Soil moisture at ${moisture}% — within optimal range. Next check in 6 hours.`
+                      }
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="font-bold text-slate-800 text-sm line-through opacity-40">Precision Nutrients Phase 1</h4>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Status: Completed • 08:00 AM</p>
-                </div>
+                {shouldWater && (
+                  <div className="flex-shrink-0 text-center bg-white rounded-2xl border border-blue-200 p-6 shadow-sm">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-2">Suggested Window</p>
+                    <p className="text-2xl font-black text-slate-900">{windowStart}</p>
+                    <p className="text-xs text-slate-400 font-bold">to {windowEnd}</p>
+                    <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest mt-2">Apply 25mm</p>
+                  </div>
+                )}
               </div>
-            </div>
+            );
+          })()}
+        </section>
+      )}
 
-            <div className="p-8 flex items-center justify-between gap-4 border-t border-slate-100">
-              <div className="flex items-center gap-6">
-                <div className="w-11 h-11 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center shadow-md">
-                  <Clock size={24} className="text-emerald-600" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-slate-900 text-sm">Calibration Cycle</h4>
-                  <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-widest mt-1">Status: Pending • 10:00 PM</p>
-                </div>
-              </div>
-              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-            </div>
-          </div>
-        </div>
-      </section>
+
     </div>
   );
 };

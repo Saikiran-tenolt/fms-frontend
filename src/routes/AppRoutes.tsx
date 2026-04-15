@@ -12,6 +12,7 @@ import { NotificationsPage } from '../features/notifications/NotificationsPage';
 import { MarketPage } from '../features/market/MarketPage';
 import { AssistantPage } from '../features/assistant/AssistantPage';
 import { SettingsPage } from '../features/settings/SettingsPage';
+import { WeatherPage } from '../features/weather/WeatherPage';
 
 // Admin Pages
 import { Overview as AdminDashboardPage } from '../admin/pages/Overview';
@@ -54,6 +55,7 @@ export const AppRoutes: React.FC = () => {
         <Route path="plots/:id" element={<PlotDetailsPage />} />
         <Route path="plots/:id/edit" element={<AddPlotPage />} />
         <Route path="advisories" element={<AdvisoryPage />} />
+        <Route path="weather" element={<WeatherPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
         <Route path="market" element={<MarketPage />} />
         <Route path="assistant" element={<AssistantPage />} />

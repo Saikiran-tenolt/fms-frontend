@@ -219,7 +219,7 @@ export const LoginPage: React.FC = () => {
                   <div className="flex items-center justify-between pt-2">
                     <button 
                       type="button"
-                      onClick={() => setRole(role === 'farmer' ? 'admin' : 'farmer')}
+                      onClick={() => { setRole('admin'); setStage('ADMIN_CORE'); }}
                       className="text-xs font-bold text-slate-400 hover:text-emerald-600 transition-colors uppercase tracking-widest"
                     >
                       {role === 'farmer' ? 'Admin Portal' : 'Farmer Access'}

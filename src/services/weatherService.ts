@@ -69,3 +69,14 @@ export const fetchWeatherByPincode = async (pincode: string): Promise<WeatherRes
   });
   return response.data;
 };
+
+export const fetchForecastByPincode = async (pincode: string): Promise<ForecastResponse> => {
+  const response = await axios.get(`${BASE_URL}/forecast`, {
+    params: {
+      zip: `${pincode},IN`,
+      appid: API_KEY,
+      units: 'metric',
+    },
+  });
+  return response.data;
+};
