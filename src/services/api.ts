@@ -106,7 +106,10 @@ api.interceptors.response.use(
     // For non-401 errors
     if (error.response) {
       const message = error.response.data?.message || 'An error occurred';
-      return Promise.reject(new Error(message));
+      const err = new Error(message) as any;
+      err.errors = error.response.data?.errors;
+      err.status = error.response.status;
+      return Promise.reject(err);
     } else if (error.request) {
       return Promise.reject(new Error('No response from server'));
     } else {
