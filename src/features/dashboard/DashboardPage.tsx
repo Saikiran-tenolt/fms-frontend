@@ -18,7 +18,10 @@ import {
   Loader2,
   Activity,
   Droplet,
-  ArrowRight
+  ArrowRight,
+  IndianRupee,
+  MessageSquare,
+  Zap
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -402,6 +405,105 @@ export const DashboardPage: React.FC = () => {
               </motion.div>
             );
           })}
+        </div>
+      </section>
+
+      {/* section: Quick Actions */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+              Quick Actions
+              <span className="text-xs font-medium text-slate-400 ml-2">Navigate fast</span>
+            </h2>
+            <p className="text-xs text-slate-400 font-medium mt-0.5">Jump to key modules from your command centre.</p>
+          </div>
+          <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 border border-emerald-100 rounded-full">
+            <Zap className="w-3 h-3 text-emerald-600" />
+            <span className="text-[10px] font-bold tracking-wider text-emerald-700 uppercase">4 Actions</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* View Plots */}
+          <motion.button
+            whileHover={{ y: -4 }}
+            onClick={() => navigate('/plots')}
+            className="group relative flex flex-col items-start gap-4 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-xl hover:border-emerald-300 transition-all duration-300 text-left overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50/60 rounded-full -mr-12 -mt-12 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="relative z-10 p-3 bg-emerald-50 text-emerald-600 rounded-xl group-hover:bg-emerald-600 group-hover:text-white transition-all duration-300">
+              <MapPin size={20} />
+            </div>
+            <div className="relative z-10 space-y-1">
+              <p className="font-bold text-slate-900 text-sm tracking-tight">View Plots</p>
+              <p className="text-[11px] text-slate-400 font-medium leading-snug">Manage farm plots &amp; boundaries</p>
+            </div>
+            <div className="relative z-10 flex items-center gap-1 mt-auto">
+              <span className="text-[9px] font-black uppercase tracking-widest text-emerald-600 group-hover:text-emerald-700">Open</span>
+              <ArrowRight size={11} className="text-emerald-600 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </motion.button>
+
+          {/* Market Prices */}
+          <motion.button
+            whileHover={{ y: -4 }}
+            onClick={() => navigate('/market')}
+            className="group relative flex flex-col items-start gap-4 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-xl hover:border-amber-300 transition-all duration-300 text-left overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-50/60 rounded-full -mr-12 -mt-12 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="relative z-10 p-3 bg-amber-50 text-amber-600 rounded-xl group-hover:bg-amber-500 group-hover:text-white transition-all duration-300">
+              <IndianRupee size={20} />
+            </div>
+            <div className="relative z-10 space-y-1">
+              <p className="font-bold text-slate-900 text-sm tracking-tight">Market Prices</p>
+              <p className="text-[11px] text-slate-400 font-medium leading-snug">Live mandi &amp; crop price feeds</p>
+            </div>
+            <div className="relative z-10 flex items-center gap-1 mt-auto">
+              <span className="text-[9px] font-black uppercase tracking-widest text-amber-600 group-hover:text-amber-700">Open</span>
+              <ArrowRight size={11} className="text-amber-600 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </motion.button>
+
+          {/* Smart Assistant */}
+          <motion.button
+            whileHover={{ y: -4 }}
+            onClick={() => navigate('/assistant')}
+            className="group relative flex flex-col items-start gap-4 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-xl hover:border-blue-300 transition-all duration-300 text-left overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50/60 rounded-full -mr-12 -mt-12 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="relative z-10 p-3 bg-blue-50 text-blue-600 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
+              <MessageSquare size={20} />
+            </div>
+            <div className="relative z-10 space-y-1">
+              <p className="font-bold text-slate-900 text-sm tracking-tight">Smart Assistant</p>
+              <p className="text-[11px] text-slate-400 font-medium leading-snug">Get AI-powered farm advice</p>
+            </div>
+            <div className="relative z-10 flex items-center gap-1 mt-auto">
+              <span className="text-[9px] font-black uppercase tracking-widest text-blue-600 group-hover:text-blue-700">Chat</span>
+              <ArrowRight size={11} className="text-blue-600 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </motion.button>
+
+          {/* View Advisories */}
+          <motion.button
+            whileHover={{ y: -4 }}
+            onClick={() => navigate('/advisories')}
+            className="group relative flex flex-col items-start gap-4 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-xl hover:border-violet-300 transition-all duration-300 text-left overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 w-32 h-32 bg-violet-50/60 rounded-full -mr-12 -mt-12 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="relative z-10 p-3 bg-violet-50 text-violet-600 rounded-xl group-hover:bg-violet-600 group-hover:text-white transition-all duration-300">
+              <Brain size={20} />
+            </div>
+            <div className="relative z-10 space-y-1">
+              <p className="font-bold text-slate-900 text-sm tracking-tight">View Advisories</p>
+              <p className="text-[11px] text-slate-400 font-medium leading-snug">AI crop recommendations</p>
+            </div>
+            <div className="relative z-10 flex items-center gap-1 mt-auto">
+              <span className="text-[9px] font-black uppercase tracking-widest text-violet-600 group-hover:text-violet-700">Explore</span>
+              <ArrowRight size={11} className="text-violet-600 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </motion.button>
         </div>
       </section>
 
