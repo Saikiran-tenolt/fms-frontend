@@ -191,8 +191,14 @@ export const LoginPage: React.FC = () => {
             accessToken: res.data.accessToken!,
             refreshToken: res.data.refreshToken!,
           }));
-          toast.success(`Welcome back, ${res.data.user!.name}`);
-          navigate('/dashboard');
+          
+          if (isSignup) {
+            toast.success(`Account created successfully! Welcome, ${res.data.user!.name}`);
+            navigate('/plots/create');
+          } else {
+            toast.success(`Welcome back, ${res.data.user!.name}`);
+            navigate('/dashboard');
+          }
         }
       } else {
         setError(res.data.message ?? 'Verification failed');

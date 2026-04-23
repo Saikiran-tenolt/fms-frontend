@@ -10,6 +10,7 @@ import { fetchAllPlots, selectPlot, removePlot } from './plotsSlice';
 import { PlotListItem } from './components/PlotListItem';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import { SkeletonPlotRow } from '../../components/ui';
 
 export const PlotListPage: React.FC = () => {
   const navigate = useNavigate();
@@ -39,9 +40,10 @@ export const PlotListPage: React.FC = () => {
 
   if (loading && plots.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
-        <Loader2 className="h-8 w-8 text-emerald-600 animate-spin" />
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Synchronizing Intelligence...</p>
+      <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-10">
+        <div className="space-y-4">
+          {[...Array(5)].map((_, i) => <SkeletonPlotRow key={i} />)}
+        </div>
       </div>
     );
   }

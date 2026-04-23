@@ -169,6 +169,9 @@ export const SettingsPage: React.FC = () => {
                 <div className="text-center md:text-left pt-2">
                   <h3 className="text-3xl font-black text-slate-900 tracking-tight leading-tight">{user?.name}</h3>
                   <p className="text-slate-500 font-bold text-sm tracking-wide mt-1">{user?.email || 'No email provided'}</p>
+                  {user?.phone && (
+                    <p className="text-slate-400 font-mono text-sm tracking-wide mt-0.5">+91 {user.phone}</p>
+                  )}
                   <div className="flex flex-wrap justify-center md:justify-start gap-2 mt-4">
                     <span className="inline-flex items-center px-3 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase tracking-[0.1em] border border-emerald-100 rounded-full">
                       <CheckCircle2 className="h-3 w-3 mr-1.5" /> Verified {user?.role}

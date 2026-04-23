@@ -1,7 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import type { PlotsState, Plot } from '../../types';
 import plotService, { CreatePlotPayload, UpdatePlotPayload } from '../../services/plotService';
-import { mockPlots } from '../../services/mockData';
 
 const initialState: PlotsState = {
   plots: [],
@@ -18,17 +17,12 @@ export const fetchAllPlots = createAsyncThunk(
     try {
       const response = await plotService.getPlots();
       if (response.success) {
-        // Fallback to mock data if API is empty (Simulation Mode)
-        if (response.data.length === 0) {
-          return mockPlots;
-        }
         return response.data;
       }
       return rejectWithValue('Failed to fetch plots');
     } catch (error: any) {
-      // Fallback to mock data on error as well for local dev
-      console.warn("API Error, falling back to mock data:", error.message);
-      return mockPlots;
+      console.warn("API Error:", error.message);
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch plots');
     }
   }
 );

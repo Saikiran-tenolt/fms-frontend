@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../../hooks';
 import { setSensorData, setTrendData } from '../sensors/sensorsSlice';
 import { setAdvisories, fetchWeatherAndAdvisories } from '../advisories/advisoriesSlice';
-import { EmptyState, SkeletonCard, SkeletonChart } from '../../components/ui';
+import { EmptyState, SkeletonDashboard } from '../../components/ui';
 import { toast } from 'sonner';
 import {
   Droplets,
@@ -41,7 +41,7 @@ export const DashboardPage: React.FC = () => {
   const { notifications } = useAppSelector((state: any) => state.notifications);
   const { user } = useAppSelector((state: any) => state.auth);
   const { weatherData: realWeather, advisories } = useAppSelector((state: any) => state.advisories);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [weather, setWeather] = useState<any>(null);
   const [executingAdvisoryId, setExecutingAdvisoryId] = useState<string | null>(null);
   const hasShownNotifications = useRef(false);
@@ -74,8 +74,10 @@ export const DashboardPage: React.FC = () => {
   useEffect(() => {
     if (plots.length > 0 && selectedPlotId) {
       loadDashboardData();
+    } else if (!plotsLoading && plots.length === 0) {
+      setLoading(false);
     }
-  }, [selectedPlotId, plots.length]);
+  }, [selectedPlotId, plots.length, plotsLoading]);
 
   const loadDashboardData = async () => {
     setLoading(true);
@@ -109,12 +111,7 @@ export const DashboardPage: React.FC = () => {
   };
 
   if (plotsLoading && plots.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full py-20 gap-4">
-        <Loader2 className="h-10 w-10 text-emerald-600 animate-spin" />
-        <p className="text-slate-400 font-bold text-xs uppercase tracking-widest">Establishing Satellite Uplink...</p>
-      </div>
-    );
+    return <SkeletonDashboard />;
   }
 
   if (plots.length === 0) {
@@ -188,20 +185,7 @@ export const DashboardPage: React.FC = () => {
   const metrics = getMetrics();
 
   if (loading) {
-    return (
-      <div className="px-8 max-w-7xl mx-auto space-y-12 mt-8 pb-20">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <SkeletonCard />
-          <SkeletonCard />
-          <SkeletonCard />
-          <SkeletonCard />
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <SkeletonChart />
-          <SkeletonChart />
-        </div>
-      </div>
-    );
+    return <SkeletonDashboard />;
   }
 
   return (

@@ -5,4 +5,4 @@ export { Loader } from './Loader';
 export { EmptyState } from './EmptyState';
 export { ErrorState } from './ErrorState';
 export { Modal } from './Modal';
-export { Skeleton, SkeletonCard, SkeletonChart } from './Skeleton';
+export { Skeleton, SkeletonCard, SkeletonChart, SkeletonPlotRow, SkeletonPlotDetails, SkeletonDashboard } from './Skeleton';

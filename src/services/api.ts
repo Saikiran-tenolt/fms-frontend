@@ -6,7 +6,7 @@ const API_BASE_URL = 'https://fms-backend-976n.onrender.com/api/v1';
 // Create axios instance
 const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: 60000, // 60s — accounts for Render free tier cold start (can take 30-60s)
   headers: {
     'Content-Type': 'application/json',
   },

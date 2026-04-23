@@ -6,7 +6,7 @@ import {
   Clock, Trash2, Battery, Signal, Zap, 
   CheckCircle2, RefreshCw, Droplet, Activity, Loader2, Layers
 } from 'lucide-react';
-import { EmptyState } from '../../components/ui';
+import { EmptyState, SkeletonPlotDetails } from '../../components/ui';
 import { toast } from 'sonner';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { motion } from 'framer-motion';
@@ -76,9 +76,8 @@ export const PlotDetailsPage: React.FC = () => {
   
   if (loading || plotsLoading) {
     return (
-      <div className="flex flex-col items-center justify-center h-[70vh] gap-4">
-        <Loader2 className="h-12 w-12 text-emerald-600 animate-spin" />
-        <p className="text-slate-400 font-black text-xs uppercase tracking-widest">Accessing Intelligence Feed...</p>
+      <div className="w-full font-['Inter'] pb-12 px-4 md:px-0">
+        <SkeletonPlotDetails />
       </div>
     );
   }
