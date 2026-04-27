@@ -1,6 +1,7 @@
 import { Bell, User, Menu } from 'lucide-react';
 import { useAppSelector } from '../../hooks';
 import { useNavigate } from 'react-router-dom';
+import { Badge } from '../ui/Badge';
 
 interface NavbarProps {
   onMobileMenuToggle: () => void;
@@ -10,6 +11,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMobileMenuToggle }) => {
   const navigate = useNavigate();
   const { user } = useAppSelector((state) => state.auth);
   const { unreadCount } = useAppSelector((state) => state.notifications);
+  const appMode = import.meta.env.VITE_APP_MODE;
 
   return (
     <nav className="bg-white/70 backdrop-blur-xl border-b border-slate-200/50 px-4 sm:px-8 py-3 sticky top-0 z-30 transition-all duration-300">
@@ -32,6 +34,11 @@ export const Navbar: React.FC<NavbarProps> = ({ onMobileMenuToggle }) => {
             <div className="flex items-center gap-2">
                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                <p className="text-[9px] font-bold text-slate-400 tracking-widest uppercase">System Operational</p>
+               {appMode === 'simulation' && (
+                 <Badge variant="info" size="sm" className="hidden sm:inline-flex ml-2 scale-[0.85] origin-left">
+                   Mode: Simulation
+                 </Badge>
+               )}
             </div>
           </div>
         </div>

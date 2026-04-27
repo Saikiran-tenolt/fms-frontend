@@ -176,31 +176,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onMobileClose }) =
 
   const sidebarContent = (
     <div className="flex flex-col h-full bg-[#fcfcfd] border-r border-slate-200/60 relative w-full overflow-hidden">
-      {/* Top Branding Section */}
-      <div className={`h-20 flex items-center transition-all duration-[400ms] ease-[cubic-bezier(0.25,1,0.5,1)] ${isSidebarCollapsed ? 'justify-center' : 'px-6'}`}>
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-600/20">
-            <Sparkles className="text-white h-5 w-5" />
-          </div>
-          <AnimatePresence>
-            {!isSidebarCollapsed && (
-              <motion.div
-                initial={{ opacity: 0, width: 0 }}
-                animate={{ opacity: 1, width: 'auto' }}
-                exit={{ opacity: 0, width: 0 }}
-                transition={{ type: "spring", stiffness: 400, damping: 35 }}
-                className="flex flex-col overflow-hidden whitespace-nowrap"
-              >
-                <span className="text-sm font-bold text-slate-900 leading-tight">FMS Pro</span>
-                <span className="text-[10px] font-semibold text-slate-400 tracking-wider">WORKSPACE</span>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
-
       {/* Navigation Groups */}
-      <div className="flex-1 overflow-hidden pt-4 space-y-3 flex flex-col">
+      <div className="flex-1 overflow-hidden pt-8 space-y-3 flex flex-col">
         {navGroups.map((group, groupIdx) => (
           <div key={groupIdx} className="space-y-1">
             <AnimatePresence>

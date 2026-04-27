@@ -2,29 +2,26 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../../hooks';
 import { setSensorData, setTrendData } from '../sensors/sensorsSlice';
-import { setAdvisories, fetchWeatherAndAdvisories } from '../advisories/advisoriesSlice';
+import { fetchWeatherAndAdvisories, setAdvisories } from '../advisories/advisoriesSlice';
 import { EmptyState, SkeletonDashboard } from '../../components/ui';
 import { toast } from 'sonner';
 import {
-  Droplets,
-  Thermometer,
-  Cloud,
-  Radio,
+  Droplet,
   MapPin,
-  Maximize,
-  Brain,
   ChevronDown,
   CloudRain,
-  Loader2,
-  Activity,
-  Droplet,
-  ArrowRight,
+  Sun,
+  CloudLightning,
+  CloudSnow,
+  Cloud as CloudIcon,
   IndianRupee,
   MessageSquare,
-  Zap
+  Brain,
+  Thermometer,
+  Radio,
+  Activity,
+  Loader2
 } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import {
   generateMockSensorData,
   generateMockTrendData,
@@ -33,24 +30,41 @@ import {
 } from '../../services/mockData';
 import { selectPlot, fetchAllPlots } from '../plots/plotsSlice';
 
+const getWeatherIcon = (condition: string, className = "w-6 h-6") => {
+  const lowerCondition = condition?.toLowerCase() || '';
+  if (lowerCondition.includes('rain') || lowerCondition.includes('drizzle')) return <CloudRain className={className} />;
+  if (lowerCondition.includes('sun') || lowerCondition.includes('clear')) return <Sun className={className} />;
+  if (lowerCondition.includes('thunder')) return <CloudLightning className={className} />;
+  if (lowerCondition.includes('snow')) return <CloudSnow className={className} />;
+  return <CloudIcon className={className} />;
+};
+
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const { plots, selectedPlotId, loading: plotsLoading } = useAppSelector((state: any) => state.plots);
+  const { plots, selectedPlotId, loading: plotsLoading, hasFetched } = useAppSelector((state: any) => state.plots);
   const { sensorData, trendData } = useAppSelector((state: any) => state.sensors);
   const { notifications } = useAppSelector((state: any) => state.notifications);
   const { user } = useAppSelector((state: any) => state.auth);
-  const { weatherData: realWeather, advisories } = useAppSelector((state: any) => state.advisories);
+  const { weatherData: realWeather, forecastData, advisories } = useAppSelector((state: any) => state.advisories);
+  
   const [loading, setLoading] = useState(false);
   const [weather, setWeather] = useState<any>(null);
-  const [executingAdvisoryId, setExecutingAdvisoryId] = useState<string | null>(null);
   const hasShownNotifications = useRef(false);
+  const [timeSinceUpdate, setTimeSinceUpdate] = useState('just now');
+  const [executingAdvisoryId, setExecutingAdvisoryId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (plots.length === 0 && !plotsLoading) {
+    if (plots.length === 0 && !plotsLoading && !hasFetched) {
       dispatch(fetchAllPlots());
     }
-  }, [dispatch, plots.length, plotsLoading]);
+  }, [dispatch, plots.length, plotsLoading, hasFetched]);
+
+  useEffect(() => {
+    if (hasFetched && plots.length === 0) {
+      navigate('/plots/create', { replace: true });
+    }
+  }, [hasFetched, plots.length, navigate]);
 
   useEffect(() => {
     if (!loading && notifications.length > 0 && !hasShownNotifications.current) {
@@ -58,10 +72,7 @@ export const DashboardPage: React.FC = () => {
       if (unread.length > 0) {
         unread.forEach((n: any, index: number) => {
           setTimeout(() => {
-            toast(n.title, {
-              description: n.message,
-              duration: 5000,
-            });
+            toast(n.title, { description: n.message, duration: 5000 });
           }, index * 500);
         });
         hasShownNotifications.current = true;
@@ -81,20 +92,16 @@ export const DashboardPage: React.FC = () => {
 
   const loadDashboardData = async () => {
     setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 800));
 
     if (selectedPlot) {
       const sensors = generateMockSensorData(selectedPlot._id, selectedPlot.environmentType);
       dispatch(setSensorData({ plotId: selectedPlot._id, data: sensors }));
       dispatch(setTrendData({ plotId: selectedPlot._id, sensor: 'soilMoisture', data: generateMockTrendData() }));
-      dispatch(setTrendData({ plotId: selectedPlot._id, sensor: 'temperature', data: generateMockTrendData() }));
-      dispatch(setTrendData({ plotId: selectedPlot._id, sensor: 'humidity', data: generateMockTrendData() }));
-      dispatch(setTrendData({ plotId: selectedPlot._id, sensor: 'soilTemperature', data: generateMockTrendData() }));
 
-      // Fetch weather based on plot coordinates
       const loc = selectedPlot.location as any;
-      const lat = loc.coordinates?.coordinates?.[1] ?? loc.lat;
-      const lon = loc.coordinates?.coordinates?.[0] ?? loc.lng;
+      const lat = loc?.coordinates?.coordinates?.[1] ?? loc?.lat;
+      const lon = loc?.coordinates?.coordinates?.[0] ?? loc?.lng;
 
       if (lat !== undefined && lon !== undefined) {
         dispatch(fetchWeatherAndAdvisories({ lat, lon }) as any);
@@ -103,559 +110,419 @@ export const DashboardPage: React.FC = () => {
       } else {
         setWeather(generateMockWeather(selectedPlot._id));
       }
-
+      
       dispatch(setAdvisories(mockAdvisories));
     }
-
     setLoading(false);
+    setTimeSinceUpdate('just now');
   };
 
-  if (plotsLoading && plots.length === 0) {
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeSinceUpdate('1 min ago');
+    }, 60000);
+    return () => clearInterval(timer);
+  }, [selectedPlotId]);
+
+  if (plotsLoading || (plots.length === 0 && !hasFetched)) {
     return <SkeletonDashboard />;
   }
 
   if (plots.length === 0) {
-    return (
-      <EmptyState
-        icon={<MapPin className="h-20 w-20" />}
-        title="No units identified"
-        description="Add your first geospatial unit to start monitoring your assets and receive real-time intelligence."
-        action={{
-          label: 'Deploy First Unit',
-          onClick: () => navigate('/plots/create'),
-        }}
-      />
-    );
-  }
-
-  const currentSensors = selectedPlotId ? sensorData[selectedPlotId] : null;
-  const latestAdvisory = advisories[0];
-
-  const getMetrics = () => {
-    if (!currentSensors) return [];
-
-    return [
-      {
-        id: 'moisture',
-        label: 'Soil Moisture',
-        value: currentSensors.soilMoisture?.value || 0,
-        unit: '%',
-        icon: Droplets,
-        timestamp: 'Just now',
-        status: (currentSensors.soilMoisture?.value || 0) < 30 ? 'critical' : (currentSensors.soilMoisture?.value || 0) <= 70 ? 'optimal' : 'normal',
-        statusLabel: (currentSensors.soilMoisture?.value || 0) < 30 ? 'Needs Watering' : (currentSensors.soilMoisture?.value || 0) <= 70 ? 'Optimal' : 'Normal',
-        colorClass: (currentSensors.soilMoisture?.value || 0) < 30 ? 'rose' : (currentSensors.soilMoisture?.value || 0) <= 70 ? 'emerald' : 'blue',
-      },
-      {
-        id: 'temp',
-        label: 'Temperature',
-        value: currentSensors.temperature?.value || 0,
-        unit: '°C',
-        icon: Thermometer,
-        timestamp: '2 mins ago',
-        status: (currentSensors.temperature?.value || 0) >= 18 && (currentSensors.temperature?.value || 0) <= 28 ? 'optimal' : 'normal',
-        statusLabel: (currentSensors.temperature?.value || 0) >= 18 && (currentSensors.temperature?.value || 0) <= 28 ? 'Optimal' : 'Normal',
-        colorClass: (currentSensors.temperature?.value || 0) >= 18 && (currentSensors.temperature?.value || 0) <= 28 ? 'emerald' : 'blue',
-      },
-      {
-        id: 'humidity',
-        label: 'Humidity',
-        value: currentSensors.humidity?.value || 0,
-        unit: '%',
-        icon: Cloud,
-        timestamp: 'Just now',
-        status: (currentSensors.humidity?.value || 0) >= 40 && (currentSensors.humidity?.value || 0) <= 70 ? 'normal' : 'optimal',
-        statusLabel: (currentSensors.humidity?.value || 0) >= 40 && (currentSensors.humidity?.value || 0) <= 70 ? 'Normal' : 'Optimal',
-        colorClass: (currentSensors.humidity?.value || 0) >= 40 && (currentSensors.humidity?.value || 0) <= 70 ? 'blue' : 'emerald',
-      },
-      {
-        id: 'soil-temp',
-        label: 'Soil Temp',
-        value: currentSensors.soilTemperature?.value || 0,
-        unit: '°C',
-        icon: Radio,
-        timestamp: '5 mins ago',
-        status: (currentSensors.soilTemperature?.value || 0) >= 18 && (currentSensors.soilTemperature?.value || 0) <= 26 ? 'optimal' : 'normal',
-        statusLabel: (currentSensors.soilTemperature?.value || 0) >= 18 && (currentSensors.soilTemperature?.value || 0) <= 26 ? 'Optimal' : 'Normal',
-        colorClass: (currentSensors.soilTemperature?.value || 0) >= 18 && (currentSensors.soilTemperature?.value || 0) <= 26 ? 'emerald' : 'blue',
-      }
-    ];
-  };
-
-  const metrics = getMetrics();
-
-  if (loading) {
+    // A fallback while the useEffect redirects
     return <SkeletonDashboard />;
   }
 
+  if (loading) return <SkeletonDashboard />;
+
+  const currentSensors = selectedPlotId ? sensorData[selectedPlotId] : null;
+  const moisture = currentSensors?.soilMoisture?.value || 0;
+  const isRaining = (realWeather?.weather?.[0]?.main || '').toLowerCase().includes('rain');
+  const shouldWater = moisture < 40 && !isRaining;
+  const latestAdvisory = advisories?.[0];
+
+  const getBadge = (val: number, type: 'moisture' | 'temp') => {
+    if (type === 'moisture') {
+      if (val < 30) return <span className="bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-600/10 text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">Low</span>;
+      if (val <= 70) return <span className="bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/10 text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">Optimal</span>;
+      return <span className="bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-600/10 text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">High</span>;
+    }
+    if (val > 35) return <span className="bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-600/10 text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">High</span>;
+    return <span className="bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/10 text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">Optimal</span>;
+  };
+
+  const mapWeatherCode = (code: number) => {
+    if (code === 0) return { condition: 'Clear', description: 'clear sky' };
+    if ([1, 2, 3].includes(code)) return { condition: 'Clouds', description: 'partly cloudy' };
+    if ([45, 48].includes(code)) return { condition: 'Fog', description: 'foggy' };
+    if ([51, 53, 55, 56, 57].includes(code)) return { condition: 'Drizzle', description: 'light drizzle' };
+    if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return { condition: 'Rain', description: 'rain showers' };
+    if ([71, 73, 75, 77, 85, 86].includes(code)) return { condition: 'Snow', description: 'snowfall' };
+    if ([95, 96, 99].includes(code)) return { condition: 'Thunderstorm', description: 'thunderstorms' };
+    return { condition: 'Clouds', description: 'overcast' };
+  };
+
+  const getDailyForecast = (data: any) => {
+    if (!data || !data.daily) return [];
+    const daily = [];
+    const { time, weather_code, temperature_2m_max } = data.daily;
+    
+    for (let i = 0; i < Math.min(7, time.length); i++) {
+      const date = new Date(time[i]);
+      const dayStr = date.toLocaleDateString('en-US', { weekday: 'short' });
+      const { condition, description } = mapWeatherCode(weather_code[i]);
+      
+      daily.push({
+        dateStr: dayStr,
+        temp: temperature_2m_max[i],
+        condition,
+        description,
+      });
+    }
+    return daily;
+  };
+
+  const forecastDays = forecastData ? getDailyForecast(forecastData) : [];
+  const trendList = trendData[`${selectedPlotId}_soilMoisture`] || [];
+
   return (
-    <div className="px-4 sm:px-8 max-w-7xl mx-auto space-y-12 mt-8 pb-20 font-inter">
-      {/* section: Matured Hero Section */}
-      <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        <div className="lg:col-span-8 space-y-6">
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2 px-3 py-1 bg-emerald-50 border border-emerald-100/50 rounded-full">
-              <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-              <span className="text-[10px] font-bold tracking-wider text-emerald-700 uppercase">System Active</span>
-            </div>
-            <span className="text-slate-400 text-[10px] font-semibold uppercase tracking-widest bg-slate-100 px-2 py-1 rounded-md">
-              Refreshed: {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+    <div className="flex flex-col flex-1 h-full font-inter bg-stone-50/50 text-zinc-900">
+      {/* Header */}
+      <header className="bg-white/80 backdrop-blur-md border-b border-zinc-200/60 px-8 py-5 flex justify-between items-center shrink-0">
+        <div className="flex flex-col">
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold tracking-tight text-zinc-900">{selectedPlot?.plotName}</h1>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 bg-zinc-100/80 px-2 py-0.5 rounded-md ml-1 border border-zinc-200/60">
+              {selectedPlot?.farmSize || 0} Acres • {selectedPlot?.soilType || 'Loamy'}
             </span>
+            <div className="relative group ml-1">
+              <select
+                value={selectedPlotId || ''}
+                onChange={(e) => dispatch(selectPlot(e.target.value))}
+                className="appearance-none pl-3 pr-8 py-1.5 bg-zinc-50/50 border border-zinc-200/60 rounded-lg text-sm font-semibold text-zinc-700 hover:bg-zinc-100 cursor-pointer outline-none transition-colors"
+              >
+                {plots.map((plot: any) => (
+                  <option key={plot._id} value={plot._id}>{plot.plotName}</option>
+                ))}
+              </select>
+              <ChevronDown className="w-4 h-4 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400" />
+            </div>
           </div>
-          
-          <div className="space-y-2">
-            <h1 className="text-4xl lg:text-6xl font-bold text-slate-900 tracking-tight leading-tight">
-              {selectedPlot?.plotName}
-              <span className="block text-2xl lg:text-3xl text-slate-400 font-medium mt-1">
-                Prime <span className="text-emerald-600/80 italic font-semibold">{selectedPlot?.cropType}</span> Sector
-              </span>
-            </h1>
-            {selectedPlot?.location && (
-              <div className="flex items-center gap-2 text-slate-500">
-                <div className="p-1.5 bg-slate-100 rounded-lg">
-                  <MapPin size={14} className="text-slate-600" />
+          <div className="text-[12px] font-medium text-zinc-500 flex items-center gap-3 mt-1.5">
+            <span className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full inline-block animate-pulse"></span>
+              <span className="capitalize">{selectedPlot?.cropStage?.replace('_', ' ').toLowerCase() || 'Vegetative'} Stage</span>
+            </span>
+            <span className="text-zinc-300">•</span>
+            <span>Updated {timeSinceUpdate}</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-4 hidden sm:flex">
+          <div className="flex items-center gap-3">
+            <div className="text-right">
+              <div className="text-[13px] font-semibold text-zinc-900 tracking-tight">{user?.name || 'Farmer'}</div>
+              <div className="text-[11px] font-medium tracking-wide uppercase text-zinc-500">{user?.role || 'Farmer'}</div>
+            </div>
+            <div className="w-9 h-9 rounded-full bg-zinc-100 border border-zinc-200/60 text-zinc-700 flex items-center justify-center text-[13px] font-bold uppercase shadow-sm">
+              {(user?.name?.charAt(0) || 'F')}
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content Area */}
+      <div className="p-6 md:p-8 max-w-[1400px] w-full mx-auto pb-24">
+        {/* Farm Header */}
+        <div className="mb-8">
+          <div className="flex flex-wrap items-center gap-4 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+            <div className="flex items-center gap-1.5">
+              <MapPin className="w-4 h-4 text-zinc-400" />
+              {selectedPlot?.location?.district || 'South Delhi'}, {selectedPlot?.location?.state || 'Delhi'}
+            </div>
+            <span className="text-zinc-300">•</span>
+            <div className="flex items-center gap-1.5">
+              Prime {selectedPlot?.cropType || 'PADDY'} Sector
+            </div>
+            <span className="text-zinc-300">•</span>
+            <div className="flex items-center gap-1.5">
+              {realWeather ? Math.round(realWeather.main.temp) : weather?.temperature || 41}°C Local Climate
+            </div>
+          </div>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+          {/* Soil Moisture */}
+          <div className="bg-white/80 backdrop-blur-md border border-zinc-200/60 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center gap-2 text-[10px] font-medium text-zinc-500 uppercase tracking-wider">
+                <Droplet className="w-4 h-4 text-emerald-600" />
+                Soil Moisture
+              </div>
+              {getBadge(moisture, 'moisture')}
+            </div>
+            <div>
+              <div className="text-4xl font-semibold text-zinc-900 tracking-tight">
+                {moisture}<span className="text-xl text-zinc-400 font-medium ml-1">%</span>
+              </div>
+              <div className="text-xs font-medium text-zinc-400 mt-2">Updated {timeSinceUpdate}</div>
+            </div>
+          </div>
+
+          {/* Temperature */}
+          <div className="bg-white/80 backdrop-blur-md border border-zinc-200/60 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center gap-2 text-[10px] font-medium text-zinc-500 uppercase tracking-wider">
+                <Thermometer className="w-4 h-4 text-amber-600" />
+                Temperature
+              </div>
+              {getBadge(realWeather ? Math.round(realWeather.main.temp) : (currentSensors?.temperature?.value || 22), 'temp')}
+            </div>
+            <div>
+              <div className="text-4xl font-semibold text-zinc-900 tracking-tight">
+                {realWeather ? Math.round(realWeather.main.temp) : (currentSensors?.temperature?.value || 22)}<span className="text-xl text-zinc-400 font-medium ml-1">°C</span>
+              </div>
+              <div className="text-xs font-medium text-zinc-400 mt-2">
+                Updated {timeSinceUpdate}
+              </div>
+            </div>
+          </div>
+
+          {/* Humidity */}
+          <div className="bg-white/80 backdrop-blur-md border border-zinc-200/60 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center gap-2 text-[10px] font-medium text-zinc-500 uppercase tracking-wider">
+                <CloudRain className="w-4 h-4 text-sky-600" />
+                Humidity
+              </div>
+              <span className="bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-600/10 text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">Normal</span>
+            </div>
+            <div>
+              <div className="text-4xl font-semibold text-zinc-900 tracking-tight">
+                {realWeather ? realWeather.main.humidity : (currentSensors?.humidity?.value || 65)}<span className="text-xl text-zinc-400 font-medium ml-1">%</span>
+              </div>
+              <div className="text-xs font-medium text-zinc-400 mt-2">
+                Updated {timeSinceUpdate}
+              </div>
+            </div>
+          </div>
+
+          {/* Soil Temp */}
+          <div className="bg-white/80 backdrop-blur-md border border-zinc-200/60 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center gap-2 text-[10px] font-medium text-zinc-500 uppercase tracking-wider">
+                <Radio className="w-4 h-4 text-purple-600" />
+                Soil Temp
+              </div>
+              {getBadge(currentSensors?.soilTemperature?.value || 22, 'temp')}
+            </div>
+            <div>
+              <div className="text-4xl font-semibold text-zinc-900 tracking-tight">
+                {currentSensors?.soilTemperature?.value || 22}<span className="text-xl text-zinc-400 font-medium ml-1">°C</span>
+              </div>
+              <div className="text-xs font-medium text-zinc-400 mt-2">Updated 5 mins ago</div>
+            </div>
+          </div>
+        </div>
+
+        {/* 7-Day Weather Forecast */}
+        {forecastDays.length > 0 && (
+          <div className="bg-white/80 backdrop-blur-md border border-zinc-200/60 rounded-2xl p-6 mb-6 shadow-sm">
+            <div className="mb-4">
+              <h3 className="text-base font-bold tracking-tight text-zinc-900">7-Day Weather Forecast</h3>
+              <p className="text-[13px] text-zinc-500">Based on local telemetry and API</p>
+            </div>
+            <div className="flex w-full divide-x divide-zinc-100/80 overflow-x-auto rounded-xl border border-zinc-100 bg-white">
+              {forecastDays.map((day, idx) => (
+                <div key={idx} className="flex-1 min-w-[100px] flex flex-col items-center justify-center p-3">
+                  <div className="text-[10px] font-bold text-zinc-400 mb-2 uppercase tracking-wider">{day.dateStr}</div>
+                  <div className="mb-2 text-zinc-600">{getWeatherIcon(day.condition, "w-6 h-6 stroke-[1.5]")}</div>
+                  <div className="text-[15px] font-semibold text-zinc-900">{Math.round(day.temp)}°C</div>
+                  <div className="text-[11px] text-zinc-400 mt-1 capitalize text-center leading-tight truncate w-full">{day.description}</div>
                 </div>
-                <p className="text-sm font-semibold tracking-tight">
-                  {selectedPlot.location.district}, {selectedPlot.location.state}
-                </p>
-              </div>
-            )}
+              ))}
+            </div>
           </div>
+        )}
 
-          <p className="text-slate-600 text-lg font-medium max-w-2xl leading-relaxed">
-            Real-time geospatial analytics and sensor telemetry for 
-            <span className="text-slate-900 font-bold mx-1">{selectedPlot?.plotName}</span>. 
-            Automated monitoring is currently optimizing for climate-specific yield variables.
-          </p>
-
-          <div className="flex flex-wrap items-center gap-6 pt-4">
-            <div className="flex items-center gap-4 bg-white p-3 pr-6 rounded-2xl border border-slate-200/60 shadow-sm">
-              <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
-                 {realWeather ? (
-                    <img src={`https://openweathermap.org/img/wn/${realWeather.weather[0].icon}.png`} alt="weather" className="w-10 h-10 object-contain" />
-                 ) : <CloudRain size={24} />}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* Alert / Recommendation */}
+          <div className="bg-white/80 backdrop-blur-md border border-zinc-200/60 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+            <div>
+              <div className="flex items-center gap-4 mb-3">
+                <div className="w-10 h-10 bg-sky-50 text-sky-600 rounded-xl flex items-center justify-center shrink-0">
+                  <Droplet className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold tracking-tight text-zinc-900">
+                    {shouldWater ? 'Water Now' : 'Optimal Moisture'}
+                  </h3>
+                  <p className="text-[13px] text-zinc-500">
+                    {shouldWater 
+                      ? `Soil moisture at ${moisture}% — below optimal threshold. No rain expected.`
+                      : `Soil moisture at ${moisture}% — within optimal range. No immediate action needed.`}
+                  </p>
+                </div>
               </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Local Climate</span>
-                <span className="text-2xl font-bold text-slate-900 leading-none">
-                  {realWeather ? Math.round(realWeather.main.temp) : weather?.temperature}°C
+            </div>
+            <div className="mt-5 pt-5 border-t border-zinc-100 flex justify-between items-center">
+              <div className="text-[11px] font-medium uppercase tracking-wider text-zinc-400">
+                Suggested Window
+                <span className="block font-semibold tracking-tight text-[13px] text-zinc-900 mt-1 normal-case">
+                  {shouldWater ? '05:30 AM to 07:30 AM' : 'N/A'}
                 </span>
               </div>
-            </div>
-
-            <div className="h-12 w-px bg-slate-200 hidden sm:block" />
-
-            <div className="flex flex-col min-w-[200px]">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Switch Deployment</span>
-              <div className="relative group">
-                <select
-                  value={selectedPlotId || ''}
-                  onChange={(e) => dispatch(selectPlot(e.target.value))}
-                  className="w-full appearance-none pl-4 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 transition-all cursor-pointer outline-none"
-                >
-                  {plots.map((plot: any) => (
-                    <option key={plot._id} value={plot._id}>
-                      {plot.plotName}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 group-hover:text-emerald-500 transition-colors" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="lg:col-span-4 flex flex-col gap-3 lg:items-end">
-          <div className="bg-emerald-600 text-white p-6 rounded-3xl shadow-lg shadow-emerald-600/20 w-full max-w-sm">
-             <div className="flex items-center justify-between mb-4">
-                <div className="p-2 bg-white/20 rounded-lg">
-                  <Activity size={20} />
-                </div>
-                <span className="text-[10px] font-bold uppercase tracking-widest opacity-80">Health Index</span>
-             </div>
-             <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-bold">94</span>
-                <span className="text-xl font-medium opacity-60">/100</span>
-             </div>
-             <div className="mt-4 h-1.5 bg-white/20 rounded-full overflow-hidden">
-                <div className="h-full bg-white w-[94%]" />
-             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* section: Polished Map View */}
-      <section className="space-y-4">
-        <div className="flex items-center justify-between px-2">
-          <div>
-            <h3 className="text-xl font-bold text-slate-900 tracking-tight">Geospatial Topology</h3>
-            <p className="text-xs text-slate-400 font-medium">Sat-link NDVI vegetative coverage analysis.</p>
-          </div>
-        </div>
-        <div className="rounded-[2.5rem] overflow-hidden bg-slate-100 border border-slate-200 shadow-sm h-[400px] relative group">
-          <img 
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[2000ms]" 
-            alt="Field sat" 
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuDnEG46wjKTwfzJsI-5SiCNM3CtwZcMgI9qZUVzYUX1kKN0HjBXhYsfMRLt07pXnsIdyoX0lB0gxXsGqEyTUuZJMbMGHUNN6hLvGMRBAq_jJgDIqxgz-1jvincfTDkyjISLRky4LyV_bG12Hj8enTNsfYx8-qyabGe3kZxvNbCBahUpE_XHOd_24ddgYpkNm7TWPJJbOCA60Y5IfRApDLi1-PfcbhllbinCqAVlwMdK5fxEjctrxe6vhH-XGimOMZXRtKk4paKLxq8d" 
-            referrerPolicy="no-referrer" 
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 via-transparent to-transparent opacity-60" />
-          
-          {/* Glass Controls */}
-          <div className="absolute top-6 left-6 flex flex-col gap-2">
-             <div className="px-3 py-1.5 bg-white/60 backdrop-blur-md border border-white/40 rounded-xl shadow-lg flex items-center gap-2">
-                <div className="w-2 h-2 bg-emerald-500 rounded-full" />
-                <span className="text-[10px] font-bold text-slate-900 uppercase">Live Feed</span>
-             </div>
-          </div>
-
-          <div className="absolute bottom-8 left-8 right-8 flex justify-between items-end">
-            <div className="text-white drop-shadow-md">
-              <p className="text-[10px] uppercase tracking-[0.3em] opacity-90 mb-1 font-bold">Spectral Analysis</p>
-              <h4 className="text-3xl font-bold tracking-tight">Sector Coverage</h4>
-            </div>
-            <button className="bg-white/80 backdrop-blur-xl border border-white text-slate-900 p-4 rounded-2xl hover:bg-white transition-all shadow-xl hover:scale-110 active:scale-95 group">
-              <Maximize className="w-5 h-5 group-hover:text-emerald-600 transition-colors" />
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* section: Matured Metrics Grid */}
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            Sensor Network
-            <span className="text-xs font-medium text-slate-400 ml-2">Real-time Data</span>
-          </h2>
-          <button className="text-xs font-bold text-emerald-600 hover:text-emerald-700 uppercase tracking-widest underline underline-offset-4 decoration-2">Calibration History</button>
-        </div>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {metrics.map((m) => {
-            const Icon = m.icon;
-            
-            const styles = {
-              rose: {
-                iconContainer: 'bg-rose-50 text-rose-600 group-hover:bg-rose-600',
-                badge: 'bg-rose-50 text-rose-700 border-rose-100',
-                progress: 'bg-rose-500'
-              },
-              emerald: {
-                iconContainer: 'bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600',
-                badge: 'bg-emerald-50 text-emerald-700 border-emerald-100',
-                progress: 'bg-emerald-500'
-              },
-              blue: {
-                iconContainer: 'bg-blue-50 text-blue-600 group-hover:bg-blue-600',
-                badge: 'bg-blue-50 text-blue-700 border-blue-100',
-                progress: 'bg-blue-500'
-              }
-            }[m.colorClass as 'rose' | 'emerald' | 'blue'];
-            
-            return (
-              <motion.div 
-                key={m.id}
-                whileHover={{ y: -4 }}
-                className="group relative bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-xl hover:border-slate-300 transition-all duration-300"
+              <button 
+                className={`px-5 py-2.5 rounded-xl text-xs font-semibold transition-all shadow-sm ${
+                  shouldWater 
+                    ? 'bg-zinc-900 text-white hover:bg-zinc-800' 
+                    : 'bg-zinc-100 text-zinc-400 cursor-not-allowed shadow-none'
+                }`} 
+                disabled={!shouldWater}
+                onClick={() => {
+                  toast.success('Irrigation command sent to control unit');
+                }}
               >
-                <div className="flex items-start justify-between mb-6">
-                  <div className={`p-3 rounded-xl ${styles.iconContainer} group-hover:text-white transition-all duration-300`}>
-                     <Icon size={20} />
-                  </div>
-                  <div className="flex flex-col items-end">
-                    <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${styles.badge} border`}>
-                      {m.statusLabel}
-                    </span>
-                    <span className="text-[10px] text-slate-400 mt-1 font-medium">{m.timestamp}</span>
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">{m.label}</p>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-4xl font-bold text-slate-900 tracking-tight">{m.value}</span>
-                    <span className="text-lg font-bold text-slate-400">{m.unit}</span>
-                  </div>
-                </div>
-                
-                {/* Subtle Progress Bar */}
-                <div className="mt-4 h-1 bg-slate-50 rounded-full overflow-hidden">
-                   <div 
-                    className={`h-full ${styles.progress} transition-all duration-1000`} 
-                    style={{ width: `${m.value}%` }}
-                   />
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* section: Quick Actions */}
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-              Quick Actions
-              <span className="text-xs font-medium text-slate-400 ml-2">Navigate fast</span>
-            </h2>
-            <p className="text-xs text-slate-400 font-medium mt-0.5">Jump to key modules from your command centre.</p>
+                Execute Command
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 border border-emerald-100 rounded-full">
-            <Zap className="w-3 h-3 text-emerald-600" />
-            <span className="text-[10px] font-bold tracking-wider text-emerald-700 uppercase">4 Actions</span>
-          </div>
-        </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* View Plots */}
-          <motion.button
-            whileHover={{ y: -4 }}
-            onClick={() => navigate('/plots')}
-            className="group relative flex flex-col items-start gap-4 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-xl hover:border-emerald-300 transition-all duration-300 text-left overflow-hidden"
-          >
-            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50/60 rounded-full -mr-12 -mt-12 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="relative z-10 p-3 bg-emerald-50 text-emerald-600 rounded-xl group-hover:bg-emerald-600 group-hover:text-white transition-all duration-300">
-              <MapPin size={20} />
-            </div>
-            <div className="relative z-10 space-y-1">
-              <p className="font-bold text-slate-900 text-sm tracking-tight">View Plots</p>
-              <p className="text-[11px] text-slate-400 font-medium leading-snug">Manage farm plots &amp; boundaries</p>
-            </div>
-            <div className="relative z-10 flex items-center gap-1 mt-auto">
-              <span className="text-[9px] font-black uppercase tracking-widest text-emerald-600 group-hover:text-emerald-700">Open</span>
-              <ArrowRight size={11} className="text-emerald-600 group-hover:translate-x-1 transition-transform" />
-            </div>
-          </motion.button>
-
-          {/* Market Prices */}
-          <motion.button
-            whileHover={{ y: -4 }}
-            onClick={() => navigate('/market')}
-            className="group relative flex flex-col items-start gap-4 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-xl hover:border-amber-300 transition-all duration-300 text-left overflow-hidden"
-          >
-            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-50/60 rounded-full -mr-12 -mt-12 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="relative z-10 p-3 bg-amber-50 text-amber-600 rounded-xl group-hover:bg-amber-500 group-hover:text-white transition-all duration-300">
-              <IndianRupee size={20} />
-            </div>
-            <div className="relative z-10 space-y-1">
-              <p className="font-bold text-slate-900 text-sm tracking-tight">Market Prices</p>
-              <p className="text-[11px] text-slate-400 font-medium leading-snug">Live mandi &amp; crop price feeds</p>
-            </div>
-            <div className="relative z-10 flex items-center gap-1 mt-auto">
-              <span className="text-[9px] font-black uppercase tracking-widest text-amber-600 group-hover:text-amber-700">Open</span>
-              <ArrowRight size={11} className="text-amber-600 group-hover:translate-x-1 transition-transform" />
-            </div>
-          </motion.button>
-
-          {/* Smart Assistant */}
-          <motion.button
-            whileHover={{ y: -4 }}
-            onClick={() => navigate('/assistant')}
-            className="group relative flex flex-col items-start gap-4 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-xl hover:border-blue-300 transition-all duration-300 text-left overflow-hidden"
-          >
-            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50/60 rounded-full -mr-12 -mt-12 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="relative z-10 p-3 bg-blue-50 text-blue-600 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
-              <MessageSquare size={20} />
-            </div>
-            <div className="relative z-10 space-y-1">
-              <p className="font-bold text-slate-900 text-sm tracking-tight">Smart Assistant</p>
-              <p className="text-[11px] text-slate-400 font-medium leading-snug">Get AI-powered farm advice</p>
-            </div>
-            <div className="relative z-10 flex items-center gap-1 mt-auto">
-              <span className="text-[9px] font-black uppercase tracking-widest text-blue-600 group-hover:text-blue-700">Chat</span>
-              <ArrowRight size={11} className="text-blue-600 group-hover:translate-x-1 transition-transform" />
-            </div>
-          </motion.button>
-
-          {/* View Advisories */}
-          <motion.button
-            whileHover={{ y: -4 }}
-            onClick={() => navigate('/advisories')}
-            className="group relative flex flex-col items-start gap-4 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-xl hover:border-violet-300 transition-all duration-300 text-left overflow-hidden"
-          >
-            <div className="absolute top-0 right-0 w-32 h-32 bg-violet-50/60 rounded-full -mr-12 -mt-12 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="relative z-10 p-3 bg-violet-50 text-violet-600 rounded-xl group-hover:bg-violet-600 group-hover:text-white transition-all duration-300">
-              <Brain size={20} />
-            </div>
-            <div className="relative z-10 space-y-1">
-              <p className="font-bold text-slate-900 text-sm tracking-tight">View Advisories</p>
-              <p className="text-[11px] text-slate-400 font-medium leading-snug">AI crop recommendations</p>
-            </div>
-            <div className="relative z-10 flex items-center gap-1 mt-auto">
-              <span className="text-[9px] font-black uppercase tracking-widest text-violet-600 group-hover:text-violet-700">Explore</span>
-              <ArrowRight size={11} className="text-violet-600 group-hover:translate-x-1 transition-transform" />
-            </div>
-          </motion.button>
-        </div>
-      </section>
-
-      {/* section: Intelligence Advisory Overlay */}
-      {latestAdvisory && (
-        <section className="relative group">
-          <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent" />
-          <div className="bg-white border border-slate-200 rounded-[2.5rem] p-10 sm:p-14 overflow-hidden relative shadow-sm hover:shadow-xl transition-all duration-500">
-            <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-50/50 rounded-full -mr-48 -mt-48 blur-3xl opacity-50 group-hover:opacity-100 transition-opacity" />
-            
-            <div className="relative z-10 flex flex-col lg:flex-row gap-12 items-center">
-              <div className="flex-grow space-y-6 text-center lg:text-left">
-                <div className="inline-flex items-center gap-3 px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full text-[10px] font-bold tracking-widest uppercase border border-emerald-100/50">
-                  <Brain className="w-4 h-4" />
-                  AI Optimization Feed
+          {/* AI Crop Advisory */}
+          {latestAdvisory ? (
+            <div className="bg-white/80 backdrop-blur-md border border-zinc-200/60 rounded-2xl p-6 shadow-sm flex flex-col justify-between relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-full blur-2xl -mr-16 -mt-16 opacity-50 pointer-events-none group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div>
+                <div className="flex items-center gap-4 mb-3 relative z-10">
+                  <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center shrink-0">
+                    <Brain className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold tracking-tight text-zinc-900">
+                      {latestAdvisory.title}
+                    </h3>
+                    <p className="text-[13px] text-zinc-500 line-clamp-2">
+                      {latestAdvisory.description}
+                    </p>
+                  </div>
                 </div>
-                <h2 className="text-slate-900 text-4xl font-bold tracking-tight leading-tight">
-                  {latestAdvisory.title}
-                </h2>
-                <p className="text-slate-500 max-w-xl text-lg font-medium leading-relaxed">
-                  {latestAdvisory.description}
-                </p>
               </div>
-              <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
-                <button
+              <div className="mt-5 pt-5 border-t border-zinc-100 flex justify-between items-center relative z-10">
+                <div className="text-[11px] font-medium uppercase tracking-wider text-zinc-400">
+                  AI Generated
+                  <span className="block font-semibold tracking-tight text-[13px] text-zinc-900 mt-1 normal-case">
+                    Optimization Feed
+                  </span>
+                </div>
+                <button 
+                  className={`px-5 py-2.5 rounded-xl text-xs font-semibold transition-all shadow-sm flex items-center gap-2 ${
+                    executingAdvisoryId === latestAdvisory.id 
+                      ? 'bg-zinc-100 text-zinc-400 cursor-wait shadow-none' 
+                      : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 ring-1 ring-inset ring-emerald-600/10'
+                  }`}
                   disabled={executingAdvisoryId === latestAdvisory.id}
                   onClick={() => {
                     setExecutingAdvisoryId(latestAdvisory.id);
-                    toast('Linking Command Protocol...', { icon: <Activity className="text-emerald-500" /> });
+                    toast('Linking Command Protocol...', { icon: <Activity className="text-emerald-500 w-4 h-4" /> });
                     setTimeout(() => {
                       toast.success('Sequence Optimized & Dispatched');
                       setExecutingAdvisoryId(null);
                       navigate('/advisories');
                     }, 2000);
                   }}
-                  className={`px-10 py-5 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-3 shadow-lg active:scale-95 ${
-                    executingAdvisoryId === latestAdvisory.id
-                      ? 'bg-slate-100 text-slate-400 cursor-wait'
-                      : 'bg-slate-900 text-white hover:bg-emerald-600 hover:shadow-emerald-600/20'
-                  }`}
                 >
                   {executingAdvisoryId === latestAdvisory.id ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
-                    <>
-                      Execute Command
-                      <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />
-                    </>
+                    'Review Advisory'
                   )}
                 </button>
               </div>
             </div>
-          </div>
-        </section>
-      )}
+          ) : (
+            <div className="bg-zinc-50 border border-zinc-200/60 rounded-2xl p-6 shadow-sm flex items-center justify-center text-zinc-400">
+              No active advisories
+            </div>
+          )}
+        </div>
 
-      {/* section: Soil Moisture Trend Chart */}
-      {selectedPlotId && trendData[`${selectedPlotId}_soilMoisture`]?.length > 0 && (
-        <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-bold text-slate-900 tracking-tight">Soil Moisture Trend</h2>
-              <p className="text-xs text-slate-400 font-medium">7-day saturation index from IoT sensor network.</p>
-            </div>
-            <button
-              onClick={() => navigate('/plots')}
-              className="flex items-center gap-2 text-xs font-bold text-emerald-600 hover:text-emerald-700 uppercase tracking-widest"
-            >
-              View Plots <ArrowRight size={13} />
-            </button>
-          </div>
-          <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
-            <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={trendData[`${selectedPlotId}_soilMoisture`]}>
-                  <defs>
-                    <linearGradient id="moistureGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10B981" stopOpacity={0.15} />
-                      <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
-                  <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#94A3B8', fontSize: 10, fontWeight: 700 }} dy={12} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94A3B8', fontSize: 10, fontWeight: 700 }} dx={-8} domain={[0, 100]} unit="%" />
-                  <Tooltip
-                    formatter={(val: any) => [`${val}%`, 'Soil Moisture']}
-                    contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 40px -8px rgba(0,0,0,0.1)', fontSize: '11px', fontWeight: 700, padding: '12px 16px' }}
-                  />
-                  <Area type="monotone" dataKey="value" stroke="#10B981" strokeWidth={3} fillOpacity={1} fill="url(#moistureGradient)" dot={{ r: 4, fill: '#10B981', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 7, strokeWidth: 0 }} />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="flex items-center justify-center gap-8 mt-4 pt-4 border-t border-slate-50">
-              {[{ label: 'Critical', color: 'bg-rose-500', range: '< 30%' }, { label: 'Optimal', color: 'bg-emerald-500', range: '30–70%' }, { label: 'High', color: 'bg-blue-500', range: '> 70%' }].map((l) => (
-                <div key={l.label} className="flex items-center gap-2">
-                  <div className={`w-2.5 h-2.5 rounded-full ${l.color}`} />
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{l.label} {l.range}</span>
+        {/* Chart Section */}
+        {trendList.length > 0 && (
+          <div className="bg-white/80 backdrop-blur-md border border-zinc-200/60 rounded-2xl p-6 mb-6 shadow-sm">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+              <div>
+                <h3 className="text-base font-bold tracking-tight text-zinc-900">Soil Moisture Trend</h3>
+                <p className="text-[13px] text-zinc-500 mt-0.5">7-day saturation index from IoT sensor network</p>
+              </div>
+              <div className="flex gap-4 text-[11px] font-semibold tracking-wider uppercase text-zinc-400">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-rose-400"></span>Critical &lt; 30%
                 </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>Optimal 30-70%
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-sky-500"></span>High &gt; 70%
+                </div>
+              </div>
+            </div>
+            
+            <div className="h-[200px] flex items-end gap-6 px-2 border-b border-zinc-100 pb-1">
+              {trendList.map((d: any, idx: number) => {
+                const height = `${Math.max(10, d.value)}%`;
+                return (
+                  <div key={idx} className="flex-1 bg-gradient-to-t from-emerald-600/80 to-emerald-400/40 rounded-t-md relative transition-opacity hover:opacity-80 group flex justify-center" style={{ height }}>
+                    <span className="absolute -top-7 text-[11px] font-bold tracking-tight text-zinc-900 opacity-0 group-hover:opacity-100 transition-opacity bg-white px-2 py-0.5 rounded-md shadow-sm border border-zinc-200/60">
+                      {d.value}%
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+            
+            <div className="flex gap-6 px-2 pt-4 text-[11px] font-medium uppercase tracking-wider text-zinc-400">
+              {trendList.map((d: any, idx: number) => (
+                <div key={idx} className="flex-1 text-center truncate">{d.date}</div>
               ))}
             </div>
           </div>
-        </section>
-      )}
+        )}
 
-      {/* section: Irrigation Advisory */}
-      {currentSensors && (
-        <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-bold text-slate-900 tracking-tight">Irrigation Advisory</h2>
-              <p className="text-xs text-slate-400 font-medium">Real-time recommendation based on soil moisture + weather.</p>
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
+          <button onClick={() => navigate('/plots')} className="bg-white/80 backdrop-blur-md border border-zinc-200/60 rounded-2xl p-5 flex flex-col items-start hover:border-zinc-300 hover:shadow-md transition-all text-left group">
+            <div className="w-10 h-10 rounded-xl bg-zinc-100 text-zinc-600 flex items-center justify-center mb-4 group-hover:bg-emerald-50 group-hover:text-emerald-600 transition-colors">
+              <MapPin className="w-5 h-5" />
             </div>
-          </div>
-          {(() => {
-            const moisture = currentSensors.soilMoisture?.value || 0;
-            const isRaining = (realWeather?.weather[0]?.main || '').toLowerCase().includes('rain');
-            const shouldWater = moisture < 40 && !isRaining;
-            const windowStart = shouldWater ? '05:30 AM' : '—';
-            const windowEnd = shouldWater ? '07:30 AM' : '—';
-            return (
-              <div className={`rounded-3xl border-2 p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-8 ${
-                shouldWater
-                  ? 'bg-blue-50 border-blue-200'
-                  : 'bg-emerald-50 border-emerald-200'
-              }`}>
-                <div className="flex items-center gap-6">
-                  <div className={`p-5 rounded-2xl shadow-lg ${
-                    shouldWater ? 'bg-blue-600 text-white' : 'bg-emerald-600 text-white'
-                  }`}>
-                    <Droplet size={28} />
-                  </div>
-                  <div className="space-y-2">
-                    <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                      shouldWater ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'
-                    }`}>
-                      <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${
-                        shouldWater ? 'bg-blue-500' : 'bg-emerald-500'
-                      }`} />
-                      Smart Irrigation
-                    </div>
-                    <h3 className="text-2xl font-bold text-slate-900 tracking-tight">
-                      {shouldWater ? '💧 Water Now' : '✅ Wait — No Irrigation Needed'}
-                    </h3>
-                    <p className="text-slate-600 font-medium text-sm">
-                      {shouldWater
-                        ? `Soil moisture at ${moisture}% — below optimal threshold. ${isRaining ? '' : 'No rain expected.'}`
-                        : isRaining
-                          ? `Rain detected in area. Natural precipitation is sufficient (${moisture}% moisture).`
-                          : `Soil moisture at ${moisture}% — within optimal range. Next check in 6 hours.`
-                      }
-                    </p>
-                  </div>
-                </div>
-                {shouldWater && (
-                  <div className="flex-shrink-0 text-center bg-white rounded-2xl border border-blue-200 p-6 shadow-sm">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-2">Suggested Window</p>
-                    <p className="text-2xl font-black text-slate-900">{windowStart}</p>
-                    <p className="text-xs text-slate-400 font-bold">to {windowEnd}</p>
-                    <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest mt-2">Apply 25mm</p>
-                  </div>
-                )}
-              </div>
-            );
-          })()}
-        </section>
-      )}
-
-
+            <div className="text-[14px] font-bold tracking-tight text-zinc-900 mb-1">View Plots</div>
+            <div className="text-[13px] text-zinc-500">Manage farm plots & boundaries</div>
+          </button>
+          
+          <button onClick={() => navigate('/market')} className="bg-white/80 backdrop-blur-md border border-zinc-200/60 rounded-2xl p-5 flex flex-col items-start hover:border-zinc-300 hover:shadow-md transition-all text-left group">
+            <div className="w-10 h-10 rounded-xl bg-zinc-100 text-zinc-600 flex items-center justify-center mb-4 group-hover:bg-emerald-50 group-hover:text-emerald-600 transition-colors">
+              <IndianRupee className="w-5 h-5" />
+            </div>
+            <div className="text-[14px] font-bold tracking-tight text-zinc-900 mb-1">Market Prices</div>
+            <div className="text-[13px] text-zinc-500">Live mandi & crop price feeds</div>
+          </button>
+          
+          <button onClick={() => navigate('/assistant')} className="bg-white/80 backdrop-blur-md border border-zinc-200/60 rounded-2xl p-5 flex flex-col items-start hover:border-zinc-300 hover:shadow-md transition-all text-left group">
+            <div className="w-10 h-10 rounded-xl bg-zinc-100 text-zinc-600 flex items-center justify-center mb-4 group-hover:bg-emerald-50 group-hover:text-emerald-600 transition-colors">
+              <MessageSquare className="w-5 h-5" />
+            </div>
+            <div className="text-[14px] font-bold tracking-tight text-zinc-900 mb-1">Smart Assistant</div>
+            <div className="text-[13px] text-zinc-500">Get AI-powered farm advice</div>
+          </button>
+          
+          <button onClick={() => navigate('/advisories')} className="bg-white/80 backdrop-blur-md border border-zinc-200/60 rounded-2xl p-5 flex flex-col items-start hover:border-zinc-300 hover:shadow-md transition-all text-left group">
+            <div className="w-10 h-10 rounded-xl bg-zinc-100 text-zinc-600 flex items-center justify-center mb-4 group-hover:bg-emerald-50 group-hover:text-emerald-600 transition-colors">
+              <Brain className="w-5 h-5" />
+            </div>
+            <div className="text-[14px] font-bold tracking-tight text-zinc-900 mb-1">View Advisories</div>
+            <div className="text-[13px] text-zinc-500">AI crop recommendations</div>
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

@@ -2,11 +2,17 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import type { PlotsState, Plot } from '../../types';
 import plotService, { CreatePlotPayload, UpdatePlotPayload } from '../../services/plotService';
 
-const initialState: PlotsState = {
+// Extended state type to include hasFetched without breaking existing PlotsState if imported strictly
+interface ExtendedPlotsState extends PlotsState {
+  hasFetched: boolean;
+}
+
+const initialState: ExtendedPlotsState = {
   plots: [],
   selectedPlotId: null,
   loading: false,
   error: null,
+  hasFetched: false,
 };
 
 // --- Async Thunks ---
@@ -88,6 +94,7 @@ const plotsSlice = createSlice({
     },
     setPlots: (state, action: PayloadAction<Plot[]>) => {
       state.plots = action.payload;
+      state.hasFetched = true;
       if (state.selectedPlotId === null && action.payload.length > 0) {
         state.selectedPlotId = action.payload[0]._id;
       }
@@ -104,6 +111,7 @@ const plotsSlice = createSlice({
     });
     builder.addCase(fetchAllPlots.fulfilled, (state, action) => {
       state.loading = false;
+      state.hasFetched = true;
       state.plots = action.payload;
       if (state.selectedPlotId === null && action.payload.length > 0) {
         state.selectedPlotId = action.payload[0]._id;
@@ -111,6 +119,7 @@ const plotsSlice = createSlice({
     });
     builder.addCase(fetchAllPlots.rejected, (state, action) => {
       state.loading = false;
+      state.hasFetched = true;
       state.error = action.payload as string;
     });
 

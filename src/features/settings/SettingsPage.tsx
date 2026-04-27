@@ -9,10 +9,10 @@ import authService from '../../services/authService';
 export const SettingsPage: React.FC = () => {
   const { user } = useAppSelector((state) => state.auth);
   const dispatch = useAppDispatch();
-  
+
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const [editForm, setEditForm] = useState({
     name: user?.name || '',
     email: user?.email || '',
@@ -24,7 +24,7 @@ export const SettingsPage: React.FC = () => {
 
   const handleSave = async () => {
     if (!editForm.name) return toast.error('Name is required');
-    
+
     setIsLoading(true);
     try {
       const payload = {
@@ -37,9 +37,9 @@ export const SettingsPage: React.FC = () => {
           state: editForm.state
         }
       };
-      
+
       const response = await authService.updateProfile(payload);
-      
+
       if (response.success) {
         dispatch(updateUser(response.user));
         toast.success('Profile updated successfully!');
@@ -140,16 +140,16 @@ export const SettingsPage: React.FC = () => {
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-6 border-t border-slate-50">
-                <Button 
-                  variant="ghost" 
-                  onClick={handleCancel} 
+                <Button
+                  variant="ghost"
+                  onClick={handleCancel}
                   disabled={isLoading}
                   className="text-slate-400 hover:text-slate-600 font-bold uppercase text-[11px] tracking-widest flex gap-2"
                 >
                   <X className="h-4 w-4" /> Cancel
                 </Button>
-                <Button 
-                  onClick={handleSave} 
+                <Button
+                  onClick={handleSave}
                   disabled={isLoading}
                   className="bg-slate-900 hover:bg-slate-800 text-white px-8 py-3 rounded-xl font-bold shadow-xl active:scale-95 transition-all flex gap-2"
                 >
@@ -173,9 +173,6 @@ export const SettingsPage: React.FC = () => {
                     <p className="text-slate-400 font-mono text-sm tracking-wide mt-0.5">+91 {user.phone}</p>
                   )}
                   <div className="flex flex-wrap justify-center md:justify-start gap-2 mt-4">
-                    <span className="inline-flex items-center px-3 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase tracking-[0.1em] border border-emerald-100 rounded-full">
-                      <CheckCircle2 className="h-3 w-3 mr-1.5" /> Verified {user?.role}
-                    </span>
                     <span className="inline-flex items-center px-3 py-1 bg-slate-50 text-slate-500 text-[10px] font-black uppercase tracking-[0.1em] border border-slate-100 rounded-full">
                       ID: {user?.id?.slice(-8) || 'Unknown'}
                     </span>
@@ -206,40 +203,40 @@ export const SettingsPage: React.FC = () => {
       {/* Auxiliary Settings */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card title="Notifications" className="border-slate-200/40">
-           <div className="space-y-4 pt-2">
-              <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-sm border border-slate-100">
-                    <Bell className="h-5 w-5 text-emerald-500" />
-                  </div>
-                  <div>
-                    <p className="font-bold text-slate-800 text-sm">Push Alerts</p>
-                    <p className="text-[10px] font-medium text-slate-400">Sensor & weather warnings</p>
-                  </div>
+          <div className="space-y-4 pt-2">
+            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-sm border border-slate-100">
+                  <Bell className="h-5 w-5 text-emerald-500" />
                 </div>
-                <div className="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" className="sr-only peer" defaultChecked />
-                  <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500" />
+                <div>
+                  <p className="font-bold text-slate-800 text-sm">Push Alerts</p>
+                  <p className="text-[10px] font-medium text-slate-400">Sensor & weather warnings</p>
                 </div>
               </div>
-           </div>
+              <div className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" className="sr-only peer" defaultChecked />
+                <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500" />
+              </div>
+            </div>
+          </div>
         </Card>
 
         <Card title="Privacy & Security" className="border-slate-200/40">
-           <div className="space-y-4 pt-2">
-              <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 group cursor-pointer hover:border-emerald-200 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-sm border border-slate-100 group-hover:bg-emerald-50 transition-colors">
-                    <Shield className="h-5 w-5 text-slate-400 group-hover:text-emerald-500" />
-                  </div>
-                  <div>
-                    <p className="font-bold text-slate-800 text-sm">Secure Access</p>
-                    <p className="text-[10px] font-medium text-slate-400">Manage login sessions</p>
-                  </div>
+          <div className="space-y-4 pt-2">
+            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 group cursor-pointer hover:border-emerald-200 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-sm border border-slate-100 group-hover:bg-emerald-50 transition-colors">
+                  <Shield className="h-5 w-5 text-slate-400 group-hover:text-emerald-500" />
                 </div>
-                <ChevronLeft className="h-4 w-4 text-slate-300 rotate-180" />
+                <div>
+                  <p className="font-bold text-slate-800 text-sm">Secure Access</p>
+                  <p className="text-[10px] font-medium text-slate-400">Manage login sessions</p>
+                </div>
               </div>
-           </div>
+              <ChevronLeft className="h-4 w-4 text-slate-300 rotate-180" />
+            </div>
+          </div>
         </Card>
       </div>
     </div>
@@ -247,19 +244,19 @@ export const SettingsPage: React.FC = () => {
 };
 
 const ChevronLeft = ({ className, ...props }: any) => (
-  <svg 
-    xmlns="http://www.w3.org/2000/svg" 
-    width="24" 
-    height="24" 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
-    strokeLinejoin="round" 
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
     className={className}
     {...props}
   >
-    <path d="m15 18-6-6 6-6"/>
+    <path d="m15 18-6-6 6-6" />
   </svg>
 )

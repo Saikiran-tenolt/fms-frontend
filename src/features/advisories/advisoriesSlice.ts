@@ -1,12 +1,13 @@
 import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
-import { fetchWeatherByPincode, fetchCurrentWeather } from '../../services/weatherService';
+import { fetchWeatherByPincode, fetchCurrentWeather, fetchForecast, fetchForecastByPincode } from '../../services/weatherService';
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from 'sonner';
 import type { AdvisoriesState, Advisory } from '../../types';
 
-const initialState: AdvisoriesState & { weatherData: any | null } = {
+const initialState: AdvisoriesState & { weatherData: any | null; forecastData: any | null } = {
   advisories: [],
   weatherData: null,
+  forecastData: null,
   loading: false,
   error: null,
 };
@@ -33,6 +34,9 @@ const advisoriesSlice = createSlice({
     setWeatherData: (state, action: PayloadAction<any>) => {
       state.weatherData = action.payload;
     },
+    setForecastData: (state, action: PayloadAction<any>) => {
+      state.forecastData = action.payload;
+    },
   },
 });
 
@@ -42,15 +46,19 @@ export const fetchWeatherAndAdvisories = createAsyncThunk(
     dispatch(setLoading(true));
     try {
       let weather;
+      let forecast;
       if (params.lat !== undefined && params.lon !== undefined) {
         weather = await fetchCurrentWeather(params.lat, params.lon);
+        forecast = await fetchForecast(params.lat, params.lon);
       } else if (params.pincode) {
         weather = await fetchWeatherByPincode(params.pincode);
+        forecast = await fetchForecastByPincode(params.pincode);
       } else {
         throw new Error('No location parameters provided');
       }
 
       dispatch(setWeatherData(weather));
+      dispatch(setForecastData(forecast));
 
       // Generate a Risk Advisory if it's raining or storming
       const condition = weather.weather[0].main.toLowerCase();
@@ -82,5 +90,5 @@ export const fetchWeatherAndAdvisories = createAsyncThunk(
   }
 );
 
-export const { setAdvisories, addAdvisory, resolveAdvisory, setLoading, setError, setWeatherData } = advisoriesSlice.actions;
+export const { setAdvisories, addAdvisory, resolveAdvisory, setLoading, setError, setWeatherData, setForecastData } = advisoriesSlice.actions;
 export default advisoriesSlice.reducer;

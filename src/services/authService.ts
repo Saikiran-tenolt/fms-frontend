@@ -53,6 +53,7 @@ const authService = {
         // Standardize User mapping
         const mappedUser: User = {
           ...user,
+          name: user.name || payload.name || `User ${user.phone?.slice(-4) || ''}`,
           id: (user as any)._id || user.id,
           role: user.role || 'FARMER' // Default to FARMER if not provided
         };

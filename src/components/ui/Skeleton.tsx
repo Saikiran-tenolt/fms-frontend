@@ -120,36 +120,104 @@ export const SkeletonPlotDetails: React.FC = () => (
 
 // ── Dashboard hero + full page skeleton ──────────────────────────────────────
 export const SkeletonDashboard: React.FC = () => (
-  <div className="px-4 sm:px-8 max-w-7xl mx-auto space-y-12 mt-8 pb-20 animate-pulse">
-    {/* Hero */}
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-      <div className="lg:col-span-8 space-y-5">
-        <Skeleton className="h-5 w-32 rounded-full" />
-        <Skeleton className="h-14 w-80 rounded" />
-        <Skeleton className="h-4 w-56 rounded" />
-        <Skeleton className="h-4 w-3/4 rounded" />
-        <div className="flex gap-4 pt-2">
-          <Skeleton className="h-16 w-40 rounded-2xl" />
-          <Skeleton className="h-16 w-48 rounded-2xl" />
+  <div className="flex flex-col flex-1 h-full bg-[#fafafa]">
+    {/* Header */}
+    <header className="bg-white border-b border-slate-200 px-8 py-4 flex justify-between items-center shrink-0">
+      <div className="flex flex-col gap-2">
+        <Skeleton className="h-7 w-48 rounded" />
+        <Skeleton className="h-4 w-32 rounded" />
+      </div>
+      <div className="hidden sm:flex items-center gap-4">
+        <div className="flex flex-col items-end gap-1.5">
+          <Skeleton className="h-4 w-24 rounded" />
+          <Skeleton className="h-3 w-16 rounded" />
+        </div>
+        <Skeleton className="h-8 w-8 rounded-full" />
+      </div>
+    </header>
+
+    {/* Main Content Area */}
+    <div className="p-6 md:p-8 max-w-[1400px] w-full mx-auto pb-24 space-y-8 animate-pulse">
+      {/* Farm Header */}
+      <Skeleton className="h-5 w-80 rounded" />
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="bg-white border border-slate-200 rounded-xl p-6 h-[132px] flex flex-col justify-between">
+            <div className="flex justify-between items-center mb-4">
+              <Skeleton className="h-4 w-24 rounded" />
+              <Skeleton className="h-5 w-12 rounded" />
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-9 w-20 rounded" />
+              <Skeleton className="h-3 w-32 rounded" />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Weather Forecast (7-day grid) */}
+      <div className="bg-white border border-slate-200 rounded-lg p-6">
+        <div className="mb-4 space-y-2">
+          <Skeleton className="h-5 w-48 rounded" />
+          <Skeleton className="h-3 w-32 rounded" />
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+          {[...Array(7)].map((_, i) => (
+            <div key={i} className="bg-slate-50 rounded-lg border border-slate-100 p-3 flex flex-col items-center gap-2 h-[120px]">
+              <Skeleton className="h-3 w-10 rounded mt-1" />
+              <Skeleton className="h-7 w-7 rounded-full mt-1" />
+              <Skeleton className="h-5 w-12 rounded mt-1" />
+              <Skeleton className="h-2.5 w-16 rounded mt-1" />
+            </div>
+          ))}
         </div>
       </div>
-      <div className="lg:col-span-4">
-        <Skeleton className="h-36 w-full rounded-3xl" />
+
+      {/* Alert & Advisory Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {[...Array(2)].map((_, i) => (
+          <div key={i} className="bg-white border border-slate-200 rounded-lg p-5 flex flex-col justify-between h-40">
+            <div className="flex gap-3">
+              <Skeleton className="h-10 w-10 rounded-lg shrink-0" />
+              <div className="space-y-2 w-full">
+                <Skeleton className="h-5 w-1/3 rounded" />
+                <Skeleton className="h-3 w-3/4 rounded" />
+                <Skeleton className="h-3 w-1/2 rounded" />
+              </div>
+            </div>
+            <div className="mt-4 pt-4 border-t border-slate-50 flex justify-between items-center">
+              <Skeleton className="h-8 w-32 rounded" />
+              <Skeleton className="h-8 w-24 rounded-md" />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Trend Chart */}
+      <div className="bg-white border border-slate-200 rounded-lg p-6 h-[270px] space-y-6">
+        <div className="space-y-2">
+          <Skeleton className="h-5 w-48 rounded" />
+          <Skeleton className="h-3 w-64 rounded" />
+        </div>
+        <div className="flex items-end gap-6 h-[140px] border-b border-slate-50 pb-1">
+          {[...Array(7)].map((_, i) => (
+            <Skeleton key={i} className="flex-1 rounded-t-[4px]" style={{ height: `${Math.random() * 60 + 20}%` }} />
+          ))}
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="bg-white border border-slate-200 rounded-lg p-4 h-[116px] flex flex-col items-start gap-2.5">
+            <Skeleton className="h-9 w-9 rounded-md" />
+            <Skeleton className="h-4 w-24 rounded" />
+            <Skeleton className="h-3 w-32 rounded" />
+          </div>
+        ))}
       </div>
     </div>
-    {/* Map */}
-    <Skeleton className="h-96 w-full rounded-[2.5rem]" />
-    {/* Metric cards */}
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-      {[...Array(4)].map((_, i) => <SkeletonCard key={i} />)}
-    </div>
-    {/* Quick actions */}
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      {[...Array(4)].map((_, i) => (
-        <Skeleton key={i} className="h-36 w-full rounded-2xl" />
-      ))}
-    </div>
-    {/* Chart */}
-    <SkeletonChart />
   </div>
 );
