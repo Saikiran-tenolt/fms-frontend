@@ -32,13 +32,13 @@ export const Navbar: React.FC<NavbarProps> = ({ onMobileMenuToggle }) => {
               Farmer Monitoring <span className="text-emerald-600">Portal</span>
             </h1>
             <div className="flex items-center gap-2">
-               <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-               <p className="text-[9px] font-bold text-slate-400 tracking-widest uppercase">System Operational</p>
-               {appMode === 'simulation' && (
-                 <Badge variant="info" size="sm" className="hidden sm:inline-flex ml-2 scale-[0.85] origin-left">
-                   Mode: Simulation
-                 </Badge>
-               )}
+              <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <p className="text-[9px] font-bold text-slate-400 tracking-widest uppercase">System Operational</p>
+              {appMode === 'simulation' && (
+                <Badge variant="info" size="sm" className="hidden sm:inline-flex ml-2 scale-[0.85] origin-left">
+                  Mode: Simulation
+                </Badge>
+              )}
             </div>
           </div>
         </div>

@@ -116,9 +116,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onMobileClose }) =
   };
 
   const NavLinkItem = ({ item }: { item: NavItem }) => {
-    const commonClasses = `group relative flex items-center transition-all duration-[400ms] ease-[cubic-bezier(0.25,1,0.5,1)] rounded-lg ${
-      isSidebarCollapsed ? 'justify-center w-10 h-10 mx-auto p-0' : 'gap-3 py-2 px-3 mx-3'
-    }`;
+    const commonClasses = `group relative flex items-center transition-all duration-[400ms] ease-[cubic-bezier(0.25,1,0.5,1)] rounded-lg ${isSidebarCollapsed ? 'justify-center w-10 h-10 mx-auto p-0' : 'gap-3 py-2 px-3 mx-3'
+      }`;
 
     const innerContent = (
       <>
@@ -162,10 +161,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onMobileClose }) =
         onClick={handleNavClick}
         title={isSidebarCollapsed ? item.name : undefined}
         className={({ isActive }) =>
-          `${commonClasses} ${
-            isActive
-              ? 'bg-emerald-50/80 text-emerald-700 font-semibold shadow-[inset_0_0_0_1px_rgba(16,185,129,0.1)]'
-              : 'text-slate-500 hover:bg-slate-100/80 hover:text-slate-900 font-medium'
+          `${commonClasses} ${isActive
+            ? 'bg-emerald-50/80 text-emerald-700 font-semibold shadow-[inset_0_0_0_1px_rgba(16,185,129,0.1)]'
+            : 'text-slate-500 hover:bg-slate-100/80 hover:text-slate-900 font-medium'
           }`
         }
       >
@@ -206,9 +204,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onMobileClose }) =
 
       {/* Premium User Profile Card */}
       <div className="p-4 border-t border-slate-100 bg-white/50">
-        <div className={`group relative flex items-center rounded-xl p-2 transition-all duration-[400ms] ease-[cubic-bezier(0.25,1,0.5,1)] ${
-          isSidebarCollapsed ? 'justify-center p-0' : 'bg-slate-50/50 border border-slate-200/50 hover:bg-slate-50'
-        }`}>
+        <div className={`group relative flex items-center rounded-xl p-2 transition-all duration-[400ms] ease-[cubic-bezier(0.25,1,0.5,1)] ${isSidebarCollapsed ? 'justify-center p-0' : 'bg-slate-50/50 border border-slate-200/50 hover:bg-slate-50'
+          }`}>
           {/* Avatar Badge */}
           <div className={`flex-shrink-0 w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-md shadow-indigo-600/10`}>
             {user?.name?.charAt(0) || 'F'}
@@ -233,7 +230,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onMobileClose }) =
 
           {!isSidebarCollapsed && (
             <div className="flex items-center gap-1">
-              <button 
+              <button
                 onClick={() => {
                   navigate(user?.role === 'ADMIN' ? '/admin/settings' : '/settings');
                   handleNavClick();
@@ -243,7 +240,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onMobileClose }) =
               >
                 <Settings size={16} />
               </button>
-              <button 
+              <button
                 onClick={handleLogout}
                 className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
                 title="Logout"
@@ -273,13 +270,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onMobileClose }) =
       >
         {sidebarContent}
         {/* Toggle Collapse Button - Premium Glassmorphism with Enhanced Borders */}
-        <button 
+        <button
           onClick={() => dispatch(toggleSidebarCollapsed())}
           className="hidden lg:flex absolute -right-4 top-6 w-8 h-8 bg-white/60 backdrop-blur-xl border-2 border-white shadow-xl rounded-full items-center justify-center text-slate-900 z-50 hover:bg-white hover:scale-110 active:scale-95 group transition-all duration-300 ring-4 ring-black/5"
           aria-label={isSidebarCollapsed ? "Expand" : "Collapse"}
         >
-          {isSidebarCollapsed ? 
-            <ChevronRight size={16} strokeWidth={3} className="group-hover:text-emerald-600 transition-colors" /> : 
+          {isSidebarCollapsed ?
+            <ChevronRight size={16} strokeWidth={3} className="group-hover:text-emerald-600 transition-colors" /> :
             <ChevronLeft size={16} strokeWidth={3} className="group-hover:text-emerald-600 transition-colors" />
           }
         </button>
@@ -293,9 +290,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onMobileClose }) =
       )}
 
       <aside
-        className={`lg:hidden fixed inset-y-0 left-0 z-50 w-64 bg-white transform transition-transform duration-300 ease-out ${
-          mobileOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        className={`lg:hidden fixed inset-y-0 left-0 z-50 w-64 bg-white transform transition-transform duration-300 ease-out ${mobileOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
       >
         {sidebarContent}
       </aside>
