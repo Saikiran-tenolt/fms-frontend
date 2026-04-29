@@ -29,7 +29,6 @@ import {
 import {
   generateMockSensorData,
   generateMockTrendData,
-  generateMockWeather,
   mockAdvisories,
 } from '../../services/mockData';
 import { selectPlot, fetchAllPlots } from '../plots/plotsSlice';
@@ -117,8 +116,6 @@ export const DashboardPage: React.FC = () => {
         dispatch(fetchWeatherAndAdvisories({ lat, lon }) as any);
       } else if (user?.pincode) {
         dispatch(fetchWeatherAndAdvisories({ pincode: user.pincode }) as any);
-      } else {
-        setWeather(generateMockWeather(selectedPlot._id));
       }
 
       dispatch(setAdvisories(mockAdvisories));
@@ -175,7 +172,7 @@ export const DashboardPage: React.FC = () => {
   const getDailyForecast = (data: any) => {
     if (!data || !data.daily) return [];
     const daily = [];
-    const { time, weather_code, temperature_2m_max } = data.daily;
+    const { time, weather_code, temperature_2m_max, temperature_2m_min } = data.daily;
 
     for (let i = 0; i < Math.min(7, time.length); i++) {
       const date = new Date(time[i]);
@@ -184,7 +181,8 @@ export const DashboardPage: React.FC = () => {
 
       daily.push({
         dateStr: dayStr,
-        temp: temperature_2m_max[i],
+        tempMax: temperature_2m_max[i],
+        tempMin: temperature_2m_min[i],
         condition,
         description,
       });
@@ -199,7 +197,7 @@ export const DashboardPage: React.FC = () => {
     <div className="flex flex-col flex-1 h-full font-inter bg-[#f5f5f3] text-zinc-900">
       {/* Header */}
       <div className="px-6 pt-5">
-        <div className="flex items-center h-20 bg-white border border-zinc-200 rounded-xl px-5">
+        <div className="flex items-center h-20 bg-white border border-[#e2e2d9] rounded-xl px-5">
 
           {/* Plot selector */}
           <div className="relative flex items-center h-full pr-5 hover:opacity-70 transition-opacity">
@@ -236,14 +234,14 @@ export const DashboardPage: React.FC = () => {
               <Activity size={10} />
               {selectedPlot?.cropStage ? selectedPlot.cropStage.charAt(0) + selectedPlot.cropStage.slice(1).toLowerCase() : 'Growth Stage'}
             </span>
-            <span className="flex items-center gap-1 bg-gray-50 border border-zinc-200 text-gray-500 text-[11.5px] rounded-full px-2.5 py-1">
+            <span className="flex items-center gap-1 bg-gray-50 border border-[#e2e2d9] text-gray-500 text-[11.5px] rounded-full px-2.5 py-1">
               <MapPin size={10} />
               {selectedPlot?.location?.district ?? '—'}{selectedPlot?.location?.state ? `, ${selectedPlot.location.state}` : ''}
             </span>
           </div>
 
           {/* Live indicator */}
-          <div className="flex items-center gap-2 pl-5 border-l border-zinc-200 h-full">
+          <div className="flex items-center gap-2 pl-5 border-l border-[#e2e2d9] h-full">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-[11.5px] text-gray-400">Live</span>
           </div>
@@ -252,14 +250,14 @@ export const DashboardPage: React.FC = () => {
       </div>
 
       {/* Main Content Area */}
-      <div className="p-6 md:p-8 max-w-[1400px] w-full mx-auto pb-24 space-y-8">
+      <div className="p-6 md:p-8 max-w-[1400px] w-full mx-auto pb-24 space-y-5">
         {/* Farm Header */}
 
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {/* Soil Moisture */}
-          <div className="bg-white/80 backdrop-blur-md border border-zinc-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+          <div className="bg-white/80 backdrop-blur-md border border-[#e2e2d9] rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between">
             <div className="flex justify-between items-center mb-4">
               <div className="flex items-center gap-2 text-[10px] font-medium text-zinc-500 uppercase tracking-wider">
                 <Droplet className="w-4 h-4 text-emerald-600" />
@@ -276,7 +274,7 @@ export const DashboardPage: React.FC = () => {
           </div>
 
           {/* Temperature */}
-          <div className="bg-white/80 backdrop-blur-md border border-zinc-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+          <div className="bg-white/80 backdrop-blur-md border border-[#e2e2d9] rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between">
             <div className="flex justify-between items-center mb-4">
               <div className="flex items-center gap-2 text-[10px] font-medium text-zinc-500 uppercase tracking-wider">
                 <Thermometer className="w-4 h-4 text-amber-600" />
@@ -295,7 +293,7 @@ export const DashboardPage: React.FC = () => {
           </div>
 
           {/* Humidity */}
-          <div className="bg-white/80 backdrop-blur-md border border-zinc-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+          <div className="bg-white/80 backdrop-blur-md border border-[#e2e2d9] rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between">
             <div className="flex justify-between items-center mb-4">
               <div className="flex items-center gap-2 text-[10px] font-medium text-zinc-500 uppercase tracking-wider">
                 <CloudRain className="w-4 h-4 text-sky-600" />
@@ -314,7 +312,7 @@ export const DashboardPage: React.FC = () => {
           </div>
 
           {/* Soil Temp */}
-          <div className="bg-white/80 backdrop-blur-md border border-zinc-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+          <div className="bg-white/80 backdrop-blur-md border border-[#e2e2d9] rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between">
             <div className="flex justify-between items-center mb-4">
               <div className="flex items-center gap-2 text-[10px] font-medium text-zinc-500 uppercase tracking-wider">
                 <Radio className="w-4 h-4 text-purple-600" />
@@ -333,12 +331,12 @@ export const DashboardPage: React.FC = () => {
 
         {/* 7-Day Weather Forecast */}
         {forecastDays.length > 0 && (
-          <div className="bg-white/80 backdrop-blur-md border border-zinc-200 rounded-xl p-6 shadow-sm">
+          <div className="bg-white/80 backdrop-blur-md border border-[#e2e2d9] rounded-xl p-6 shadow-sm">
             <div className="mb-4">
               <h3 className="text-base font-bold tracking-tight text-zinc-900">7-Day Weather Forecast</h3>
               <p className="text-[13px] text-zinc-500">Based on local telemetry and API</p>
             </div>
-            <div className="flex w-full divide-x divide-zinc-200 overflow-x-auto rounded-xl border border-zinc-200 bg-white">
+            <div className="flex w-full divide-x divide-zinc-200 overflow-x-auto rounded-xl border border-[#e2e2d9] bg-white">
               {forecastDays.map((day, idx) => (
                 <div key={idx} className={`flex-1 min-w-[100px] flex flex-col items-center justify-center p-3 transition-colors ${idx === 0 ? 'bg-[#f5f5f3] rounded-lg' : ''}`}>
                   <div className={`text-[10px] font-bold mb-2 uppercase tracking-wider ${idx === 0 ? 'text-zinc-900' : 'text-zinc-400'}`}>
@@ -347,7 +345,9 @@ export const DashboardPage: React.FC = () => {
                   <div className="mb-2 text-zinc-600">
                     {getWeatherIcon(day.condition, "w-6 h-6 stroke-[1.5]")}
                   </div>
-                  <div className="text-[15px] font-semibold text-zinc-900">{Math.round(day.temp)}°C</div>
+                  <div className="text-[15px] font-semibold text-zinc-900 flex items-center gap-1">
+                    {Math.round(day.tempMax)}° <span className="text-zinc-400 text-xs">{Math.round(day.tempMin)}°</span>
+                  </div>
                   <div className={`text-[11px] mt-1 capitalize text-center leading-tight truncate w-full ${idx === 0 ? 'text-zinc-900 font-bold' : 'text-zinc-400'}`}>
                     {day.description}
                   </div>
@@ -359,7 +359,7 @@ export const DashboardPage: React.FC = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Alert / Recommendation */}
-          <div className="bg-white/80 backdrop-blur-md border border-zinc-200 rounded-xl p-6 shadow-sm flex flex-col justify-between">
+          <div className="bg-white/80 backdrop-blur-md border border-[#e2e2d9] rounded-xl p-6 shadow-sm flex flex-col justify-between">
             <div>
               <div className="flex items-center gap-4 mb-3">
                 <div className="w-10 h-10 bg-sky-50 text-sky-600 rounded-xl flex items-center justify-center shrink-0">
@@ -377,7 +377,7 @@ export const DashboardPage: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div className="mt-5 pt-5 border-t border-zinc-200 flex justify-between items-center">
+            <div className="mt-5 pt-5 border-t border-[#e2e2d9] flex justify-between items-center">
               <div className="text-[11px] font-medium uppercase tracking-wider text-zinc-400">
                 Suggested Window
                 <span className="block font-semibold tracking-tight text-[13px] text-zinc-900 mt-1 normal-case">
@@ -401,7 +401,7 @@ export const DashboardPage: React.FC = () => {
 
           {/* AI Crop Advisory */}
           {latestAdvisory ? (
-            <div className="bg-white/80 backdrop-blur-md border border-zinc-200 rounded-xl p-6 shadow-sm flex flex-col justify-between relative overflow-hidden group">
+            <div className="bg-white/80 backdrop-blur-md border border-[#e2e2d9] rounded-xl p-6 shadow-sm flex flex-col justify-between relative overflow-hidden group">
               <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-full blur-2xl -mr-16 -mt-16 opacity-50 pointer-events-none group-hover:opacity-100 transition-opacity duration-500"></div>
               <div>
                 <div className="flex items-center gap-4 mb-3 relative z-10">
@@ -418,7 +418,7 @@ export const DashboardPage: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <div className="mt-5 pt-5 border-t border-zinc-200 flex justify-between items-center relative z-10">
+              <div className="mt-5 pt-5 border-t border-[#e2e2d9] flex justify-between items-center relative z-10">
                 <div className="text-[11px] font-medium uppercase tracking-wider text-zinc-400">
                   AI Generated
                   <span className="block font-semibold tracking-tight text-[13px] text-zinc-900 mt-1 normal-case">
@@ -450,7 +450,7 @@ export const DashboardPage: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="bg-zinc-50 border border-zinc-200 rounded-xl p-6 shadow-sm flex items-center justify-center text-zinc-400">
+            <div className="bg-zinc-50 border border-[#e2e2d9] rounded-xl p-6 shadow-sm flex items-center justify-center text-zinc-400">
               No active advisories
             </div>
           )}
@@ -458,7 +458,7 @@ export const DashboardPage: React.FC = () => {
 
         {/* Chart Section */}
         {trendList.length > 0 && (
-          <div className="bg-white/80 backdrop-blur-md border border-zinc-200 rounded-xl p-6 shadow-sm">
+          <div className="bg-white/80 backdrop-blur-md border border-[#e2e2d9] rounded-xl p-6 shadow-sm">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
               <div>
                 <h3 className="text-base font-bold tracking-tight text-zinc-900">Soil Moisture Trend</h3>
@@ -477,20 +477,20 @@ export const DashboardPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="h-[200px] flex items-end gap-6 px-2 border-b border-zinc-200 pb-1">
+            <div className="h-[200px] flex items-end gap-6 px-2 border-b border-[#e2e2d9] pb-1">
               {trendList.map((d: any, idx: number) => {
                 const height = `${Math.max(10, d.value)}%`;
                 return (
-                  <div 
-                    key={idx} 
-                    className="flex-1 rounded-t-md relative transition-all hover:opacity-100 group flex justify-center shadow-sm" 
-                    style={{ 
-                      height, 
+                  <div
+                    key={idx}
+                    className="flex-1 rounded-t-md relative transition-all hover:opacity-100 group flex justify-center shadow-sm"
+                    style={{
+                      height,
                       background: 'linear-gradient(180deg, #6fd3a3 0%, #1d9e75 100%)',
-                      opacity: 0.9 
+                      opacity: 0.9
                     }}
                   >
-                    <span className="absolute -top-7 text-[11px] font-bold tracking-tight text-zinc-900 opacity-0 group-hover:opacity-100 transition-opacity bg-white px-2 py-0.5 rounded-md shadow-sm border border-zinc-200">
+                    <span className="absolute -top-7 text-[11px] font-bold tracking-tight text-zinc-900 opacity-0 group-hover:opacity-100 transition-opacity bg-white px-2 py-0.5 rounded-md shadow-sm border border-[#e2e2d9]">
                       {d.value}%
                     </span>
                   </div>
@@ -508,9 +508,9 @@ export const DashboardPage: React.FC = () => {
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          <button 
-            onClick={() => navigate('/plots')} 
-            className="bg-white border border-zinc-200 rounded-xl p-6 flex items-center gap-4 hover:border-green-200 hover:shadow-md transition-all text-left group"
+          <button
+            onClick={() => navigate('/plots')}
+            className="bg-white border border-[#e2e2d9] rounded-xl p-6 flex items-center gap-4 hover:border-green-200 hover:shadow-md transition-all text-left group"
           >
             <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#eaf3de' }}>
               <LayoutGrid size={18} strokeWidth={1.8} className="text-[#3b6d11]" />
@@ -520,10 +520,10 @@ export const DashboardPage: React.FC = () => {
               <p className="text-[12px] text-gray-400 mt-0.5">Manage farm plots & boundaries</p>
             </div>
           </button>
-          
-          <button 
-            onClick={() => navigate('/market')} 
-            className="bg-white border border-zinc-200 rounded-xl p-6 flex items-center gap-4 hover:border-amber-200 hover:shadow-md transition-all text-left group"
+
+          <button
+            onClick={() => navigate('/market')}
+            className="bg-white border border-[#e2e2d9] rounded-xl p-6 flex items-center gap-4 hover:border-amber-200 hover:shadow-md transition-all text-left group"
           >
             <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#faeeda' }}>
               <IndianRupee size={18} strokeWidth={1.8} className="text-[#854f0b]" />
@@ -533,10 +533,10 @@ export const DashboardPage: React.FC = () => {
               <p className="text-[12px] text-gray-400 mt-0.5">Live mandi & crop price feeds</p>
             </div>
           </button>
-          
-          <button 
-            onClick={() => navigate('/assistant')} 
-            className="bg-white border border-zinc-200 rounded-xl p-6 flex items-center gap-4 hover:border-blue-200 hover:shadow-md transition-all text-left group"
+
+          <button
+            onClick={() => navigate('/assistant')}
+            className="bg-white border border-[#e2e2d9] rounded-xl p-6 flex items-center gap-4 hover:border-blue-200 hover:shadow-md transition-all text-left group"
           >
             <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#e6f1fb' }}>
               <MessageSquare size={18} strokeWidth={1.8} className="text-[#185fa5]" />
@@ -546,10 +546,10 @@ export const DashboardPage: React.FC = () => {
               <p className="text-[12px] text-gray-400 mt-0.5">Get AI-powered farm advice</p>
             </div>
           </button>
-          
-          <button 
-            onClick={() => navigate('/advisories')} 
-            className="bg-white border border-zinc-200 rounded-xl p-6 flex items-center gap-4 hover:border-emerald-200 hover:shadow-md transition-all text-left group"
+
+          <button
+            onClick={() => navigate('/advisories')}
+            className="bg-white border border-[#e2e2d9] rounded-xl p-6 flex items-center gap-4 hover:border-emerald-200 hover:shadow-md transition-all text-left group"
           >
             <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#e1f5ee' }}>
               <Star size={18} strokeWidth={1.8} className="text-[#0f6e56]" />

@@ -44,21 +44,17 @@ export const fetchWeatherAndAdvisories = createAsyncThunk(
   'advisories/fetchWeatherAndAdvisories',
   async (params: { pincode?: string; lat?: number; lon?: number }, { dispatch }) => {
     dispatch(setLoading(true));
+    
+    let weather;
     try {
-      let weather;
-      let forecast;
       if (params.lat !== undefined && params.lon !== undefined) {
         weather = await fetchCurrentWeather(params.lat, params.lon);
-        forecast = await fetchForecast(params.lat, params.lon);
       } else if (params.pincode) {
         weather = await fetchWeatherByPincode(params.pincode);
-        forecast = await fetchForecastByPincode(params.pincode);
       } else {
         throw new Error('No location parameters provided');
       }
-
       dispatch(setWeatherData(weather));
-      dispatch(setForecastData(forecast));
 
       // Generate a Risk Advisory if it's raining or storming
       const condition = weather.weather[0].main.toLowerCase();
@@ -73,20 +69,25 @@ export const fetchWeatherAndAdvisories = createAsyncThunk(
           timestamp: new Date().toISOString(),
         }));
       }
-
-      dispatch(setLoading(false));
     } catch (error: any) {
-      if (error.response?.status === 401) {
-        dispatch(setError('OpenWeather API Key expired or invalid. Please update the key in weatherService.ts.'));
-        toast.error('Weather API Key expired. Please paste a new one.', {
-          description: 'Current key: c182db35...7efd',
-          duration: 10000,
-        });
-      } else {
-        dispatch(setError(error.message));
-      }
-      dispatch(setLoading(false));
+      dispatch(setError(error.message));
     }
+
+    try {
+      let forecast;
+      if (params.lat !== undefined && params.lon !== undefined) {
+        forecast = await fetchForecast(params.lat, params.lon);
+      } else if (params.pincode) {
+        forecast = await fetchForecastByPincode(params.pincode);
+      }
+      if (forecast) {
+        dispatch(setForecastData(forecast));
+      }
+    } catch (error: any) {
+      console.error('Forecast fetch error:', error);
+    }
+
+    dispatch(setLoading(false));
   }
 );
 

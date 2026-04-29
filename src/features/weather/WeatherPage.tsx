@@ -28,41 +28,31 @@ const getRiskLevel = (main: string): { level: string; color: string; bg: string;
   return { level: 'LOW', color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-200', advice: 'Conditions are favorable for all standard field operations.' };
 };
 
-// Group 3-hour forecast into daily summaries
-const groupForecast = (list: any[]) => {
-  const dayMap: Record<string, any[]> = {};
-  list.forEach((item) => {
-    const date = item.dt_txt.split(' ')[0];
-    if (!dayMap[date]) dayMap[date] = [];
-    dayMap[date].push(item);
-  });
-  return Object.entries(dayMap).slice(0, 7).map(([date, items]) => {
-    const temps = items.map((i) => i.main.temp);
-    const mid = items[Math.floor(items.length / 2)];
-    return {
-      date,
-      label: new Date(date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric' }),
-      tempMax: Math.round(Math.max(...temps)),
-      tempMin: Math.round(Math.min(...temps)),
-      weatherMain: mid.weather[0].main,
-      weatherDesc: mid.weather[0].description,
-      icon: `https://openweathermap.org/img/wn/${mid.weather[0].icon}@2x.png`,
-    };
-  });
+// Map WMO weather codes (Open-Meteo) to conditions
+const mapWeatherCode = (code: number) => {
+  if (code === 0) return { condition: 'Clear', description: 'clear sky' };
+  if ([1, 2, 3].includes(code)) return { condition: 'Clouds', description: 'partly cloudy' };
+  if ([45, 48].includes(code)) return { condition: 'Fog', description: 'foggy' };
+  if ([51, 53, 55, 56, 57].includes(code)) return { condition: 'Drizzle', description: 'light drizzle' };
+  if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return { condition: 'Rain', description: 'rain showers' };
+  if ([71, 73, 75, 77, 85, 86].includes(code)) return { condition: 'Snow', description: 'snowfall' };
+  if ([95, 96, 99].includes(code)) return { condition: 'Thunderstorm', description: 'thunderstorms' };
+  return { condition: 'Clouds', description: 'overcast' };
 };
 
-// Mock forecast fallback
-const generateMockForecast = () => {
-  const conditions = ['Clear', 'Clouds', 'Rain', 'Drizzle', 'Clear', 'Clouds', 'Rain'];
-  return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(Date.now() + 86400000 * i);
+// Transform Open-Meteo forecast into UI format
+const transformOpenMeteo = (data: any) => {
+  if (!data || !data.daily) return [];
+  const { time, weather_code, temperature_2m_max, temperature_2m_min } = data.daily;
+  return time.map((t: string, i: number) => {
+    const { condition, description } = mapWeatherCode(weather_code[i]);
     return {
-      date: d.toISOString().split('T')[0],
-      label: d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric' }),
-      tempMax: Math.floor(Math.random() * 8) + 28,
-      tempMin: Math.floor(Math.random() * 6) + 20,
-      weatherMain: conditions[i],
-      weatherDesc: conditions[i].toLowerCase(),
+      date: t,
+      label: new Date(t).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric' }),
+      tempMax: Math.round(temperature_2m_max[i]),
+      tempMin: Math.round(temperature_2m_min[i]),
+      weatherMain: condition,
+      weatherDesc: description,
       icon: null,
     };
   });
@@ -91,20 +81,20 @@ export const WeatherPage: React.FC = () => {
       dispatch(fetchWeatherAndAdvisories({ lat, lon }) as any);
       try {
         const res = await fetchForecast(lat, lon);
-        setForecast(groupForecast(res.list));
-      } catch {
-        setForecast(generateMockForecast());
+        setForecast(transformOpenMeteo(res));
+      } catch (err) {
+        console.error('Forecast fetch error:', err);
+        toast.error('Failed to load forecast data');
       }
     } else if (user?.pincode) {
       dispatch(fetchWeatherAndAdvisories({ pincode: user.pincode }) as any);
       try {
         const res = await fetchForecastByPincode(user.pincode);
-        setForecast(groupForecast(res.list));
-      } catch {
-        setForecast(generateMockForecast());
+        setForecast(transformOpenMeteo(res));
+      } catch (err) {
+        console.error('Forecast fetch error:', err);
+        toast.error('Failed to load forecast data for your pincode');
       }
-    } else {
-      setForecast(generateMockForecast());
     }
 
     setForecastLoading(false);
@@ -208,17 +198,9 @@ export const WeatherPage: React.FC = () => {
           </div>
 
           <div className="sm:col-span-5 flex justify-center sm:justify-end">
-            {current ? (
-              <img
-                src={`https://openweathermap.org/img/wn/${current.weather[0].icon}@4x.png`}
-                alt="weather"
-                className="w-48 h-48 object-contain drop-shadow-2xl"
-              />
-            ) : (
-              <div className={`w-40 h-40 rounded-full ${weatherDisplay.bg} flex items-center justify-center`}>
-                <WeatherIcon size={80} className={weatherDisplay.color} />
-              </div>
-            )}
+            <div className={`w-40 h-40 rounded-full ${weatherDisplay.bg} flex items-center justify-center shadow-2xl`}>
+              <WeatherIcon size={80} className={weatherDisplay.color} />
+            </div>
           </div>
         </div>
       </section>
@@ -244,7 +226,7 @@ export const WeatherPage: React.FC = () => {
       <section className="space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold text-slate-900 tracking-tight">7-Day Forecast</h2>
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Powered by OpenWeather</span>
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Live Weather Intelligence</span>
         </div>
 
         {forecast.length === 0 ? (
@@ -264,11 +246,10 @@ export const WeatherPage: React.FC = () => {
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.06 }}
-                  className={`rounded-2xl p-4 text-center transition-all border flex flex-col items-center gap-3 ${
-                    isToday
-                      ? 'bg-slate-900 text-white border-slate-800 shadow-lg'
-                      : 'bg-white border-slate-200 hover:border-emerald-300 hover:shadow-md cursor-pointer'
-                  }`}
+                  className={`rounded-2xl p-4 text-center transition-all border flex flex-col items-center gap-3 ${isToday
+                    ? 'bg-slate-900 text-white border-slate-800 shadow-lg'
+                    : 'bg-white border-slate-200 hover:border-emerald-300 hover:shadow-md cursor-pointer'
+                    }`}
                 >
                   <p className={`text-[10px] font-black uppercase tracking-widest ${isToday ? 'text-emerald-400' : 'text-slate-400'}`}>
                     {isToday ? 'Today' : day.label.split(' ')[0]}
@@ -277,13 +258,9 @@ export const WeatherPage: React.FC = () => {
                     {day.label.split(' ')[1]}
                   </p>
 
-                  {day.icon ? (
-                    <img src={day.icon} alt={day.weatherDesc} className="w-12 h-12 object-contain" />
-                  ) : (
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${isToday ? 'bg-white/10' : disp.bg}`}>
-                      <DayIcon size={24} className={isToday ? 'text-white' : disp.color} />
-                    </div>
-                  )}
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${isToday ? 'bg-white/10' : disp.bg}`}>
+                    <DayIcon size={24} className={isToday ? 'text-white' : disp.color} />
+                  </div>
 
                   <div className="space-y-1">
                     <p className={`text-xl font-black ${isToday ? 'text-white' : 'text-slate-900'}`}>{day.tempMax}°</p>
