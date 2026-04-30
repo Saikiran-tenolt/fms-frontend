@@ -1,284 +1,337 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Wifi, WifiOff, Edit2, Trash2, ChevronDown, ChevronUp, MapPin, Sprout } from 'lucide-react';
+import { Plus, Search, Sprout, MapPin, Edit2, Trash2, Wifi, WifiOff, Battery, Signal } from 'lucide-react';
 import { useAppSelector, useAppDispatch } from '../../hooks';
 import { fetchAllPlots, selectPlot, removePlot } from './plotsSlice';
-import { useEffect } from 'react';
+import { setSensorData } from '../sensors/sensorsSlice';
+import { generateMockSensorData } from '../../services/mockData';
 import { toast } from 'sonner';
 import { SkeletonPlotRow } from '../../components/ui';
-import type { Plot } from '../../types';
+import type { Plot, SensorData } from '../../types';
+
+// ─── Stage helpers ────────────────────────────────────────────────────────────
 
 const STAGES = ['SEEDLING', 'VEGETATIVE', 'FLOWERING', 'HARVEST'];
 
 const stageLabel: Record<string, string> = {
-  SEEDLING: 'Sowed',
+  SEEDLING:   'Sowed',
   VEGETATIVE: 'Growing',
-  FLOWERING: 'Harvest ready',
-  HARVEST: 'Harvested',
+  FLOWERING:  'Harvest ready',
+  HARVEST:    'Harvested',
 };
 
-const stageColors: Record<string, { bg: string; text: string; border: string }> = {
-  SEEDLING: { bg: '#eff6ff', text: '#1d4ed8', border: '#bfdbfe' },
-  VEGETATIVE: { bg: '#fefce8', text: '#a16207', border: '#fde68a' },
-  FLOWERING: { bg: '#fdf4ff', text: '#7e22ce', border: '#e9d5ff' },
-  HARVEST: { bg: '#f0fdf4', text: '#15803d', border: '#bbf7d0' },
+const stageColors: Record<string, { bg: string; text: string }> = {
+  SEEDLING:   { bg: '#eff6ff', text: '#1d4ed8' },
+  VEGETATIVE: { bg: '#fefce8', text: '#a16207' },
+  FLOWERING:  { bg: '#fdf4ff', text: '#7e22ce' },
+  HARVEST:    { bg: '#f0fdf4', text: '#15803d' },
 };
 
-// Map sensor state badge
-const sensorBadge = (value: number | null, type: string) => {
-  if (value === null) return { label: '—', bg: '#f9fafb', text: '#9ca3af', border: '#e5e7eb' };
-  if (type === 'moisture') {
-    if (value < 30) return { label: 'Low', bg: '#fef2f2', text: '#dc2626', border: '#fecaca' };
-    if (value <= 70) return { label: 'Optimal', bg: '#f0fdf4', text: '#15803d', border: '#bbf7d0' };
-    return { label: 'High', bg: '#eff6ff', text: '#1d4ed8', border: '#bfdbfe' };
-  }
-  if (type === 'temp') {
-    if (value > 35) return { label: 'High', bg: '#fefce8', text: '#a16207', border: '#fde68a' };
-    return { label: 'Optimal', bg: '#f0fdf4', text: '#15803d', border: '#bbf7d0' };
-  }
-  return { label: 'Normal', bg: '#eff6ff', text: '#1d4ed8', border: '#bfdbfe' };
+const sensorStatusColor: Record<string, string> = {
+  ok:       '#22c55e',
+  warning:  '#f59e0b',
+  critical: '#ef4444',
 };
 
-function StagePip({ state }: { state: 'done' | 'active' | 'idle' }) {
-  if (state === 'done') return (
-    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e', border: '1.5px solid #16a34a' }} />
-  );
-  if (state === 'active') return (
-    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#fff', border: '2px solid #22c55e', outline: '2px solid #dcfce7', outlineOffset: 1 }} />
-  );
-  return (
-    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#f3f4f6', border: '1.5px solid #d1d5db' }} />
-  );
-}
+// ─── Stage progress bar ────────────────────────────────────────────────────────
 
 function StageBar({ stage }: { stage: string }) {
   const ci = STAGES.indexOf(stage);
   return (
-    <div style={{ display: 'flex', alignItems: 'center', padding: '10px 16px', borderTop: '0.5px solid #f0f0f0' }}>
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 0 }}>
       {STAGES.map((s, i) => {
-        const state = i < ci ? 'done' : i === ci ? 'active' : 'idle';
+        const isDone   = i < ci;
+        const isActive = i === ci;
         return (
-          <div key={s} style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-              <StagePip state={state} />
-              <span style={{
-                fontSize: 9, whiteSpace: 'nowrap',
-                color: state === 'done' ? '#15803d' : state === 'active' ? '#111' : '#d1d5db',
-                fontWeight: state === 'active' ? 600 : 400,
-              }}>{stageLabel[s] || s}</span>
-            </div>
-            {i < STAGES.length - 1 && (
+          <React.Fragment key={s}>
+            {i > 0 && (
               <div style={{
-                flex: 1, height: '0.5px', margin: '0 5px', marginBottom: 14,
-                background: i < ci ? '#22c55e' : '#e5e7eb',
+                flex: 1, height: 1, marginTop: 3.5,
+                background: isDone || isActive ? '#22c55e' : '#e5e7eb',
               }} />
             )}
-          </div>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+              <div style={{
+                width: 7, height: 7, borderRadius: '50%', flexShrink: 0,
+                background: isDone ? '#22c55e' : isActive ? '#fff' : '#f3f4f6',
+                border: isDone ? '1.5px solid #16a34a'
+                      : isActive ? '2px solid #22c55e'
+                      : '1.5px solid #d1d5db',
+                outline: isActive ? '2px solid #dcfce7' : 'none',
+                outlineOffset: 1,
+              }} />
+              <span style={{
+                fontSize: 9, whiteSpace: 'nowrap',
+                color: isDone ? '#15803d' : isActive ? '#111' : '#d1d5db',
+                fontWeight: isActive ? 600 : 400,
+              }}>
+                {stageLabel[s] ?? s}
+              </span>
+            </div>
+          </React.Fragment>
         );
       })}
     </div>
   );
 }
 
+// ─── Sensor rows ──────────────────────────────────────────────────────────────
+
+interface SensorRow { label: string; key: keyof SensorData; }
+
+const SENSOR_ROWS: SensorRow[] = [
+  { label: 'Soil moisture', key: 'soilMoisture'    },
+  { label: 'Temperature',   key: 'temperature'     },
+  { label: 'Humidity',      key: 'humidity'        },
+  { label: 'Soil temp',     key: 'soilTemperature' },
+];
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const fmt = (d: string) =>
+  new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
+const batteryColor = (v?: number) =>
+  v === undefined ? '#9ca3af' : v < 20 ? '#ef4444' : v < 50 ? '#f59e0b' : '#22c55e';
+
+// ─── Plot card ─────────────────────────────────────────────────────────────────
+
 interface PlotCardProps {
   plot: Plot;
-  onEdit: (e: React.MouseEvent) => void;
+  sensorData: SensorData | undefined;
+  onEdit:   (e: React.MouseEvent) => void;
   onDelete: (e: React.MouseEvent) => void;
-  onClick: () => void;
+  onClick:  () => void;
 }
 
-function PlotCard({ plot, onEdit, onDelete, onClick }: PlotCardProps) {
-  const [expanded, setExpanded] = useState(false);
+function PlotCard({ plot, sensorData, onEdit, onDelete, onClick }: PlotCardProps) {
+  const sc    = stageColors[plot.cropStage] ?? { bg: '#f3f4f6', text: '#6b7280' };
+  const label = stageLabel[plot.cropStage] ?? plot.cropStage;
+  const activeSensors = SENSOR_ROWS.filter(r => sensorData?.[r.key] != null).length;
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
-  const moisture = null; // From sensors — placeholder
-  const temp = null;
-  const humidity = null;
-  const soilTemp = null;
-
-  const sensors = [
-    { label: 'Soil moisture', value: moisture, unit: '%', type: 'moisture' },
-    { label: 'Temperature', value: temp, unit: '°C', type: 'temp' },
-    { label: 'Humidity', value: humidity, unit: '%', type: 'humidity' },
-    { label: 'Soil temp', value: soilTemp, unit: '°C', type: 'temp' },
-  ];
-
-  const activeSensors = sensors.filter(s => s.value !== null).length;
-  const stageStyle = stageColors[plot.cropStage] || stageColors['SEEDLING'];
+  const hw = plot.hardwareStatus;
 
   return (
     <div style={{
+      width: 340,
       background: '#fff',
       border: '0.5px solid #e2e2d9',
       borderRadius: 12,
       overflow: 'hidden',
-      marginBottom: 8,
+      display: 'flex',
+      flexDirection: 'column',
+      flexShrink: 0,
     }}>
-      {/* Header row */}
-      <div
-        style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 16px', cursor: 'pointer' }}
-        onClick={() => setExpanded(!expanded)}
-      >
+
+      {/* ── Top bar ─────────────────────────────────────────── */}
+      <div style={{ padding: '14px 16px 12px', display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+
         {/* Icon */}
         <div style={{
           width: 32, height: 32, borderRadius: 8, flexShrink: 0,
           background: '#f9fafb', border: '0.5px solid #e5e7eb',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          <Sprout size={13} color="#6b7280" />
+          <Sprout size={14} color="#6b7280" />
         </div>
 
-        {/* Info */}
+        {/* Name + location */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 500, color: '#111', marginBottom: 2 }}>{plot.plotName}</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+          <div style={{
+            fontSize: 13, fontWeight: 500, color: '#111', marginBottom: 2,
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          }}>
+            {plot.plotName}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <MapPin size={10} color="#9ca3af" />
-            <span style={{ fontSize: 11, color: '#9ca3af' }}>{plot.location?.district}, {plot.location?.state}</span>
-            {[plot.soilType, `${plot.farmSize} Ha`].map(t => (
-              <span key={t} style={{
-                fontSize: 10, padding: '1px 7px', borderRadius: 99,
-                background: '#f9fafb', color: '#6b7280', border: '0.5px solid #e5e7eb',
-              }}>{t}</span>
-            ))}
             <span style={{
-              fontSize: 10, padding: '1px 7px', borderRadius: 99,
-              background: stageStyle.bg, color: stageStyle.text, border: `0.5px solid ${stageStyle.border}`,
-            }}>{stageLabel[plot.cropStage] || plot.cropStage}</span>
+              fontSize: 11, color: '#9ca3af',
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            }}>
+              {[plot.location?.district, plot.location?.state].filter(Boolean).join(', ')}
+            </span>
           </div>
         </div>
 
-        {/* Date */}
-        <span style={{ fontSize: 11, color: '#9ca3af', whiteSpace: 'nowrap', flexShrink: 0 }}>
-          Sown {new Date(plot.sowingDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-        </span>
-
-        {/* Actions */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
-          <button onClick={(e) => { e.stopPropagation(); onEdit(e); }} style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            padding: 6, borderRadius: 6, display: 'flex', alignItems: 'center', color: '#9ca3af',
-          }}>
-            <Edit2 size={13} />
-          </button>
-          <button onClick={(e) => { e.stopPropagation(); onDelete(e); }} style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            padding: 6, borderRadius: 6, display: 'flex', alignItems: 'center', color: '#9ca3af',
-          }}>
-            <Trash2 size={13} />
-          </button>
-          <div style={{ padding: 4, color: '#9ca3af' }}>
-            {expanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-          </div>
+        {/* Actions / inline delete confirm */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
+          {confirmDelete ? (
+            <>
+              <button
+                onClick={(e) => { e.stopPropagation(); setConfirmDelete(false); }}
+                style={{
+                  fontSize: 10, padding: '3px 8px', borderRadius: 6, border: '0.5px solid #e5e7eb',
+                  background: '#fff', color: '#6b7280', cursor: 'pointer', whiteSpace: 'nowrap',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); setConfirmDelete(false); onDelete(e); }}
+                style={{
+                  fontSize: 10, padding: '3px 8px', borderRadius: 6, border: 'none',
+                  background: '#ef4444', color: '#fff', cursor: 'pointer', whiteSpace: 'nowrap', marginLeft: 4,
+                }}
+              >
+                Delete
+              </button>
+            </>
+          ) : (
+            <>
+              <button title="Edit" onClick={(e) => { e.stopPropagation(); onEdit(e); }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 5, borderRadius: 6, color: '#9ca3af', display: 'flex' }}>
+                <Edit2 size={12} />
+              </button>
+              <button title="Delete" onClick={(e) => { e.stopPropagation(); setConfirmDelete(true); }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 5, borderRadius: 6, color: '#9ca3af', display: 'flex' }}>
+                <Trash2 size={12} />
+              </button>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Sensor summary strip */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', borderTop: '0.5px solid #f0f0f0' }}>
-        {sensors.map((s, i) => {
-          const badge = sensorBadge(s.value, s.type);
-          const active = s.value !== null;
+      {/* ── Meta chips (from real API fields) ───────────────── */}
+      <div style={{ padding: '0 16px 12px', display: 'flex', flexWrap: 'wrap', gap: 5, alignItems: 'center' }}>
+        {[
+          plot.cropType,
+          `${plot.farmSize} Ha`,
+          plot.environmentType?.replace('_', ' '),
+        ].filter(Boolean).map(tag => (
+          <span key={tag} style={{
+            fontSize: 10, padding: '2px 8px', borderRadius: 99,
+            background: '#f9fafb', color: '#6b7280', border: '0.5px solid #e5e7eb',
+            whiteSpace: 'nowrap',
+          }}>
+            {tag}
+          </span>
+        ))}
+        <span style={{
+          fontSize: 10, padding: '2px 10px', borderRadius: 99,
+          background: sc.bg, color: sc.text, whiteSpace: 'nowrap', fontWeight: 500,
+        }}>
+          {label}
+        </span>
+      </div>
+
+      <div style={{ height: '0.5px', background: '#f0f0f0' }} />
+
+      {/* ── Live sensors ─────────────────────────────────────── */}
+      <div style={{ padding: '10px 16px' }}>
+        <div style={{ fontSize: 9, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>
+          Live sensors
+        </div>
+        {SENSOR_ROWS.map((row, i) => {
+          const reading = sensorData?.[row.key] as { value: number; unit: string; status: string } | undefined;
+          const isActive = reading != null;
+          const dotColor = isActive ? (sensorStatusColor[reading!.status] ?? '#22c55e') : '#e5e7eb';
+
           return (
-            <div key={s.label} style={{
-              padding: '9px 14px',
-              borderRight: i < 3 ? '0.5px solid #f0f0f0' : 'none',
+            <div key={row.label} style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '7px 0',
+              borderBottom: i < SENSOR_ROWS.length - 1 ? '0.5px solid #f5f5f5' : 'none',
             }}>
-              <div style={{ fontSize: 9, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 2 }}>{s.label}</div>
-              <div style={{ fontSize: 16, fontWeight: 500, color: active ? '#111' : '#d1d5db', marginBottom: 2 }}>
-                {active ? s.value : '—'}<span style={{ fontSize: 10, color: '#9ca3af' }}>{active ? ` ${s.unit}` : ''}</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                {active ? (
-                  <Wifi size={9} color="#22c55e" />
-                ) : (
+              <div style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: dotColor }} />
+              <span style={{ fontSize: 12, color: isActive ? '#374151' : '#9ca3af', flex: 1 }}>
+                {row.label}
+              </span>
+              {isActive ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <span style={{ fontSize: 12, fontWeight: 500, color: '#111' }}>
+                    {reading!.value}
+                    <span style={{ fontSize: 10, color: '#6b7280', fontWeight: 400 }}> {reading!.unit}</span>
+                  </span>
+                  <Wifi size={9} color={sensorStatusColor[reading!.status] ?? '#22c55e'} />
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span style={{ fontSize: 10, color: '#d1d5db' }}>—</span>
                   <WifiOff size={9} color="#d1d5db" />
-                )}
-                <span style={{
-                  fontSize: 9, padding: '1px 5px', borderRadius: 99,
-                  background: badge.bg, color: badge.text, border: `0.5px solid ${badge.border}`,
-                  opacity: active ? 1 : 0.4,
-                }}>{badge.label}</span>
-              </div>
+                </div>
+              )}
             </div>
           );
         })}
       </div>
 
-      {/* Stage progress */}
-      <StageBar stage={plot.cropStage} />
+      <div style={{ height: '0.5px', background: '#f0f0f0' }} />
 
-      {/* Expanded detail */}
-      {expanded && (
-        <div style={{ borderTop: '0.5px solid #f0f0f0', padding: '14px 16px' }}>
-          {/* Sensor status */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <span style={{ fontSize: 12, fontWeight: 500, color: '#111' }}>Sensors</span>
-            <span style={{
-              fontSize: 10, padding: '2px 8px', borderRadius: 99,
-              background: activeSensors > 0 ? '#f0fdf4' : '#f9fafb',
-              color: activeSensors > 0 ? '#15803d' : '#9ca3af',
-              border: `0.5px solid ${activeSensors > 0 ? '#bbf7d0' : '#e5e7eb'}`,
-            }}>{activeSensors} of {sensors.length} active</span>
+      {/* ── Hardware status (from real API: hardwareStatus field) */}
+      {hw && (
+        <>
+          <div style={{ padding: '9px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              <Battery size={11} color={batteryColor(hw.battery)} />
+              <span style={{ fontSize: 11, color: '#374151' }}>
+                <span style={{ fontWeight: 500, color: batteryColor(hw.battery) }}>{hw.battery}%</span>
+                <span style={{ color: '#9ca3af' }}> battery</span>
+              </span>
+            </div>
+            <div style={{ width: '0.5px', background: '#f0f0f0', height: 12 }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              <Signal size={11} color="#3b82f6" />
+              <span style={{ fontSize: 11, color: '#374151' }}>
+                <span style={{ fontWeight: 500, color: '#3b82f6' }}>{hw.signal}%</span>
+                <span style={{ color: '#9ca3af' }}> signal</span>
+              </span>
+            </div>
+            <div style={{ flex: 1 }} />
+            <span style={{ fontSize: 10, color: '#9ca3af' }}>
+              Synced {new Date(hw.lastSync).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+            </span>
           </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-            {sensors.map(s => {
-              const active = s.value !== null;
-              const badge = sensorBadge(s.value, s.type);
-              return (
-                <div key={s.label} style={{
-                  display: 'flex', alignItems: 'center', gap: 10,
-                  padding: '7px 10px', borderRadius: 8,
-                  background: '#f9fafb', border: '0.5px solid #f0f0f0',
-                }}>
-                  <div style={{
-                    width: 5, height: 5, borderRadius: '50%', flexShrink: 0,
-                    background: active ? '#22c55e' : '#e5e7eb',
-                  }} />
-                  <span style={{ fontSize: 12, fontWeight: 500, color: '#111', flex: 1 }}>{s.label}</span>
-                  <span style={{ fontSize: 12, color: active ? '#374151' : '#d1d5db', minWidth: 50, textAlign: 'right' }}>
-                    {active ? `${s.value} ${s.unit}` : 'Not activated'}
-                  </span>
-                  {active ? (
-                    <span style={{
-                      fontSize: 9, padding: '2px 7px', borderRadius: 99,
-                      background: badge.bg, color: badge.text, border: `0.5px solid ${badge.border}`,
-                    }}>{badge.label}</span>
-                  ) : (
-                    <span style={{
-                      fontSize: 9, padding: '2px 7px', borderRadius: 99,
-                      background: '#f9fafb', color: '#9ca3af', border: '0.5px solid #e5e7eb',
-                    }}>Offline</span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          <button
-            onClick={(e) => { e.stopPropagation(); onClick(); }}
-            style={{
-              marginTop: 12, width: '100%', fontSize: 11, padding: '8px 0',
-              borderRadius: 8, border: '0.5px solid #e5e7eb',
-              background: 'transparent', color: '#374151', cursor: 'pointer',
-              fontWeight: 500,
-            }}
-          >
-            View full details →
-          </button>
-        </div>
+          <div style={{ height: '0.5px', background: '#f0f0f0' }} />
+        </>
       )}
+
+      {/* ── Footer ──────────────────────────────────────────── */}
+      <div style={{
+        padding: '10px 16px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      }}>
+        <button
+          onClick={(e) => { e.stopPropagation(); onClick(); }}
+          style={{
+            fontSize: 11, color: '#374151', cursor: 'pointer',
+            background: 'none', border: 'none', padding: 0, fontWeight: 500,
+          }}
+        >
+          View details →
+        </button>
+        <span style={{ fontSize: 10, color: activeSensors > 0 ? '#16a34a' : '#9ca3af', fontWeight: 500 }}>
+          {activeSensors}/{SENSOR_ROWS.length} sensors active
+        </span>
+      </div>
     </div>
   );
 }
+
+// ─── Page ──────────────────────────────────────────────────────────────────────
 
 export const PlotListPage: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { plots, loading } = useAppSelector((state) => state.plots);
+  const { sensorData } = useAppSelector((state) => state.sensors);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     dispatch(fetchAllPlots());
   }, [dispatch]);
+
+  // Generate mock sensor data per plot (until backend sensor endpoint is ready)
+  useEffect(() => {
+    if (plots.length === 0) return;
+    plots.forEach(plot => {
+      if (!sensorData[plot._id]) {
+        const data = generateMockSensorData(plot._id, plot.environmentType);
+        dispatch(setSensorData({ plotId: plot._id, data }));
+      }
+    });
+  }, [plots, dispatch]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const filtered = plots.filter(p =>
     p.plotName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -287,20 +340,18 @@ export const PlotListPage: React.FC = () => {
   );
 
   const handleDelete = async (id: string, name: string) => {
-    if (window.confirm(`Delete "${name}"? This cannot be undone.`)) {
-      try {
-        await dispatch(removePlot(id)).unwrap();
-        toast.success(`${name} deleted`);
-      } catch (err: any) {
-        toast.error(err || 'Failed to delete plot');
-      }
+    try {
+      await dispatch(removePlot(id)).unwrap();
+      toast.success(`"${name}" deleted`);
+    } catch (err: any) {
+      toast.error(err || 'Failed to delete plot');
     }
   };
 
   if (loading && plots.length === 0) {
     return (
       <div style={{ background: '#f5f5f3', minHeight: '100vh', padding: '28px 32px', fontFamily: "'Inter', sans-serif" }}>
-        <div style={{ maxWidth: 900, margin: '0 auto' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
           {[...Array(3)].map((_, i) => <SkeletonPlotRow key={i} />)}
         </div>
       </div>
@@ -309,17 +360,18 @@ export const PlotListPage: React.FC = () => {
 
   return (
     <div style={{
-      minHeight: '100vh', background: '#f5f5f3',
+      minHeight: '100vh',
+      background: '#f5f5f3',
       fontFamily: "'Inter', -apple-system, sans-serif",
       padding: '28px 32px',
     }}>
-      <div style={{ maxWidth: 900, margin: '0 auto' }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
           <div>
-            <h1 style={{ fontSize: 18, fontWeight: 500, color: '#111', margin: 0 }}>Plot management</h1>
-            <p style={{ fontSize: 12, color: '#9ca3af', marginTop: 4, margin: 0 }}>
+            <h1 style={{ fontSize: 16, fontWeight: 500, color: '#111', margin: 0 }}>My plots</h1>
+            <p style={{ fontSize: 12, color: '#9ca3af', margin: '4px 0 0' }}>
               {filtered.length} active plot{filtered.length !== 1 ? 's' : ''}
             </p>
           </div>
@@ -332,7 +384,7 @@ export const PlotListPage: React.FC = () => {
               fontSize: 12, fontWeight: 500, cursor: 'pointer',
             }}
           >
-            <Plus size={12} />
+            <Plus size={11} />
             Add plot
           </button>
         </div>
@@ -341,13 +393,13 @@ export const PlotListPage: React.FC = () => {
         <div style={{
           display: 'flex', alignItems: 'center', gap: 8,
           background: '#fff', border: '0.5px solid #e2e2d9',
-          borderRadius: 8, padding: '0 12px', height: 36, marginBottom: 14,
+          borderRadius: 8, padding: '0 12px', height: 36, marginBottom: 20,
         }}>
           <Search size={13} color="#9ca3af" />
           <input
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Filter by plot name or location..."
+            placeholder="Filter by name or location…"
             style={{
               border: 'none', background: 'transparent', outline: 'none',
               fontSize: 13, color: '#111', flex: 1,
@@ -357,26 +409,32 @@ export const PlotListPage: React.FC = () => {
             <button
               onClick={() => setSearchQuery('')}
               style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', fontSize: 16, lineHeight: 1 }}
-            >×</button>
+            >
+              ×
+            </button>
           )}
         </div>
 
-        {/* Plot cards */}
+        {/* Cards */}
         {filtered.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '48px 0', color: '#9ca3af', fontSize: 13 }}>
-            {searchQuery ? `No plots match "${searchQuery}"` : 'No plots yet. Add your first plot.'}
+          <div style={{ textAlign: 'center', padding: '60px 0', color: '#9ca3af', fontSize: 13 }}>
+            {searchQuery ? `No plots match "${searchQuery}"` : 'No plots yet — add your first plot.'}
           </div>
         ) : (
-          filtered.map(plot => (
-            <PlotCard
-              key={plot._id}
-              plot={plot}
-              onClick={() => { dispatch(selectPlot(plot._id)); navigate(`/plots/${plot._id}`); }}
-              onEdit={(e) => { e.stopPropagation(); navigate(`/plots/edit/${plot._id}`); }}
-              onDelete={(e) => { e.stopPropagation(); handleDelete(plot._id, plot.plotName); }}
-            />
-          ))
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+            {filtered.map(plot => (
+              <PlotCard
+                key={plot._id}
+                plot={plot}
+                sensorData={sensorData[plot._id]}
+                onClick={() => { dispatch(selectPlot(plot._id)); navigate(`/plots/${plot._id}`); }}
+                onEdit={(e) => { e.stopPropagation(); navigate(`/plots/${plot._id}/edit`); }}
+                onDelete={(e) => { e.stopPropagation(); handleDelete(plot._id, plot.plotName); }}
+              />
+            ))}
+          </div>
         )}
+
       </div>
     </div>
   );
