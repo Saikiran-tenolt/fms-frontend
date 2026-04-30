@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import {
-  Navigation, X, Image as ImageIcon, Plus, ChevronDown
-} from 'lucide-react';
+import { Navigation, X, Image as ImageIcon, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import type { SoilType, EnvironmentType, Plot, CropStage, CropType } from '../../../types';
 
@@ -12,19 +10,75 @@ interface PlotFormProps {
   isSubmitting: boolean;
 }
 
-const RequiredMark = () => (
-  <span className="text-red-600 text-sm font-bold ml-0.5">*</span>
+/* ─── tiny primitives ─────────────────────────────── */
+const Req = () => <span style={{ color: '#c0392b', fontWeight: 700 }}>*</span>;
+
+const OptTag = () => (
+  <span style={{
+    fontSize: 9.5, fontWeight: 500, background: '#f5f5f3',
+    border: '0.5px solid #e3e3e0', color: '#888780',
+    borderRadius: 4, padding: '1px 5px', textTransform: 'none', letterSpacing: '.02em',
+  }}>
+    Optional
+  </span>
 );
 
-const FieldLabel = ({ children }: { children: React.ReactNode }) => (
-  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-widest mb-1.5">
-    {children}
-  </label>
+/* ─── shared style tokens ─────────────────────────── */
+const S = {
+  card: {
+    background: '#fff',
+    border: '0.5px solid #e3e3e0',
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 10,
+  } as React.CSSProperties,
+
+  sectionHd: {
+    display: 'flex', alignItems: 'center', gap: 10,
+    padding: '11px 18px',
+    borderBottom: '0.5px solid #e3e3e0',
+    background: '#f5f5f3',
+  } as React.CSSProperties,
+
+  sectionBody: {
+    padding: 18,
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 14,
+  } as React.CSSProperties,
+
+  fieldLabel: {
+    fontSize: 10.5, fontWeight: 600, color: '#5f5e5a',
+    letterSpacing: '.06em', textTransform: 'uppercase' as const,
+    display: 'flex', alignItems: 'center', gap: 5,
+    marginBottom: 5,
+  } as React.CSSProperties,
+
+  input: {
+    border: '0.5px solid #e3e3e0', borderRadius: 8,
+    background: '#fff', fontFamily: "'DM Sans', system-ui, sans-serif",
+    fontSize: 13, color: '#1a1a18',
+    padding: '9px 12px', outline: 'none', width: '100%',
+    boxSizing: 'border-box' as const,
+    transition: 'border-color .15s, box-shadow .15s',
+    appearance: 'none' as const,
+  } as React.CSSProperties,
+};
+
+/* ─── sub-components ──────────────────────────────── */
+const SectionHeader = ({ tag, title }: { tag: string; title: string }) => (
+  <div style={S.sectionHd}>
+    <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', color: '#888780', textTransform: 'uppercase' }}>{tag}</span>
+    <div style={{ width: 18, height: '0.5px', background: '#e3e3e0' }} />
+    <span style={{ fontSize: 11, fontWeight: 500, color: '#5f5e5a', letterSpacing: '.04em', textTransform: 'uppercase' }}>{title}</span>
+  </div>
 );
 
-const inputClasses =
-  'w-full px-3 py-2.5 bg-white border border-slate-300 rounded text-sm text-slate-800 font-medium placeholder:text-slate-300 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors';
+const FieldHint = ({ children }: { children: React.ReactNode }) => (
+  <span style={{ fontSize: 10.5, color: '#b4b2a9' }}>{children}</span>
+);
 
+/* ─── main component ──────────────────────────────── */
 export const PlotForm: React.FC<PlotFormProps> = ({ initialData, onSubmit, onCancel, isSubmitting }) => {
   const [formData, setFormData] = useState({
     plotName: '',
@@ -33,13 +87,7 @@ export const PlotForm: React.FC<PlotFormProps> = ({ initialData, onSubmit, onCan
     environmentType: 'OPEN_FIELD' as EnvironmentType,
     sowingDate: new Date().toISOString().split('T')[0],
     expectedHarvestDate: '',
-    location: {
-      address: '',
-      state: '',
-      district: '',
-      lat: '',
-      lng: '',
-    },
+    location: { address: '', state: '', district: '', lat: '', lng: '' },
     cropStage: 'SOWED' as CropStage,
     actualHarvestDate: '',
     imageUrl: '',
@@ -48,6 +96,8 @@ export const PlotForm: React.FC<PlotFormProps> = ({ initialData, onSubmit, onCan
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isFetchingLocation, setIsFetchingLocation] = useState(false);
+  const [gpsDetected, setGpsDetected] = useState(false);
+  const [focusedId, setFocusedId] = useState<string | null>(null);
 
   useEffect(() => {
     if (initialData) {
@@ -83,6 +133,7 @@ export const PlotForm: React.FC<PlotFormProps> = ({ initialData, onSubmit, onCan
           location: { ...prev.location, lat: pos.coords.latitude.toFixed(6), lng: pos.coords.longitude.toFixed(6) },
         }));
         setIsFetchingLocation(false);
+        setGpsDetected(true);
         toast.success('GPS coordinates captured');
       },
       (err) => { toast.error(`GPS sync failed: ${err.message}`); setIsFetchingLocation(false); }
@@ -113,7 +164,6 @@ export const PlotForm: React.FC<PlotFormProps> = ({ initialData, onSubmit, onCan
     e.preventDefault();
     const latNum = parseFloat(formData.location.lat) || 0;
     const lngNum = parseFloat(formData.location.lng) || 0;
-
     const payload: any = {
       plotName: formData.plotName || 'Unnamed Plot',
       farmSize: parseFloat(formData.farmSize) || 0,
@@ -132,302 +182,383 @@ export const PlotForm: React.FC<PlotFormProps> = ({ initialData, onSubmit, onCan
       expectedHarvestDate: formData.expectedHarvestDate ? new Date(formData.expectedHarvestDate).toISOString() : null,
       actualHarvestDate: formData.actualHarvestDate ? new Date(formData.actualHarvestDate).toISOString() : null,
     };
-
     onSubmit(payload);
   };
 
-  return (
-    <form onSubmit={handleFormSubmit} className="space-y-0">
+  /* input style with focus state */
+  const inputStyle = (id: string, extra?: React.CSSProperties): React.CSSProperties => ({
+    ...S.input,
+    borderColor: focusedId === id ? '#93c5fd' : '#e3e3e0',
+    boxShadow: focusedId === id ? '0 0 0 3px rgba(59,130,246,0.12)' : 'none',
+    ...extra,
+  });
 
-      {/* Section 1: Plot Identity */}
-      <div className="border border-slate-200 rounded-t overflow-hidden">
-        <div className="bg-slate-50 border-b border-slate-200 px-5 py-2.5 flex items-center gap-2">
-          <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-500">Section A</span>
-          <span className="text-slate-300 text-xs">—</span>
-          <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-700">Plot Identity</span>
-        </div>
-        <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-5 bg-white">
-          <div>
-            <FieldLabel>Plot Name / Identification <RequiredMark /></FieldLabel>
-            <input
-              type="text" required
-              placeholder="e.g. Green Valley – Sector A"
-              value={formData.plotName}
-              onChange={e => setFormData(p => ({ ...p, plotName: e.target.value }))}
-              className={inputClasses}
-            />
+  const selectArrow = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888780' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`;
+
+  return (
+    <form onSubmit={handleFormSubmit} style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+
+      {/* ── A: PLOT IDENTITY ─────────────────────────── */}
+      <div style={S.card}>
+        <SectionHeader tag="A" title="Plot Identity" />
+        <div style={S.sectionBody}>
+
+          {/* Row 1 */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div>
+              <div style={S.fieldLabel}>Plot Name <Req /></div>
+              <input
+                id="plotName" type="text" required
+                placeholder="e.g. Green Valley – Sector A"
+                value={formData.plotName}
+                onChange={e => setFormData(p => ({ ...p, plotName: e.target.value }))}
+                onFocus={() => setFocusedId('plotName')}
+                onBlur={() => setFocusedId(null)}
+                style={inputStyle('plotName')}
+              />
+            </div>
+            <div>
+              <div style={S.fieldLabel}>
+                Farm Size&nbsp;<FieldHint>(hectares)</FieldHint>&nbsp;<Req />
+              </div>
+              <input
+                id="farmSize" type="number" step="any" required
+                placeholder="e.g. 3.5"
+                value={formData.farmSize}
+                onChange={e => setFormData(p => ({ ...p, farmSize: e.target.value }))}
+                onFocus={() => setFocusedId('farmSize')}
+                onBlur={() => setFocusedId(null)}
+                style={inputStyle('farmSize')}
+              />
+            </div>
           </div>
-          <div>
-            <FieldLabel>Farm Area (Hectares) <RequiredMark /></FieldLabel>
-            <input
-              type="number" step="any" required
-              placeholder="e.g. 3.5"
-              value={formData.farmSize}
-              onChange={e => setFormData(p => ({ ...p, farmSize: e.target.value }))}
-              className={inputClasses}
-            />
-          </div>
-          <div>
-            <FieldLabel>Soil Type <RequiredMark /></FieldLabel>
-            <div className="relative">
+
+          {/* Row 2 */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div>
+              <div style={S.fieldLabel}>Soil Type <Req /></div>
               <select
-                required
+                id="soilType" required
                 value={formData.soilType}
                 onChange={e => setFormData(p => ({ ...p, soilType: e.target.value as SoilType }))}
-                className={`${inputClasses} appearance-none cursor-pointer`}
+                onFocus={() => setFocusedId('soilType')}
+                onBlur={() => setFocusedId(null)}
+                style={{
+                  ...inputStyle('soilType'),
+                  backgroundImage: selectArrow,
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right 12px center',
+                  paddingRight: 32,
+                  cursor: 'pointer',
+                }}
               >
-                <option value="LOAMY">Loamy – High Organic Content</option>
-                <option value="SANDY">Sandy – High Drainage</option>
-                <option value="CLAY">Clay – Water Retentive</option>
+                <option value="">Select soil type</option>
+                <option value="SANDY">Sandy – Well Draining</option>
+                <option value="LOAMY">Loamy – High Organic</option>
+                <option value="CLAY">Clay – High Retention</option>
               </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+            </div>
+            <div>
+              <div style={S.fieldLabel}>Environment Type <OptTag /></div>
+              {/* Toggle group */}
+              <div style={{
+                display: 'flex',
+                border: '0.5px solid #e3e3e0',
+                borderRadius: 8,
+                overflow: 'hidden',
+              }}>
+                {(['OPEN_FIELD', 'INDOOR'] as EnvironmentType[]).map((val, i) => (
+                  <button
+                    key={val}
+                    type="button"
+                    onClick={() => setFormData(p => ({ ...p, environmentType: val }))}
+                    style={{
+                      flex: 1,
+                      padding: '9px 10px',
+                      fontSize: 12.5,
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      border: 'none',
+                      borderLeft: i > 0 ? '0.5px solid #e3e3e0' : 'none',
+                      fontFamily: "'DM Sans', system-ui, sans-serif",
+                      transition: 'background .15s, color .15s',
+                      background: formData.environmentType === val ? '#1d4ed8' : '#fff',
+                      color: formData.environmentType === val ? '#fff' : '#888780',
+                    }}
+                  >
+                    {val === 'OPEN_FIELD' ? 'Open Field' : 'Greenhouse'}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
-          <div>
-            <FieldLabel>Environment Type <RequiredMark /></FieldLabel>
-            <div className="flex border border-slate-300 rounded overflow-hidden">
-              <button
-                type="button"
-                onClick={() => setFormData(p => ({ ...p, environmentType: 'OPEN_FIELD' }))}
-                className={`flex-1 py-2.5 text-[11px] font-bold uppercase tracking-widest transition-colors ${
-                  formData.environmentType === 'OPEN_FIELD'
-                    ? 'bg-blue-700 text-white'
-                    : 'bg-white text-slate-500 hover:bg-slate-50'
-                }`}
-              >
-                Open Field
-              </button>
-              <button
-                type="button"
-                onClick={() => setFormData(p => ({ ...p, environmentType: 'INDOOR' }))}
-                className={`flex-1 py-2.5 text-[11px] font-bold uppercase tracking-widest border-l border-slate-300 transition-colors ${
-                  formData.environmentType === 'INDOOR'
-                    ? 'bg-blue-700 text-white border-l-blue-700'
-                    : 'bg-white text-slate-500 hover:bg-slate-50'
-                }`}
-              >
-                Indoor / Greenhouse
-              </button>
+
+        </div>
+      </div>
+
+      {/* ── B: SCHEDULE ──────────────────────────────── */}
+      <div style={S.card}>
+        <SectionHeader tag="B" title="Schedule" />
+        <div style={S.sectionBody}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div>
+              <div style={S.fieldLabel}>Sowing Date <Req /></div>
+              <input
+                id="sowingDate" type="date" required
+                value={formData.sowingDate}
+                onChange={e => setFormData(p => ({ ...p, sowingDate: e.target.value }))}
+                onFocus={() => setFocusedId('sowingDate')}
+                onBlur={() => setFocusedId(null)}
+                style={inputStyle('sowingDate')}
+              />
+            </div>
+            <div>
+              <div style={S.fieldLabel}>Expected Harvest Date <OptTag /></div>
+              <input
+                id="expectedHarvestDate" type="date"
+                value={formData.expectedHarvestDate}
+                onChange={e => setFormData(p => ({ ...p, expectedHarvestDate: e.target.value }))}
+                onFocus={() => setFocusedId('expectedHarvestDate')}
+                onBlur={() => setFocusedId(null)}
+                style={inputStyle('expectedHarvestDate')}
+              />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Section 2: Cultivation Schedule */}
-      <div className="border-x border-b border-slate-200">
-        <div className="bg-slate-50 border-b border-slate-200 px-5 py-2.5 flex items-center gap-2">
-          <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-500">Section B</span>
-          <span className="text-slate-300 text-xs">—</span>
-          <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-700">Cultivation Schedule</span>
-        </div>
-        <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-5 bg-white">
-          <div>
-            <FieldLabel>Sowing Date <RequiredMark /></FieldLabel>
-            <input
-              type="date" required
-              value={formData.sowingDate}
-              onChange={e => setFormData(p => ({ ...p, sowingDate: e.target.value }))}
-              className={inputClasses}
-            />
-          </div>
-          <div>
-            <FieldLabel>Expected Harvest Date <RequiredMark /></FieldLabel>
-            <input
-              type="date" required
-              value={formData.expectedHarvestDate}
-              onChange={e => setFormData(p => ({ ...p, expectedHarvestDate: e.target.value }))}
-              className={inputClasses}
-            />
-          </div>
-        </div>
-      </div>
+      {/* ── C: LOCATION ──────────────────────────────── */}
+      <div style={S.card}>
+        <SectionHeader tag="C" title="Location" />
+        <div style={S.sectionBody}>
 
-      {/* Section 3: Location */}
-      <div className="border-x border-b border-slate-200">
-        <div className="bg-slate-50 border-b border-slate-200 px-5 py-2.5 flex items-center gap-2">
-          <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-500">Section C</span>
-          <span className="text-slate-300 text-xs">—</span>
-          <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-700">Geospatial Location</span>
-        </div>
-        <div className="p-5 space-y-5 bg-white">
           <div>
-            <FieldLabel>Full Address <RequiredMark /></FieldLabel>
+            <div style={S.fieldLabel}>Address <Req /></div>
             <input
-              type="text" required
+              id="address" type="text" required
               placeholder="Village, Block, District"
               value={formData.location.address}
               onChange={e => setFormData(p => ({ ...p, location: { ...p.location, address: e.target.value } }))}
-              className={inputClasses}
+              onFocus={() => setFocusedId('address')}
+              onBlur={() => setFocusedId(null)}
+              style={inputStyle('address')}
             />
           </div>
-          <div className="grid grid-cols-2 gap-5">
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
-              <FieldLabel>State <RequiredMark /></FieldLabel>
+              <div style={S.fieldLabel}>State <Req /></div>
               <input
-                type="text" required placeholder="e.g. Telangana"
+                id="state" type="text" required placeholder="e.g. Telangana"
                 value={formData.location.state}
                 onChange={e => setFormData(p => ({ ...p, location: { ...p.location, state: e.target.value } }))}
-                className={inputClasses}
+                onFocus={() => setFocusedId('state')}
+                onBlur={() => setFocusedId(null)}
+                style={inputStyle('state')}
               />
             </div>
             <div>
-              <FieldLabel>District <RequiredMark /></FieldLabel>
+              <div style={S.fieldLabel}>District <Req /></div>
               <input
-                type="text" required placeholder="e.g. Nalgonda"
+                id="district" type="text" required placeholder="e.g. Nalgonda"
                 value={formData.location.district}
                 onChange={e => setFormData(p => ({ ...p, location: { ...p.location, district: e.target.value } }))}
-                className={inputClasses}
+                onFocus={() => setFocusedId('district')}
+                onBlur={() => setFocusedId(null)}
+                style={inputStyle('district')}
               />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-5">
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
-              <FieldLabel>Latitude <RequiredMark /></FieldLabel>
+              <div style={S.fieldLabel}>Latitude <Req /></div>
               <input
-                type="number" step="any" required placeholder="0.000000"
+                id="lat" type="number" step="any" required placeholder="0.000000"
                 value={formData.location.lat}
                 onChange={e => setFormData(p => ({ ...p, location: { ...p.location, lat: e.target.value } }))}
-                className={inputClasses}
+                onFocus={() => setFocusedId('lat')}
+                onBlur={() => setFocusedId(null)}
+                style={inputStyle('lat')}
               />
             </div>
             <div>
-              <FieldLabel>Longitude <RequiredMark /></FieldLabel>
+              <div style={S.fieldLabel}>Longitude <Req /></div>
               <input
-                type="number" step="any" required placeholder="0.000000"
+                id="lng" type="number" step="any" required placeholder="0.000000"
                 value={formData.location.lng}
                 onChange={e => setFormData(p => ({ ...p, location: { ...p.location, lng: e.target.value } }))}
-                className={inputClasses}
+                onFocus={() => setFocusedId('lng')}
+                onBlur={() => setFocusedId(null)}
+                style={inputStyle('lng')}
               />
             </div>
           </div>
+
+          {/* GPS button */}
           <div>
             <button
               type="button"
               onClick={fetchLocation}
               disabled={isFetchingLocation}
-              className="flex items-center gap-2 px-4 py-2 border border-slate-300 rounded text-[11px] font-bold uppercase tracking-widest text-slate-600 hover:border-blue-600 hover:text-blue-700 hover:bg-blue-50 transition-all disabled:opacity-50"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 7,
+                border: gpsDetected ? '0.5px solid #93c5fd' : '0.5px solid #e3e3e0',
+                borderRadius: 7,
+                background: '#fff',
+                padding: '7px 13px',
+                fontSize: 12, fontWeight: 500,
+                color: gpsDetected ? '#1d4ed8' : '#5f5e5a',
+                cursor: isFetchingLocation ? 'not-allowed' : 'pointer',
+                opacity: isFetchingLocation ? 0.7 : 1,
+                fontFamily: "'DM Sans', system-ui, sans-serif",
+                transition: 'border-color .15s, color .15s',
+              }}
             >
               {isFetchingLocation ? (
-                <div className="w-3.5 h-3.5 border-2 border-slate-400 border-t-blue-600 rounded-full animate-spin" />
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                  style={{ animation: 'spin 1s linear infinite' }}>
+                  <path d="M21 12a9 9 0 11-6.219-8.56" />
+                </svg>
+              ) : gpsDetected ? (
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" strokeWidth="2.5">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
               ) : (
                 <Navigation size={13} />
               )}
-              Auto-Detect GPS Coordinates
+              {isFetchingLocation ? 'Detecting…' : gpsDetected ? 'GPS Detected' : 'Auto-Detect GPS'}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Section 4: Field Photo */}
-      <div className="border-x border-b border-slate-200 rounded-b">
-        <div className="bg-slate-50 border-b border-slate-200 px-5 py-2.5 flex items-center gap-2">
-          <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-500">Section D</span>
-          <span className="text-slate-300 text-xs">—</span>
-          <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-700">Field Photograph <RequiredMark /></span>
-        </div>
-        <div className="p-5 bg-white">
-          <div className="flex items-start gap-6">
-            <div className={`relative h-28 w-40 border-2 border-dashed rounded flex items-center justify-center overflow-hidden shrink-0 bg-slate-50 ${imagePreview ? 'border-blue-400' : 'border-slate-300 hover:border-blue-400'} transition-colors`}>
+      {/* ── D: FIELD PHOTO ───────────────────────────── */}
+      <div style={S.card}>
+        <SectionHeader tag="D" title="Field Photograph" />
+        <div style={{ ...S.sectionBody }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 20 }}>
+            <div style={{
+              position: 'relative', height: 110, width: 156,
+              border: `1.5px dashed ${imagePreview ? '#93c5fd' : '#d1d5db'}`,
+              borderRadius: 8, display: 'flex', alignItems: 'center',
+              justifyContent: 'center', overflow: 'hidden', flexShrink: 0,
+              background: '#f9fafb',
+            }}>
               {imagePreview ? (
                 <>
-                  <img src={imagePreview} alt="Preview" className="h-full w-full object-cover" />
-                  <button
-                    type="button"
-                    onClick={handleRemoveImage}
-                    className="absolute top-1.5 right-1.5 p-1 bg-white border border-slate-300 rounded text-slate-600 hover:bg-red-50 hover:border-red-400 hover:text-red-600 transition-all"
-                  >
+                  <img src={imagePreview} alt="Preview" style={{ height: '100%', width: '100%', objectFit: 'cover' }} />
+                  <button type="button" onClick={handleRemoveImage} style={{
+                    position: 'absolute', top: 6, right: 6, padding: 4,
+                    background: '#fff', border: '0.5px solid #e3e3e0',
+                    borderRadius: 5, color: '#5f5e5a', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center',
+                  }}>
                     <X size={11} />
                   </button>
                 </>
               ) : (
-                <div className="flex flex-col items-center gap-1.5 text-slate-300">
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, color: '#d1d5db' }}>
                   <ImageIcon size={22} />
-                  <span className="text-[9px] font-bold uppercase tracking-widest">No file</span>
+                  <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em' }}>No file</span>
                 </div>
               )}
             </div>
-            <div className="space-y-2 pt-1">
-              <p className="text-xs font-semibold text-slate-700">Upload Field Photograph</p>
-              <p className="text-[11px] text-slate-400 leading-relaxed max-w-xs">
-                Attach a clear photograph of the field for official records and visual verification. Max size: 5MB.
+            <div style={{ paddingTop: 4 }}>
+              <p style={{ fontSize: 12, fontWeight: 600, color: '#1a1a18', marginBottom: 4 }}>Upload Field Photograph</p>
+              <p style={{ fontSize: 11, color: '#888780', lineHeight: 1.6, maxWidth: 260, marginBottom: 10 }}>
+                Attach a clear photograph of the field for official records. Max size: 5MB.
               </p>
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-2 px-4 py-2 border border-slate-300 rounded text-[11px] font-bold uppercase tracking-widest text-slate-600 hover:border-blue-600 hover:text-blue-700 hover:bg-blue-50 transition-all mt-1"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  border: '0.5px solid #e3e3e0', borderRadius: 7,
+                  background: '#fff', padding: '7px 13px',
+                  fontSize: 12, fontWeight: 500, color: '#5f5e5a',
+                  cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif",
+                }}
               >
                 <Plus size={13} />
                 {imagePreview ? 'Replace Photo' : 'Choose File'}
               </button>
-              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
+              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageSelect} style={{ display: 'none' }} />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Edit-only: Crop Stage & Actual Harvest */}
+      {/* ── E: HARVEST RECORD (edit only) ────────────── */}
       {initialData && (
-        <div className="border-x border-b border-slate-200 rounded-b mt-0">
-          <div className="bg-slate-50 border-b border-slate-200 px-5 py-2.5 flex items-center gap-2">
-            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-500">Section E</span>
-            <span className="text-slate-300 text-xs">—</span>
-            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-700">Harvest Record</span>
-          </div>
-          <div className="p-5 grid grid-cols-2 gap-5 bg-white">
-            <div>
-              <FieldLabel>Crop Stage <RequiredMark /></FieldLabel>
-              <div className="relative">
-                <select
-                  required value={formData.cropStage}
-                  onChange={e => setFormData(p => ({ ...p, cropStage: e.target.value as CropStage }))}
-                  className={`${inputClasses} appearance-none cursor-pointer`}
-                >
-                  <option value="SOWED">Sowed</option>
-                  <option value="GROWING">Growing</option>
-                  <option value="HARVEST_READY">Harvest Ready</option>
-                  <option value="HARVESTED">Harvested</option>
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+        <div style={S.card}>
+          <SectionHeader tag="E" title="Harvest Record" />
+          <div style={S.sectionBody}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div>
+                <div style={S.fieldLabel}>Actual Harvest Date <Req /></div>
+                <input
+                  id="actualHarvestDate" type="date" required
+                  value={formData.actualHarvestDate}
+                  onChange={e => setFormData(p => ({ ...p, actualHarvestDate: e.target.value }))}
+                  onFocus={() => setFocusedId('actualHarvestDate')}
+                  onBlur={() => setFocusedId(null)}
+                  style={inputStyle('actualHarvestDate')}
+                />
               </div>
-            </div>
-            <div>
-              <FieldLabel>Actual Harvest Date <RequiredMark /></FieldLabel>
-              <input
-                type="date" required
-                value={formData.actualHarvestDate}
-                onChange={e => setFormData(p => ({ ...p, actualHarvestDate: e.target.value }))}
-                className={inputClasses}
-              />
             </div>
           </div>
         </div>
       )}
 
-      {/* Footer: Action Buttons */}
-      <div className="flex items-center justify-between pt-6">
-        <p className="text-[10px] text-slate-400 font-medium">
-          <span className="text-red-600 font-bold">*</span> All marked fields are mandatory
-        </p>
-        <div className="flex items-center gap-3">
+      {/* ── FOOTER ───────────────────────────────────── */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        paddingTop: 6, marginTop: 2,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#b4b2a9' }}>
+          <span style={{ color: '#c0392b', fontWeight: 700 }}>*</span> Required
+          <div style={{ width: '0.5px', height: 11, background: '#e3e3e0', margin: '0 2px' }} />
+          <OptTag /> fields can be updated later
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
           <button
             type="button"
             onClick={onCancel}
-            className="px-5 py-2.5 border border-slate-300 rounded text-[11px] font-bold uppercase tracking-widest text-slate-600 hover:bg-slate-50 transition-all"
+            style={{
+              padding: '8px 18px', fontSize: 13, fontWeight: 500,
+              border: '0.5px solid #e3e3e0', borderRadius: 7,
+              background: '#fff', color: '#5f5e5a',
+              cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif",
+            }}
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="flex items-center gap-2 px-6 py-2.5 bg-blue-700 text-white rounded text-[11px] font-bold uppercase tracking-widest hover:bg-blue-800 transition-all disabled:opacity-50"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 7,
+              padding: '8px 20px', fontSize: 13, fontWeight: 600,
+              border: 'none', borderRadius: 7,
+              background: isSubmitting ? '#93c5fd' : '#1d4ed8',
+              color: '#fff', cursor: isSubmitting ? 'not-allowed' : 'pointer',
+              fontFamily: "'DM Sans', system-ui, sans-serif",
+              transition: 'background .15s',
+            }}
           >
-            {isSubmitting ? (
-              <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : null}
-            {initialData ? 'Update Record' : 'Register Plot'}
+            {isSubmitting && (
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                style={{ animation: 'spin 1s linear infinite' }}>
+                <path d="M21 12a9 9 0 11-6.219-8.56" />
+              </svg>
+            )}
+            {isSubmitting ? 'Saving…' : initialData ? 'Update Record' : 'Register Plot'}
           </button>
         </div>
       </div>
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </form>
   );
 };
