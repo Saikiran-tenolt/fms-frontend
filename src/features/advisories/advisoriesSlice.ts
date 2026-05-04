@@ -1,10 +1,9 @@
 import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
-import { fetchWeatherByPincode, fetchCurrentWeather, fetchForecast, fetchForecastByPincode } from '../../services/weatherService';
+import { fetchWeatherByPincode, fetchCurrentWeather, fetchForecast, fetchForecastByPincode, WeatherResponse, ForecastResponse } from '../../services/weatherService';
 import { v4 as uuidv4 } from 'uuid';
-import { toast } from 'sonner';
 import type { AdvisoriesState, Advisory } from '../../types';
 
-const initialState: AdvisoriesState & { weatherData: any | null; forecastData: any | null } = {
+const initialState: AdvisoriesState & { weatherData: WeatherResponse | null; forecastData: ForecastResponse | null } = {
   advisories: [],
   weatherData: null,
   forecastData: null,

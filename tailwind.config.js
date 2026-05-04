@@ -8,7 +8,9 @@ export default {
     extend: {
       fontFamily: {
         sans: ['Inter', 'system-ui', 'Avenir', 'Helvetica', 'Arial', 'sans-serif'],
-        manrope: ['Manrope', 'sans-serif'],
+        manrope: ['Inter', 'sans-serif'],
+        mono: ['Inter', 'sans-serif'],
+        serif: ['Inter', 'sans-serif'],
       },
       colors: {
         primary: {

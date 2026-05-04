@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User as UserIcon, Bell, Shield, Pencil, Loader2, Save, X, MapPin, CheckCircle2 } from 'lucide-react';
+import { User as UserIcon, Bell, Shield, Pencil, Loader2, Save, X, MapPin, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppSelector, useAppDispatch } from '../../hooks';
 import { updateUser } from '../auth/authSlice';
@@ -234,7 +234,7 @@ export const SettingsPage: React.FC = () => {
                   <p className="text-[10px] font-medium text-slate-400">Manage login sessions</p>
                 </div>
               </div>
-              <ChevronLeft className="h-4 w-4 text-slate-300 rotate-180" />
+              <ChevronRight className="h-4 w-4 text-slate-300" />
             </div>
           </div>
         </Card>
@@ -242,21 +242,3 @@ export const SettingsPage: React.FC = () => {
     </div>
   );
 };
-
-const ChevronLeft = ({ className, ...props }: any) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={className}
-    {...props}
-  >
-    <path d="m15 18-6-6 6-6" />
-  </svg>
-)

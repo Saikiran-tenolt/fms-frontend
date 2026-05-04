@@ -37,7 +37,7 @@ export const MarketPage: React.FC = () => {
   // Removed unused selectedCrop
 
   // Helper to generate a realistic-looking sparkline trend array
-  const generateTrendData = (price: number, trend: 'up' | 'down' | 'stable', changePct: number, points: number = 10) => {
+  const generateTrendData = React.useCallback((price: number, trend: 'up' | 'down' | 'stable', changePct: number, points: number = 10) => {
     const data = [];
     let current = trend === 'up' ? price * (1 - changePct / 100) :
       trend === 'down' ? price * (1 + changePct / 100) : price;
@@ -49,7 +49,7 @@ export const MarketPage: React.FC = () => {
     }
     data.push({ time: 'Now', value: price });
     return data;
-  };
+  }, []);
 
   // Pre-compute mini trend data for table
   const tableTrendMap = useMemo(() => {
@@ -109,6 +109,11 @@ export const MarketPage: React.FC = () => {
     return insight;
   }, [prices]);
 
+  const topPerformer = React.useMemo(() => {
+    if (!filteredPrices.length) return null;
+    return [...filteredPrices].sort((a, b) => b.price - a.price)[0];
+  }, [filteredPrices]);
+
   return (
     <div className="space-y-6 animate-fadeIn max-w-[1400px] mx-auto min-h-[calc(100vh-6rem)] flex flex-col font-inter">
 
@@ -137,10 +142,10 @@ export const MarketPage: React.FC = () => {
             <h3 className="text-sm font-bold text-slate-900 tracking-tight">Top Performer</h3>
           </div>
           <p className="text-2xl font-black text-slate-900 mb-1">
-            {filteredPrices.sort((a, b) => b.price - a.price)[0]?.cropName || 'N/A'}
+            {topPerformer?.cropName || 'N/A'}
           </p>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-            ₹{filteredPrices.sort((a, b) => b.price - a.price)[0]?.price.toLocaleString() || '0'} / qtl
+            ₹{topPerformer?.price.toLocaleString() || '0'} / qtl
           </p>
           <div className="mt-4 pt-4 border-t border-slate-50 flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest">
             <span>Current Mandi</span>
@@ -280,7 +285,7 @@ export const MarketPage: React.FC = () => {
                             </div>
                             <div>
                               <p className={`font-bold text-sm ${isSelected ? 'text-emerald-900' : 'text-slate-900'}`}>{price.cropName}</p>
-                              <p className="text-[10px] text-slate-400 font-medium">Vol: {Math.floor(Math.random() >> 0 * 500) + 120} lots</p>
+                              <p className="text-[10px] text-slate-400 font-medium">Vol: {Math.floor(Math.random() * 500) + 120} lots</p>
                             </div>
                           </div>
                         </td>

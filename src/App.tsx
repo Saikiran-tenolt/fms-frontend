@@ -5,7 +5,7 @@ import { Toaster } from 'sonner';
 import { store } from './store/store';
 import { AppRoutes } from './routes/AppRoutes';
 import { useAppDispatch, useAppSelector } from './hooks';
-// import { setPlots } from './features/plots/plotsSlice';
+
 import { setNotifications } from './features/notifications/notificationsSlice';
 import { mockNotifications } from './services/mockData';
 
@@ -16,7 +16,7 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     if (isAuthenticated) {
       // Load initial data in simulation mode
-      // dispatch(setPlots(mockPlots));
+
       dispatch(setNotifications(mockNotifications));
     }
   }, [isAuthenticated, dispatch]);

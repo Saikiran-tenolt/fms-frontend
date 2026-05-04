@@ -1,21 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { MapPin, Trash2, ExternalLink } from 'lucide-react';
+import { MapPin, ExternalLink } from 'lucide-react';
 import { EmptyState, SkeletonPlotDetails } from '../../components/ui';
-import { toast } from 'sonner';
 import { useAppSelector, useAppDispatch } from '../../hooks';
 import { setSensorData, setTrendData } from '../sensors/sensorsSlice';
-import { removePlot, fetchAllPlots, fetchOnePlot } from '../plots/plotsSlice';
+import { fetchAllPlots, fetchOnePlot } from '../plots/plotsSlice';
 import { generateMockSensorData, generateMockTrendData } from '../../services/mockData';
+import { getPlotCoordinates } from '../../shared/utils/location';
 
 /* ── tiny primitives ─────────────────────────────────── */
 type PillVariant = 'green' | 'amber' | 'blue' | 'red' | 'gray';
 const PILL_CLS: Record<PillVariant, string> = {
   green: 'bg-[#eaf3de] border-[#c0dd97] text-[#3b6d11]',
   amber: 'bg-[#faeeda] border-[#f5c97a] text-[#854f0b]',
-  blue:  'bg-[#e6f1fb] border-[#9fc8f0] text-[#185fa5]',
-  red:   'bg-[#fdecea] border-[#f5b3ae] text-[#b91c1c]',
-  gray:  'bg-[#f5f5f3] border-[#e3e3e0] text-[#5f5e5a]',
+  blue: 'bg-[#e6f1fb] border-[#9fc8f0] text-[#185fa5]',
+  red: 'bg-[#fdecea] border-[#f5b3ae] text-[#b91c1c]',
+  gray: 'bg-[#f5f5f3] border-[#e3e3e0] text-[#5f5e5a]',
 };
 const Pill = ({ children, v = 'gray' }: { children: React.ReactNode; v?: PillVariant }) => (
   <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-medium border ${PILL_CLS[v]}`}>
@@ -70,11 +70,11 @@ const TL = [
 
 const SENSORS = [
   { name: 'Soil Moisture Sensor', desc: 'Volumetric water content in soil.', s: 'active' },
-  { name: 'Temperature Sensor',   desc: 'Ambient and canopy monitoring.',    s: 'active' },
-  { name: 'Humidity Sensor',      desc: 'Relative humidity monitoring.',     s: 'pending' },
-  { name: 'Soil pH Sensor',       desc: 'Continuous pH monitoring.',         s: 'none' },
-  { name: 'Rainfall Sensor',      desc: 'Tipping bucket rain gauge.',        s: 'none' },
-  { name: 'NPK Soil Sensor',      desc: 'N, P, K level monitoring.',         s: 'none' },
+  { name: 'Temperature Sensor', desc: 'Ambient and canopy monitoring.', s: 'active' },
+  { name: 'Humidity Sensor', desc: 'Relative humidity monitoring.', s: 'pending' },
+  { name: 'Soil pH Sensor', desc: 'Continuous pH monitoring.', s: 'none' },
+  { name: 'Rainfall Sensor', desc: 'Tipping bucket rain gauge.', s: 'none' },
+  { name: 'NPK Soil Sensor', desc: 'N, P, K level monitoring.', s: 'none' },
 ];
 
 /* ── main ────────────────────────────────────────────── */
@@ -83,7 +83,7 @@ export const PlotDetailsPage: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { plots, loading: plotsLoading } = useAppSelector((s) => s.plots);
-  const { user } = useAppSelector((s) => s.auth);
+
   const [loading, setLoading] = useState(true);
   const plot = plots.find((p) => p._id === id);
 
@@ -95,32 +95,23 @@ export const PlotDetailsPage: React.FC = () => {
   useEffect(() => {
     if (!plot) return;
     setLoading(true);
-    setTimeout(() => {
+    const timeout = setTimeout(() => {
       dispatch(setSensorData({ plotId: plot._id, data: generateMockSensorData(plot._id, plot.environmentType) }));
       dispatch(setTrendData({ plotId: plot._id, sensor: 'soilMoisture', data: generateMockTrendData() }));
       setLoading(false);
     }, 600);
-  }, [plot?._id]);
+    return () => clearTimeout(timeout);
+  }, [id, plot, dispatch]);
 
-  const handleDelete = async () => {
-    if (!plot || !window.confirm(`Delete "${plot.plotName}"?`)) return;
-    try {
-      await dispatch(removePlot(plot._id)).unwrap();
-      navigate('/plots');
-      toast.success(`"${plot.plotName}" removed.`);
-    } catch (e: any) { toast.error(e || 'Failed to delete.'); }
-  };
 
-  if (loading || plotsLoading) return <div className="p-8"><SkeletonPlotDetails /></div>;
+  if (loading || plotsLoading) return <SkeletonPlotDetails />;
   if (!plot) return (
     <EmptyState icon={<MapPin className="h-12 w-12" />} title="Plot Not Found"
       description="This plot does not exist."
       action={{ label: 'Back to Plots', onClick: () => navigate('/plots') }} />
   );
 
-  const loc = plot.location as any;
-  const lat: number = loc.coordinates?.coordinates?.[1] ?? loc.lat ?? 0;
-  const lon: number = loc.coordinates?.coordinates?.[0] ?? loc.lng ?? 0;
+  const { lat = 0, lon = 0 } = getPlotCoordinates(plot.location);
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
   const daysLeft = plot.expectedHarvestDate
     ? Math.ceil((new Date(plot.expectedHarvestDate).getTime() - Date.now()) / 86400000)
@@ -133,23 +124,24 @@ export const PlotDetailsPage: React.FC = () => {
     <div style={{ background: '#f5f5f3', minHeight: '100vh', fontFamily: "'DM Sans',sans-serif" }}>
 
       {/* ── Topbar ── */}
-      <div className="bg-white border-b border-[#e3e3e0] flex items-center px-5 gap-3 sticky top-0 z-10" style={{ height: 52 }}>
-        <button onClick={() => navigate('/plots')}
-          className="flex items-center gap-1.5 border border-[#e3e3e0] rounded-lg px-3 py-1.5 text-[12px] text-[#5f5e5a] bg-white hover:border-[#c0dd97] transition-colors">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-            <path d="M7.5 2.5L4.5 6l3 3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+      <div className="flex items-center px-6 gap-4 z-10" style={{ height: 56 }}>
+        <button
+          onClick={() => navigate('/plots')}
+          className="flex items-center gap-2 border border-[#e8eae5] rounded-full px-4 py-1.5 text-[13px] font-medium text-[#1a1f16] bg-white hover:bg-[#f9fafb] transition-all active:scale-95"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
           </svg>
           Back
         </button>
-        <div className="flex items-center gap-1.5 text-[12px] text-[#b4b2a9]">
-          <span>Plots</span><span>/</span>
-          <span className="text-[#1a1a18] font-medium">{plot.plotName}</span>
+
+        <div className="flex items-center gap-2 text-[13px] text-[#6b7468]">
+          <span className="hover:text-[#1a1f16] cursor-pointer" onClick={() => navigate('/plots')}>Plots</span>
+          <span className="text-[#9ea89b] text-[11px]">›</span>
+          <span className="text-[#1a1f16] font-bold">{plot.plotName}</span>
         </div>
-        <div className="ml-auto">
-          <span className="text-[10.5px] bg-[#f5f5f3] border border-[#e3e3e0] rounded-full px-3 py-1 text-[#888780]">
-            Mode: Simulation
-          </span>
-        </div>
+
       </div>
 
       <div className="p-5 flex flex-col gap-3.5">
@@ -167,10 +159,6 @@ export const PlotDetailsPage: React.FC = () => {
             </div>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
-            <button onClick={handleDelete}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[#f5b3ae] text-[#b91c1c] bg-white text-[12.5px] font-medium hover:bg-[#fdecea] transition-colors">
-              <Trash2 size={13} /> Delete Plot
-            </button>
             <button onClick={() => navigate(`/plots/${plot._id}/edit`)}
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[#e3e3e0] text-[#1a1a18] bg-white text-[12.5px] font-medium hover:border-[#c0dd97] transition-colors">
               Refine Config
@@ -201,10 +189,10 @@ export const PlotDetailsPage: React.FC = () => {
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
                 {[
-                  { label: 'Soil Moisture', val: '35', unit: '%',  badge: 'Optimal', bv: 'green' as PillVariant, note: 'Updated just now' },
-                  { label: 'Temperature',   val: '39', unit: '°C', badge: 'High',    bv: 'amber' as PillVariant, note: 'Updated just now' },
-                  { label: 'Humidity',      val: '—',  unit: '',   badge: 'Pending', bv: 'gray'  as PillVariant, note: '🔒 Awaiting approval', dim: true },
-                  { label: 'Soil pH',       val: '—',  unit: '',   badge: 'Locked',  bv: 'gray'  as PillVariant, note: '🔒 Request not sent',  dim: true },
+                  { label: 'Soil Moisture', val: '35', unit: '%', badge: 'Optimal', bv: 'green' as PillVariant, note: 'Updated just now' },
+                  { label: 'Temperature', val: '39', unit: '°C', badge: 'High', bv: 'amber' as PillVariant, note: 'Updated just now' },
+                  { label: 'Humidity', val: '—', unit: '', badge: 'Pending', bv: 'gray' as PillVariant, note: '🔒 Awaiting approval', dim: true },
+                  { label: 'Soil pH', val: '—', unit: '', badge: 'Locked', bv: 'gray' as PillVariant, note: '🔒 Request not sent', dim: true },
                 ].map((sc) => (
                   <div key={sc.label}
                     className={`border border-[#e3e3e0] rounded-xl p-3 ${sc.dim ? 'bg-[#fafaf8] opacity-70' : 'bg-white'}`}>
@@ -254,37 +242,15 @@ export const PlotDetailsPage: React.FC = () => {
                     <div className="text-[13px] font-medium text-[#1a1a18] mb-1">{sensor.name}</div>
                     <div className="text-[11.5px] text-[#888780] mb-3 leading-relaxed">{sensor.desc}</div>
                     <div className="flex items-center justify-between">
-                      {sensor.s === 'active'  && <Pill v="green">Active · Live Feed</Pill>}
+                      {sensor.s === 'active' && <Pill v="green">Active · Live Feed</Pill>}
                       {sensor.s === 'pending' && <Pill v="amber">Pending Review</Pill>}
-                      {sensor.s === 'none'    && <span className="text-[11px] text-[#b4b2a9]">Not Requested</span>}
-                      {sensor.s === 'active'  && <button className="text-[11px] border border-[#e3e3e0] rounded-lg px-2.5 py-1 text-[#5f5e5a] hover:border-[#c0dd97] transition-colors">View Data</button>}
+                      {sensor.s === 'none' && <span className="text-[11px] text-[#b4b2a9]">Not Requested</span>}
+                      {sensor.s === 'active' && <button className="text-[11px] border border-[#e3e3e0] rounded-lg px-2.5 py-1 text-[#5f5e5a] hover:border-[#c0dd97] transition-colors">View Data</button>}
                       {sensor.s === 'pending' && <button className="text-[11px] border border-[#f5c97a] rounded-lg px-2.5 py-1 text-[#854f0b]">Cancel</button>}
-                      {sensor.s === 'none'    && <button className="text-[11px] bg-[#1a1a18] text-white rounded-lg px-2.5 py-1 hover:bg-[#2c2c28] transition-colors">Send Request</button>}
+                      {sensor.s === 'none' && <button className="text-[11px] bg-[#1a1a18] text-white rounded-lg px-2.5 py-1 hover:bg-[#2c2c28] transition-colors">Send Request</button>}
                     </div>
                   </div>
                 ))}
-              </div>
-            </Card>
-
-          </div>{/* /LEFT */}
-
-          {/* RIGHT */}
-          <div className="flex flex-col gap-3.5">
-
-            {/* Soil composition */}
-            <Card>
-              <div className="flex items-center justify-between mb-3">
-                <div className="text-[13px] font-medium text-[#1a1a18]">Soil Composition</div>
-                <Pill v="gray">Last tested: Today</Pill>
-              </div>
-              <div className="flex flex-col gap-3">
-                <SoilBar label="Nitrogen (N)"   val={`${n} kg/ha`} pct={Math.round((n/200)*100)} color="#1d9e75" />
-                <SoilBar label="Phosphorus (P)" val={`${p} kg/ha`} pct={Math.round((p/100)*100)} color="#378add" />
-                <SoilBar label="Potassium (K)"  val={`${k} kg/ha`} pct={Math.round((k/100)*100)} color="#d97706" />
-                <SoilBar label="Organic Matter" val="2.3%"         pct={46}                       color="#94a3b8" />
-              </div>
-              <div className="mt-3 p-2.5 bg-[#fafaf8] border border-[#e3e3e0] rounded-lg text-[11.5px] text-[#888780] leading-relaxed">
-                <strong className="text-[#5f5e5a] font-medium">Advisory:</strong> Telemetry suggests late-season split dose of P for optimal yield.
               </div>
             </Card>
 
@@ -313,6 +279,29 @@ export const PlotDetailsPage: React.FC = () => {
               </div>
             </Card>
 
+          </div>{/* /LEFT */}
+
+          {/* RIGHT */}
+          <div className="flex flex-col gap-3.5">
+
+            {/* Soil composition */}
+            <Card>
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-[13px] font-medium text-[#1a1a18]">Soil Composition</div>
+                <Pill v="gray">Last tested: Today</Pill>
+              </div>
+              <div className="flex flex-col gap-3">
+                <SoilBar label="Nitrogen (N)" val={`${n} kg/ha`} pct={Math.round((n / 200) * 100)} color="#1d9e75" />
+                <SoilBar label="Phosphorus (P)" val={`${p} kg/ha`} pct={Math.round((p / 100) * 100)} color="#378add" />
+                <SoilBar label="Potassium (K)" val={`${k} kg/ha`} pct={Math.round((k / 100) * 100)} color="#d97706" />
+                <SoilBar label="Organic Matter" val="2.3%" pct={46} color="#94a3b8" />
+              </div>
+              <div className="mt-3 p-2.5 bg-[#fafaf8] border border-[#e3e3e0] rounded-lg text-[11.5px] text-[#888780] leading-relaxed">
+                <strong className="text-[#5f5e5a] font-medium">Advisory:</strong> Telemetry suggests late-season split dose of P for optimal yield.
+              </div>
+            </Card>
+
+
             {/* Telemetry */}
             <Card>
               <div className="flex items-center justify-between mb-3">
@@ -321,8 +310,8 @@ export const PlotDetailsPage: React.FC = () => {
               </div>
               <div className="grid grid-cols-2 gap-3 mb-3">
                 {[
-                  ['Power',  plot.hardwareStatus?.battery ?? 98],
-                  ['Signal', plot.hardwareStatus?.signal  ?? 100],
+                  ['Power', plot.hardwareStatus?.battery ?? 98],
+                  ['Signal', plot.hardwareStatus?.signal ?? 100],
                 ].map(([label, pct]) => (
                   <div key={String(label)}>
                     <InfoLabel>{label}</InfoLabel>

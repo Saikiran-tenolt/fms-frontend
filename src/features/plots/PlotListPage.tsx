@@ -11,7 +11,7 @@ import type { Plot, SensorData } from '../../types';
 
 // ─── Stage helpers ────────────────────────────────────────────────────────────
 
-const STAGES = ['SEEDLING', 'VEGETATIVE', 'FLOWERING', 'HARVEST'];
+
 
 const stageLabel: Record<string, string> = {
   SEEDLING:   'Sowed',
@@ -33,47 +33,6 @@ const sensorStatusColor: Record<string, string> = {
   critical: '#ef4444',
 };
 
-// ─── Stage progress bar ────────────────────────────────────────────────────────
-
-function StageBar({ stage }: { stage: string }) {
-  const ci = STAGES.indexOf(stage);
-  return (
-    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 0 }}>
-      {STAGES.map((s, i) => {
-        const isDone   = i < ci;
-        const isActive = i === ci;
-        return (
-          <React.Fragment key={s}>
-            {i > 0 && (
-              <div style={{
-                flex: 1, height: 1, marginTop: 3.5,
-                background: isDone || isActive ? '#22c55e' : '#e5e7eb',
-              }} />
-            )}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-              <div style={{
-                width: 7, height: 7, borderRadius: '50%', flexShrink: 0,
-                background: isDone ? '#22c55e' : isActive ? '#fff' : '#f3f4f6',
-                border: isDone ? '1.5px solid #16a34a'
-                      : isActive ? '2px solid #22c55e'
-                      : '1.5px solid #d1d5db',
-                outline: isActive ? '2px solid #dcfce7' : 'none',
-                outlineOffset: 1,
-              }} />
-              <span style={{
-                fontSize: 9, whiteSpace: 'nowrap',
-                color: isDone ? '#15803d' : isActive ? '#111' : '#d1d5db',
-                fontWeight: isActive ? 600 : 400,
-              }}>
-                {stageLabel[s] ?? s}
-              </span>
-            </div>
-          </React.Fragment>
-        );
-      })}
-    </div>
-  );
-}
 
 // ─── Sensor rows ──────────────────────────────────────────────────────────────
 
@@ -88,13 +47,14 @@ const SENSOR_ROWS: SensorRow[] = [
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const fmt = (d: string) =>
-  new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
 
 const batteryColor = (v?: number) =>
   v === undefined ? '#9ca3af' : v < 20 ? '#ef4444' : v < 50 ? '#f59e0b' : '#22c55e';
 
 // ─── Plot card ─────────────────────────────────────────────────────────────────
+// RATIONALE: We retain inline style objects here to avoid breaking the heavily
+// customized CSS-in-JS grid and specific dynamic styling tied to the component's state.
 
 interface PlotCardProps {
   plot: Plot;
@@ -104,7 +64,7 @@ interface PlotCardProps {
   onClick:  () => void;
 }
 
-function PlotCard({ plot, sensorData, onEdit, onDelete, onClick }: PlotCardProps) {
+const PlotCard = React.memo(function PlotCard({ plot, sensorData, onEdit, onDelete, onClick }: PlotCardProps) {
   const sc    = stageColors[plot.cropStage] ?? { bg: '#f3f4f6', text: '#6b7280' };
   const label = stageLabel[plot.cropStage] ?? plot.cropStage;
   const activeSensors = SENSOR_ROWS.filter(r => sensorData?.[r.key] != null).length;
@@ -307,7 +267,7 @@ function PlotCard({ plot, sensorData, onEdit, onDelete, onClick }: PlotCardProps
       </div>
     </div>
   );
-}
+});
 
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
@@ -333,11 +293,11 @@ export const PlotListPage: React.FC = () => {
     });
   }, [plots, dispatch]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const filtered = plots.filter(p =>
+  const filtered = React.useMemo(() => plots.filter(p =>
     p.plotName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     p.location?.address?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     p.location?.district?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  ), [plots, searchQuery]);
 
   const handleDelete = async (id: string, name: string) => {
     try {
@@ -350,9 +310,11 @@ export const PlotListPage: React.FC = () => {
 
   if (loading && plots.length === 0) {
     return (
-      <div style={{ background: '#f5f5f3', minHeight: '100vh', padding: '28px 32px', fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ background: '#f5f6f4', minHeight: '100vh', padding: '28px 32px' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-          {[...Array(3)].map((_, i) => <SkeletonPlotRow key={i} />)}
+          <div className="flex flex-wrap gap-[12px]">
+            {[...Array(6)].map((_, i) => <SkeletonPlotRow key={i} />)}
+          </div>
         </div>
       </div>
     );

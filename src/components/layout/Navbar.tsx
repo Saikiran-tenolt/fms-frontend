@@ -1,4 +1,4 @@
-import { Bell, User, Menu } from 'lucide-react';
+import { Bell, Menu } from 'lucide-react';
 import { useAppSelector } from '../../hooks';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '../ui/Badge';
@@ -9,13 +9,12 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ onMobileMenuToggle }) => {
   const navigate = useNavigate();
-  const { user } = useAppSelector((state) => state.auth);
   const { unreadCount } = useAppSelector((state) => state.notifications);
   const appMode = import.meta.env.VITE_APP_MODE;
 
   return (
-    <nav className="bg-white/70 backdrop-blur-xl border-b border-slate-200/50 px-4 sm:px-8 py-3 sticky top-0 z-30 transition-all duration-300">
-      <div className="max-w-screen-2xl mx-auto flex items-center justify-between">
+    <nav className="bg-white/70 backdrop-blur-xl border-b border-slate-200/50 px-4 sm:px-8 py-2 sticky top-0 z-30 transition-all duration-300">
+      <div className="w-full flex items-center justify-between">
         {/* Left side - Hamburger (mobile) + Logo and title */}
         <div className="flex items-center gap-4">
           {/* Hamburger menu button (mobile only) */}
@@ -27,30 +26,24 @@ export const Navbar: React.FC<NavbarProps> = ({ onMobileMenuToggle }) => {
             <Menu className="h-5 w-5" />
           </button>
 
-          <div className="flex flex-col">
+          <div className="flex items-center gap-3">
             <h1 className="text-sm sm:text-lg font-black tracking-tighter text-slate-900 uppercase">
-              Farmer Monitoring <span className="text-emerald-600">Portal</span>
+              Farm Monitoring <span className="text-emerald-600">System</span>
             </h1>
-            <div className="flex items-center gap-2">
-              <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <p className="text-[9px] font-bold text-slate-400 tracking-widest uppercase">System Operational</p>
-              {appMode === 'simulation' && (
-                <Badge variant="info" size="sm" className="hidden sm:inline-flex ml-2 scale-[0.85] origin-left">
-                  Mode: Simulation
-                </Badge>
-              )}
-            </div>
+            {appMode === 'simulation' && (
+              <Badge variant="info" size="sm" className="hidden sm:inline-flex scale-[0.85] origin-left">
+                Mode: Simulation
+              </Badge>
+            )}
           </div>
         </div>
 
         {/* Right side - User info, notifications and sidebar toggle */}
         <div className="flex items-center gap-3">
-          <div className="w-px h-6 bg-slate-200 mx-1 hidden lg:block" />
-
           {/* Notifications */}
           <button
             onClick={() => navigate('/notifications')}
-            className="relative w-10 h-10 rounded-xl border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 transition-all active:scale-95 shadow-sm"
+            className="relative w-10 h-10 rounded-xl flex items-center justify-center text-black hover:bg-slate-50 transition-all active:scale-95"
             aria-label="Notifications"
           >
             <Bell size={18} />
@@ -62,25 +55,13 @@ export const Navbar: React.FC<NavbarProps> = ({ onMobileMenuToggle }) => {
           {/* User menu */}
           <div
             onClick={() => navigate('/settings')}
-            className="flex items-center gap-2 pl-2 sm:pl-4 border-l border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors py-1 px-2 rounded-xl group"
+            className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 transition-colors p-1 rounded-xl group"
           >
-            <div className="h-9 w-9 bg-primary-50 rounded-full flex items-center justify-center ring-1 ring-primary-200 group-hover:ring-primary-400 transition-all">
-              <User className="h-5 w-5 text-primary-600" />
+            <div className="h-7 w-7 bg-[#3b6d11] rounded-full flex flex-col items-center justify-end overflow-hidden shadow-sm ring-2 ring-transparent group-hover:ring-emerald-100 group-hover:bg-[#2c520d] transition-all">
+              <div className="w-2.5 h-2.5 bg-white rounded-full mb-0.5 shrink-0" />
+              <div className="w-[18px] h-[9px] bg-white rounded-t-full shrink-0" />
             </div>
-            <div className="hidden md:block">
-              <p className="text-sm font-bold tracking-tight text-slate-900 group-hover:text-primary-700 transition-colors">{user?.name}</p>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">{user?.role}</p>
-                {user?.permanentLocation && (
-                  <>
-                    <span className="h-1 w-1 rounded-full bg-slate-300" />
-                    <p className="text-[10px] font-medium tracking-wider text-slate-500 uppercase whitespace-nowrap">
-                      {user.permanentLocation.village}
-                    </p>
-                  </>
-                )}
-              </div>
-            </div>
+
           </div>
         </div>
       </div>

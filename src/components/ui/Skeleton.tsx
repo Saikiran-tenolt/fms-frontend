@@ -32,87 +32,88 @@ export const SkeletonChart: React.FC = () => (
   </div>
 );
 
-// ── Plot List: row skeleton ───────────────────────────────────────────────────
+// ── Plot List: Card skeleton ───────────────────────────────────────────────────
 export const SkeletonPlotRow: React.FC = () => (
-  <div className="bg-white border border-slate-200 rounded-2xl px-6 py-5 flex items-center gap-6 animate-pulse">
-    <Skeleton className="h-12 w-12 rounded-xl shrink-0" />
-    <div className="flex-1 space-y-2">
-      <Skeleton className="h-4 w-48 rounded" />
-      <Skeleton className="h-3 w-32 rounded" />
-    </div>
-    <div className="hidden sm:flex gap-8">
-      <div className="space-y-1.5">
-        <Skeleton className="h-2.5 w-16 rounded" />
-        <Skeleton className="h-4 w-20 rounded" />
-      </div>
-      <div className="space-y-1.5">
-        <Skeleton className="h-2.5 w-16 rounded" />
-        <Skeleton className="h-4 w-20 rounded" />
+  <div className="bg-white border border-[#e8eae5] rounded-xl flex flex-col shrink-0 animate-pulse" style={{ width: 340 }}>
+    <div className="p-[14px] px-4 flex items-start gap-[10px]">
+      <Skeleton className="h-8 w-8 rounded-lg shrink-0" />
+      <div className="flex-1 space-y-1.5 pt-0.5">
+        <Skeleton className="h-4 w-32 rounded" />
+        <Skeleton className="h-3 w-20 rounded" />
       </div>
     </div>
-    <Skeleton className="h-8 w-20 rounded-lg shrink-0" />
+    <div className="px-4 pb-4 space-y-2">
+      <Skeleton className="h-2 w-full rounded" />
+      <div className="grid grid-cols-2 gap-2 mt-2">
+        <Skeleton className="h-8 w-full rounded-lg" />
+        <Skeleton className="h-8 w-full rounded-lg" />
+      </div>
+    </div>
   </div>
 );
 
 // ── Plot Details: full-page skeleton ─────────────────────────────────────────
 export const SkeletonPlotDetails: React.FC = () => (
-  <div className="w-full pb-12 px-4 md:px-0 animate-pulse space-y-10">
-    {/* Header */}
-    <div className="flex items-center justify-between border-b border-slate-100 pb-10">
-      <div className="flex items-center gap-6">
-        <Skeleton className="h-14 w-14 rounded-2xl shrink-0" />
-        <div className="space-y-2">
-          <Skeleton className="h-8 w-64 rounded" />
-          <Skeleton className="h-5 w-40 rounded" />
-        </div>
-      </div>
-      <div className="flex gap-3">
-        <Skeleton className="h-12 w-12 rounded-2xl" />
-        <Skeleton className="h-12 w-32 rounded-2xl" />
-        <Skeleton className="h-12 w-32 rounded-2xl" />
+  <div className="min-h-screen bg-[#f5f6f4] animate-pulse">
+    {/* Topbar Skeleton */}
+    <div className="bg-white border-b border-[#e8eae5] flex items-center px-6 gap-4" style={{ height: 56 }}>
+      <Skeleton className="h-8 w-20 rounded-full" />
+      <div className="flex items-center gap-2">
+        <Skeleton className="h-4 w-12 rounded" />
+        <Skeleton className="h-4 w-4 rounded" />
+        <Skeleton className="h-4 w-24 rounded" />
       </div>
     </div>
 
-    {/* Body grid */}
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-      <div className="lg:col-span-8 space-y-8">
-        {/* Summary card */}
-        <div className="bg-white border border-slate-200 rounded-[3rem] p-10 grid grid-cols-12 gap-10">
-          <Skeleton className="col-span-4 aspect-square rounded-[2.5rem]" />
-          <div className="col-span-8 grid grid-cols-2 gap-6">
+    <div className="p-5 flex flex-col gap-4">
+      {/* Header Skeleton */}
+      <div className="flex items-start justify-between">
+        <div className="space-y-2">
+          <Skeleton className="h-7 w-48 rounded" />
+          <Skeleton className="h-4 w-32 rounded" />
+        </div>
+        <Skeleton className="h-10 w-32 rounded-xl" />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        {/* Left Column */}
+        <div className="lg:col-span-8 space-y-5">
+          {/* Metrics Grid Skeleton */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="space-y-2">
-                <Skeleton className="h-3 w-24 rounded" />
-                <Skeleton className="h-6 w-32 rounded" />
+              <div key={i} className="bg-white border border-[#e8eae5] rounded-xl p-3 space-y-3">
+                <div className="flex justify-between">
+                  <Skeleton className="h-3 w-16 rounded" />
+                  <Skeleton className="h-4 w-10 rounded-full" />
+                </div>
+                <Skeleton className="h-7 w-12 rounded" />
+                <Skeleton className="h-2.5 w-full rounded" />
               </div>
             ))}
-            <div className="col-span-2 pt-6 border-t border-slate-50">
-              <Skeleton className="h-16 w-full rounded-3xl" />
-            </div>
+          </div>
+
+          {/* Large Card (Chart) Skeleton */}
+          <div className="bg-white border border-[#e8eae5] rounded-xl p-5 space-y-4">
+            <Skeleton className="h-5 w-40 rounded" />
+            <Skeleton className="h-48 w-full rounded-lg" />
           </div>
         </div>
-        {/* Chart */}
-        <div className="bg-white border border-slate-200 rounded-[3rem] p-10 space-y-6">
-          <Skeleton className="h-6 w-56 rounded" />
-          <Skeleton className="h-64 w-full rounded-2xl" />
-        </div>
-        {/* Log */}
-        <div className="bg-white border border-slate-200 rounded-[3rem] p-10 space-y-6">
-          <Skeleton className="h-6 w-48 rounded" />
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="flex gap-4">
-              <Skeleton className="h-11 w-11 rounded-2xl shrink-0" />
-              <div className="flex-1 space-y-2 pt-1">
-                <Skeleton className="h-4 w-3/4 rounded" />
-                <Skeleton className="h-3 w-40 rounded" />
+
+        {/* Right Column */}
+        <div className="lg:col-span-4 space-y-5">
+          <div className="bg-white border border-[#e8eae5] rounded-xl p-5 space-y-4">
+            <Skeleton className="h-5 w-32 rounded" />
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="flex gap-3">
+                <Skeleton className="h-10 w-10 rounded-lg shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-3 w-3/4 rounded" />
+                  <Skeleton className="h-2.5 w-1/2 rounded" />
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
-      <div className="lg:col-span-4 space-y-8">
-        <Skeleton className="h-72 w-full rounded-[3rem]" />
-        <Skeleton className="h-52 w-full rounded-[3rem]" />
       </div>
     </div>
   </div>

@@ -41,7 +41,7 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onMobileClose }) => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { user } = useAppSelector((state: any) => state.auth);
+  const { user } = useAppSelector((state) => state.auth);
   const { isSidebarCollapsed } = useAppSelector((state) => state.ui);
 
   const handleLogout = () => {

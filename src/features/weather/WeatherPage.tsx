@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Cloud, Droplets, Wind, Eye,
-  CloudRain, CloudSnow, Sun, CloudLightning,
+  Droplets, Wind, Eye,
+  CloudRain, Sun, CloudLightning,
   AlertTriangle, Loader2, RefreshCw, MapPin, Volume2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -9,16 +9,11 @@ import { toast } from 'sonner';
 import { useAppSelector, useAppDispatch } from '../../hooks';
 import { fetchWeatherAndAdvisories } from '../advisories/advisoriesSlice';
 import { fetchForecast, fetchForecastByPincode } from '../../services/weatherService';
+import { getWeatherDisplay, mapWeatherCode } from '../../shared/utils/weather';
+import { getPlotCoordinates } from '../../shared/utils/location';
 
 // Map OWM icon codes to Lucide components + label + colors
-const getWeatherDisplay = (main: string) => {
-  const m = main.toLowerCase();
-  if (m.includes('thunder')) return { icon: CloudLightning, color: 'text-violet-500', bg: 'bg-violet-50', label: 'Thunderstorm' };
-  if (m.includes('rain') || m.includes('drizzle')) return { icon: CloudRain, color: 'text-blue-500', bg: 'bg-blue-50', label: 'Rainy' };
-  if (m.includes('snow')) return { icon: CloudSnow, color: 'text-sky-400', bg: 'bg-sky-50', label: 'Snow' };
-  if (m.includes('cloud')) return { icon: Cloud, color: 'text-slate-500', bg: 'bg-slate-100', label: 'Cloudy' };
-  return { icon: Sun, color: 'text-amber-500', bg: 'bg-amber-50', label: 'Clear' };
-};
+
 
 const getRiskLevel = (main: string): { level: string; color: string; bg: string; advice: string } => {
   const m = main.toLowerCase();
@@ -29,16 +24,7 @@ const getRiskLevel = (main: string): { level: string; color: string; bg: string;
 };
 
 // Map WMO weather codes (Open-Meteo) to conditions
-const mapWeatherCode = (code: number) => {
-  if (code === 0) return { condition: 'Clear', description: 'clear sky' };
-  if ([1, 2, 3].includes(code)) return { condition: 'Clouds', description: 'partly cloudy' };
-  if ([45, 48].includes(code)) return { condition: 'Fog', description: 'foggy' };
-  if ([51, 53, 55, 56, 57].includes(code)) return { condition: 'Drizzle', description: 'light drizzle' };
-  if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return { condition: 'Rain', description: 'rain showers' };
-  if ([71, 73, 75, 77, 85, 86].includes(code)) return { condition: 'Snow', description: 'snowfall' };
-  if ([95, 96, 99].includes(code)) return { condition: 'Thunderstorm', description: 'thunderstorms' };
-  return { condition: 'Clouds', description: 'overcast' };
-};
+
 
 // Transform Open-Meteo forecast into UI format
 const transformOpenMeteo = (data: any) => {
@@ -62,20 +48,18 @@ export const WeatherPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const { weatherData } = useAppSelector((state: any) => state.advisories);
   const { plots, selectedPlotId } = useAppSelector((state: any) => state.plots);
-  const { user } = useAppSelector((state: any) => state.auth);
+  const { user } = useAppSelector((state) => state.auth);
   const [forecast, setForecast] = useState<any[]>([]);
   const [forecastLoading, setForecastLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const selectedPlot = plots.find((p: any) => p._id === selectedPlotId);
 
-  const loadData = async (silent = false) => {
+  const loadData = React.useCallback(async (silent = false) => {
     if (!silent) setForecastLoading(true);
     else setRefreshing(true);
 
-    const loc = selectedPlot?.location as any;
-    const lat = loc?.coordinates?.coordinates?.[1] ?? loc?.lat;
-    const lon = loc?.coordinates?.coordinates?.[0] ?? loc?.lng;
+    const { lat, lon } = getPlotCoordinates(selectedPlot?.location);
 
     if (lat !== undefined && lon !== undefined) {
       dispatch(fetchWeatherAndAdvisories({ lat, lon }) as any);
@@ -100,11 +84,11 @@ export const WeatherPage: React.FC = () => {
     setForecastLoading(false);
     setRefreshing(false);
     if (silent) toast.success('Weather data refreshed');
-  };
+  }, [dispatch, selectedPlot?.location, user?.pincode]);
 
   useEffect(() => {
     loadData();
-  }, [selectedPlotId]);
+  }, [selectedPlotId, loadData]);
 
   const current = weatherData;
   const riskInfo = current ? getRiskLevel(current.weather[0].main) : getRiskLevel('clear');

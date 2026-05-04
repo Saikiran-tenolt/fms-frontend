@@ -48,7 +48,7 @@ const suggestionCards: SuggestionCard[] = [
 export const AssistantPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const { messages, loading } = useAppSelector((state) => state.assistant);
-  const { user } = useAppSelector((state: any) => state.auth);
+  const { user } = useAppSelector((state) => state.auth);
   const { isSidebarCollapsed } = useAppSelector((state) => state.ui);
 
   const [inputMessage, setInputMessage] = useState('');
@@ -89,7 +89,7 @@ export const AssistantPage: React.FC = () => {
     }
   };
 
-  const handleSendMessage = async () => {
+  const handleSendMessage = React.useCallback(async () => {
     if (!inputMessage.trim() && !imagePreview) return;
 
     const userMessage: ChatMessage = {
@@ -117,7 +117,7 @@ export const AssistantPage: React.FC = () => {
 
     dispatch(addMessage(aiResponse));
     dispatch(setLoading(false));
-  };
+  }, [inputMessage, imagePreview, dispatch]);
 
   const handleSuggestedQuery = (query: string) => {
     setInputMessage(query);
@@ -266,7 +266,7 @@ export const AssistantPage: React.FC = () => {
                 type="text"
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                 placeholder="Enter a prompt here"
                 className="flex-1 bg-transparent border-none focus:ring-0 outline-none text-[16px] text-slate-800 placeholder:text-slate-500 ml-2"
               />
