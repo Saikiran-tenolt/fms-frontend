@@ -134,7 +134,7 @@ export const LoginPage: React.FC = () => {
         if (msg.includes('email')) msg = 'Email already taken, try for new email';
         else if (msg.includes('phone') || msg.includes('mobile')) msg = 'Mobile number already registered';
       }
-      
+
       const newFieldErrors: Record<string, string> = { ...errors };
       if (Object.keys(errors).length === 0) {
         if (msg.toLowerCase().includes('phone') || msg.toLowerCase().includes('mobile') || msg.toLowerCase().includes('number')) {
@@ -191,7 +191,7 @@ export const LoginPage: React.FC = () => {
             accessToken: res.data.accessToken!,
             refreshToken: res.data.refreshToken!,
           }));
-          
+
           if (isSignup) {
             toast.success(`Account created successfully! Welcome, ${res.data.user!.name}`);
             navigate('/plots/create');
@@ -211,7 +211,7 @@ export const LoginPage: React.FC = () => {
         if (msg.includes('email')) msg = 'Email already taken, try for new email';
         else if (msg.includes('phone') || msg.includes('mobile')) msg = 'Mobile number already registered';
       }
-      
+
       const newFieldErrors: Record<string, string> = { ...errors };
       if (Object.keys(errors).length === 0) {
         if (msg.toLowerCase().includes('email')) newFieldErrors.email = msg;
@@ -261,7 +261,7 @@ export const LoginPage: React.FC = () => {
   // RENDER
   // ══════════════════════════════════════════════════════════════════════════════
   return (
-    <div 
+    <div
       className="min-h-screen flex items-center justify-center p-6"
       style={{ fontFamily: "'Sora', sans-serif", background: '#f9fafb' }}
     >
@@ -352,7 +352,7 @@ export const LoginPage: React.FC = () => {
                       </span>
                       <input
                         type="tel" value={phone} maxLength={10}
-                        onChange={e => {setPhone(e.target.value.replace(/\D/g, '').slice(0, 10)); setFieldErrors(p => ({...p, phone: ''}))}}
+                        onChange={e => { setPhone(e.target.value.replace(/\D/g, '').slice(0, 10)); setFieldErrors(p => ({ ...p, phone: '' })) }}
                         placeholder="98765 43210"
                         className={`w-full rounded-[9px] border py-3 pr-4 text-[13px] outline-none transition-all ${fieldErrors.phone ? 'border-red-400 bg-red-50 text-red-900' : ''}`}
                         style={fieldErrors.phone ? { paddingLeft: '64px', fontFamily: "'Sora', sans-serif" } : { paddingLeft: '64px', background: '#f8fafc', borderColor: '#e2e8f0', color: '#0f172a', fontFamily: "'Sora', sans-serif" }}
@@ -432,7 +432,7 @@ export const LoginPage: React.FC = () => {
                         {/* Name */}
                         <div className="relative">
                           <User className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: '#64748b' }} />
-                          <input type="text" value={name} onChange={e => {setName(e.target.value); setFieldErrors(p => ({...p, name: ''}))}} placeholder="Full name"
+                          <input type="text" value={name} onChange={e => { setName(e.target.value); setFieldErrors(p => ({ ...p, name: '' })) }} placeholder="Full name"
                             className={`w-full rounded-[9px] border py-3 pl-10 pr-4 text-sm outline-none transition-all ${fieldErrors.name ? 'border-red-400 bg-red-50 text-red-900 placeholder:text-red-300' : ''}`}
                             style={fieldErrors.name ? { fontFamily: "'Sora', sans-serif" } : { background: '#f8fafc', borderColor: '#e2e8f0', color: '#0f172a', fontFamily: "'Sora', sans-serif" }}
                           />
@@ -443,7 +443,7 @@ export const LoginPage: React.FC = () => {
                         {/* Email */}
                         <div className="relative">
                           <Mail className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: '#64748b' }} />
-                          <input type="email" value={email} onChange={e => {setEmail(e.target.value); setFieldErrors(p => ({...p, email: ''}))}} placeholder="Email address"
+                          <input type="email" value={email} onChange={e => { setEmail(e.target.value); setFieldErrors(p => ({ ...p, email: '' })) }} placeholder="Email address"
                             className={`w-full rounded-[9px] border py-3 pl-10 pr-4 text-sm outline-none transition-all ${fieldErrors.email ? 'border-red-400 bg-red-50 text-red-900 placeholder:text-red-300' : ''}`}
                             style={fieldErrors.email ? { fontFamily: "'Sora', sans-serif" } : { background: '#f8fafc', borderColor: '#e2e8f0', color: '#0f172a', fontFamily: "'Sora', sans-serif" }}
                           />
