@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAppDispatch } from '../../hooks';
 import { login } from './authSlice';
 import { Button } from '../../components/ui';
-import { toast } from 'sonner';
+import { useToastContext } from '../../components/toast';
 import authService, { VerifyPayload, Location as ProfileLocation } from '../../services/authService';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -47,6 +47,8 @@ export const LoginPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [infoMsg, setInfoMsg] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  
+  const toast = useToastContext();
 
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -119,7 +121,7 @@ export const LoginPage: React.FC = () => {
       const res = await authService.sendOtp(phone);
       if (res.otp) {
         console.warn('DEV — OTP received:', res.otp);
-        toast.success(`Code sent! (Demo: ${res.otp})`, { duration: 15000 });
+        toast.success(`Code sent!`, `(Demo: ${res.otp})`);
       } else {
         toast.success('Verification code sent!');
       }
@@ -181,7 +183,7 @@ export const LoginPage: React.FC = () => {
           const resendRes = await authService.sendOtp(phone);
           if (resendRes.otp) {
             console.warn('DEV — Fresh signup OTP:', resendRes.otp);
-            toast.info(`New code for registration: ${resendRes.otp}`, { duration: 15000 });
+            toast.info(`New code for registration`, resendRes.otp);
           }
           setResendTimer(60);
           setOtp(Array(6).fill(''));
@@ -193,10 +195,10 @@ export const LoginPage: React.FC = () => {
           }));
 
           if (isSignup) {
-            toast.success(`Account created successfully! Welcome, ${res.data.user!.name}`);
+            toast.success('Account created successfully!', `Welcome, ${res.data.user!.name}`);
             navigate('/plots/create');
           } else {
-            toast.success(`Welcome back, ${res.data.user!.name}`);
+            toast.success('Welcome back!', res.data.user!.name);
             navigate('/dashboard');
           }
         }

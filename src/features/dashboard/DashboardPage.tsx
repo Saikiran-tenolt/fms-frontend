@@ -4,13 +4,12 @@ import { useAppSelector, useAppDispatch } from '../../hooks';
 import { setSensorData, setTrendData } from '../sensors/sensorsSlice';
 import { fetchWeatherAndAdvisories, setAdvisories } from '../advisories/advisoriesSlice';
 import { SkeletonDashboard } from '../../components/ui';
-import { toast } from 'sonner';
+import { useToastContext } from '../../components/toast';
 import {
   Droplet,
   IndianRupee,
   MessageSquare,
   Brain,
-  Activity,
   LayoutGrid,
   Star,
   ChevronDown
@@ -59,6 +58,7 @@ export const DashboardPage: React.FC = () => {
 
   const hasShownNotifications = useRef(false);
   const [timeSinceUpdate, setTimeSinceUpdate] = useState('just now');
+  const toast = useToastContext();
 
   useEffect(() => {
     if (plots.length === 0 && !plotsLoading && !hasFetched) {
@@ -84,7 +84,7 @@ export const DashboardPage: React.FC = () => {
       if (unread.length > 0) {
         unread.forEach((n: any, index: number) => {
           setTimeout(() => {
-            toast(n.title, { description: n.message, duration: 5000 });
+            toast.toast(n.title, n.message);
           }, index * 500);
         });
         hasShownNotifications.current = true;
@@ -245,7 +245,7 @@ export const DashboardPage: React.FC = () => {
             <div>
               <div className="text-[15px] font-semibold text-[#1a1f16] mb-1">Crop Growth Stage</div>
               <div className="text-[12.5px] text-[#9ea89b]">
-                {selectedPlot?.cropType ? selectedPlot.cropType.charAt(0).toUpperCase() + selectedPlot.cropType.slice(1).toLowerCase() : 'Paddy'} — 
+                {selectedPlot?.cropType ? selectedPlot.cropType.charAt(0).toUpperCase() + selectedPlot.cropType.slice(1).toLowerCase() : 'Paddy'} —
                 Day 34 of ~120 · Currently in {selectedPlot?.cropStage ? selectedPlot.cropStage.charAt(0).toUpperCase() + selectedPlot.cropStage.slice(1).toLowerCase() : 'Tillering'}
               </div>
             </div>
@@ -265,15 +265,14 @@ export const DashboardPage: React.FC = () => {
               <div key={s.name} className="flex-1 flex flex-col items-center relative">
                 {/* Connecting Line */}
                 {idx !== arr.length - 1 && (
-                  <div className={`absolute top-[11px] left-1/2 w-full h-[2px] -z-0 ${s.done || (s.current && arr[idx+1].name !== 'Tillering') ? 'bg-[#2d7a4f]' : 'bg-[#f0f0f0]'}`} />
+                  <div className={`absolute top-[11px] left-1/2 w-full h-[2px] -z-0 ${s.done || (s.current && arr[idx + 1].name !== 'Tillering') ? 'bg-[#2d7a4f]' : 'bg-[#f0f0f0]'}`} />
                 )}
-                
+
                 {/* Node */}
-                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center mb-2 z-10 transition-all ${
-                  s.done ? 'bg-[#2d7a4f] border-[#2d7a4f] text-white' :
-                  s.current ? 'bg-[#e8f5ee] border-[#2d7a4f] text-[#2d7a4f] ring-4 ring-[#e8f5ee]' :
-                  'bg-white border-[#f0f0f0] text-transparent'
-                }`}>
+                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center mb-2 z-10 transition-all ${s.done ? 'bg-[#2d7a4f] border-[#2d7a4f] text-white' :
+                    s.current ? 'bg-[#e8f5ee] border-[#2d7a4f] text-[#2d7a4f] ring-4 ring-[#e8f5ee]' :
+                      'bg-white border-[#f0f0f0] text-transparent'
+                  }`}>
                   {s.done ? (
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="20 6 9 17 4 12"></polyline>
@@ -339,7 +338,7 @@ export const DashboardPage: React.FC = () => {
               <button
                 className="text-[11.5px] font-medium px-3 py-[5px] rounded-md transition-colors border border-[#fcd34d] text-[#d97706] bg-[#fef3c7] hover:bg-[#fde68a] flex items-center gap-1.5"
                 onClick={() => {
-                  toast('Linking Command Protocol...', { icon: <Activity className="text-emerald-500 w-4 h-4" /> });
+                  toast.toast('Linking Command Protocol...');
                   setTimeout(() => toast.success('Sequence Optimized & Dispatched'), 2000);
                 }}
               >
@@ -401,15 +400,15 @@ export const DashboardPage: React.FC = () => {
                 const maxMoisture = Math.max(...trendList.map((t: any) => t.value), 60);
                 const height = `${(d.value / maxMoisture) * 80}px`;
                 const color = d.value < 30 ? "#ef4444" : d.value > 70 ? "#3b82f6" : "#2d7a4f";
-                
+
                 return (
                   <div className="flex-1 flex flex-col items-center gap-1 group" key={idx}>
                     <div className="text-[10px] font-medium text-[#6b7468]">{d.value}%</div>
-                    <div 
-                      className="w-full rounded-t-[5px] transition-opacity cursor-pointer opacity-90 group-hover:opacity-100" 
+                    <div
+                      className="w-full rounded-t-[5px] transition-opacity cursor-pointer opacity-90 group-hover:opacity-100"
                       style={{ height, background: color }}
                     />
-                    <div className="text-[9.5px] text-[#9ea89b] uppercase tracking-[0.04em]">{d.date || `D${idx+1}`}</div>
+                    <div className="text-[9.5px] text-[#9ea89b] uppercase tracking-[0.04em]">{d.date || `D${idx + 1}`}</div>
                   </div>
                 );
               })}
