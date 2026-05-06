@@ -14,6 +14,7 @@ import {
   Star,
   ChevronDown
 } from 'lucide-react';
+import { DashboardHeader } from './components/DashboardHeader';
 import { getWeatherIcon, mapWeatherCode } from '../../shared/utils/weather';
 import { getPlotCoordinates } from '../../shared/utils/location';
 import {
@@ -154,38 +155,13 @@ export const DashboardPage: React.FC = () => {
   return (
     <div className="flex-1 bg-[#f5f6f4] min-h-screen text-[#1a1f16]">
       <main className="flex-1 p-[22px] px-6">
-        {/* TOPBAR */}
-        <div className="flex items-center justify-between mb-[18px]">
-          <div className="flex items-center gap-2 flex-wrap">
-            {/* Farm Selector (using the same logic as before) */}
-            <div className="relative flex items-center hover:opacity-70 transition-opacity">
-              <select
-                value={selectedPlotId || ''}
-                onChange={(e) => dispatch(selectPlot(e.target.value))}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-              >
-                {plots.map((plot: any) => (
-                  <option key={plot._id} value={plot._id}>{plot.plotName}</option>
-                ))}
-              </select>
-              <span className="text-base font-semibold text-[#1a1f16]">{selectedPlot?.plotName ?? 'Green Valley'}</span>
-              <ChevronDown size={14} className="ml-1 text-[#6b7468]" />
-            </div>
-            <span className="inline-flex items-center gap-1 text-[11px] font-medium px-[9px] py-[3px] rounded-full border text-[#2d7a4f] bg-[#e8f5ee] border-[#b6dfc8]">
-              🌾 {selectedPlot?.cropType?.toUpperCase() ?? 'PADDY'}
-            </span>
-            <span className="inline-flex items-center gap-1 text-[11px] font-medium px-[9px] py-[3px] rounded-full border text-[#d97706] bg-[#fef3c7] border-[#fcd34d]">
-              ↑ {selectedPlot?.cropStage ? selectedPlot.cropStage.charAt(0) + selectedPlot.cropStage.slice(1).toLowerCase() : 'Sowed'}
-            </span>
-            <span className="inline-flex items-center gap-1 text-[11px] font-medium px-[9px] py-[3px] rounded-full border text-[#6b7468] bg-[#f5f6f4] border-[#e8eae5]">
-              📍 {selectedPlot?.location?.district ?? 'Hyderabad'}, {selectedPlot?.location?.state ?? 'Telangana'}
-            </span>
-          </div>
-          <div className="flex items-center gap-[5px] text-[11.5px] font-medium text-[#2d7a4f]">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#4aab72] shadow-[0_0_0_2px_#b6dfc8] animate-[pulse_2s_infinite]" />
-            Live
-          </div>
-        </div>
+        <DashboardHeader
+          plots={plots}
+          selectedPlot={selectedPlot}
+          currentCropId={selectedPlot?.cropType}
+          currentStageId={selectedPlot?.cropStage}
+          onPlotChange={(id) => dispatch(selectPlot(id))}
+        />
 
         {/* SENSOR CARDS */}
         <div className="grid grid-cols-4 gap-[10px] mb-[14px]">
@@ -236,61 +212,6 @@ export const DashboardPage: React.FC = () => {
               {currentSensors?.soilTemperature?.value || 22}<span className="text-[13px] text-[#9ea89b] ml-1">°C</span>
             </div>
             <div className="text-[10.5px] text-[#9ea89b]">Updated 5 mins ago</div>
-          </div>
-        </div>
-
-        {/* GROWTH STAGE */}
-        <div className="bg-white border border-[#e8eae5] rounded-[10px] py-[14px] px-4 mb-[14px]">
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <div className="text-[15px] font-semibold text-[#1a1f16] mb-1">Crop Growth Stage</div>
-              <div className="text-[12.5px] text-[#9ea89b]">
-                {selectedPlot?.cropType ? selectedPlot.cropType.charAt(0).toUpperCase() + selectedPlot.cropType.slice(1).toLowerCase() : 'Paddy'} —
-                Day 34 of ~120 · Currently in {selectedPlot?.cropStage ? selectedPlot.cropStage.charAt(0).toUpperCase() + selectedPlot.cropStage.slice(1).toLowerCase() : 'Tillering'}
-              </div>
-            </div>
-            <div className="bg-[#e8f5ee] text-[#2d7a4f] text-[12px] font-medium px-4 py-2 rounded-full border border-[#b6dfc8]">
-              86 days to harvest
-            </div>
-          </div>
-          <div className="flex items-center px-2">
-            {[
-              { name: "Germination", days: "D1–D7", done: true },
-              { name: "Seedling", days: "D8–D20", done: true },
-              { name: "Tillering", days: "D21–D40", current: true },
-              { name: "Booting", days: "D41–D60" },
-              { name: "Heading", days: "D61–D80" },
-              { name: "Harvest", days: "D90+" },
-            ].map((s, idx, arr) => (
-              <div key={s.name} className="flex-1 flex flex-col items-center relative">
-                {/* Connecting Line */}
-                {idx !== arr.length - 1 && (
-                  <div className={`absolute top-[11px] left-1/2 w-full h-[2px] -z-0 ${s.done || (s.current && arr[idx + 1].name !== 'Tillering') ? 'bg-[#2d7a4f]' : 'bg-[#f0f0f0]'}`} />
-                )}
-
-                {/* Node */}
-                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center mb-2 z-10 transition-all ${s.done ? 'bg-[#2d7a4f] border-[#2d7a4f] text-white' :
-                    s.current ? 'bg-[#e8f5ee] border-[#2d7a4f] text-[#2d7a4f] ring-4 ring-[#e8f5ee]' :
-                      'bg-white border-[#f0f0f0] text-transparent'
-                  }`}>
-                  {s.done ? (
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                  ) : s.current ? (
-                    <div className="w-1.5 h-1.5 rounded-full bg-[#2d7a4f]" />
-                  ) : null}
-                </div>
-
-                {/* Labels */}
-                <div className={`text-[11px] font-medium mb-0.5 ${s.current ? 'text-[#2d7a4f]' : 'text-[#9ea89b]'}`}>
-                  {s.name}
-                </div>
-                <div className="text-[10px] text-[#9ea89b] font-medium uppercase tracking-tight">
-                  {s.days}
-                </div>
-              </div>
-            ))}
           </div>
         </div>
 
