@@ -11,8 +11,7 @@ import {
   MessageSquare,
   Brain,
   LayoutGrid,
-  Star,
-  ChevronDown
+  Star
 } from 'lucide-react';
 import { DashboardHeader } from './components/DashboardHeader';
 import { getWeatherIcon, mapWeatherCode } from '../../shared/utils/weather';

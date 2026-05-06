@@ -241,8 +241,6 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   daysToHarvest = 86,
   isLive = true,
   onPlotChange,
-  onCropChange,
-  onStageChange,
 }) => {
   const [plotOpen, setPlotOpen] = useState(false);
 
