@@ -16,7 +16,12 @@ export interface ToastData {
 export function useToast() {
   const [toasts, setToasts] = useState<ToastData[]>([]);
 
-  const add = useCallback((type: ToastData["type"], title: string, subtitle?: string, action?: ToastData["action"]) => {
+  const add = useCallback((
+    type: ToastData["type"],
+    title: string,
+    subtitle?: string,
+    action?: ToastData["action"]
+  ) => {
     const id = ++_id;
     setToasts(prev => [...prev, { id, type, title, subtitle, action }]);
     return id;
@@ -26,14 +31,30 @@ export function useToast() {
     setToasts(prev => prev.filter(t => t.id !== id));
   }, []);
 
-  return {
-    toasts,
-    dismiss,
-    warning: (title: string, subtitle?: string, action?: ToastData["action"]) => add("warning", title, subtitle, action),
-    info:    (title: string, subtitle?: string, action?: ToastData["action"]) => add("info",    title, subtitle, action),
-    success: (title: string, subtitle?: string, action?: ToastData["action"]) => add("success", title, subtitle, action),
-    error:   (title: string, subtitle?: string, action?: ToastData["action"]) => add("error",   title, subtitle, action),
-    danger:  (title: string, subtitle?: string, action?: ToastData["action"]) => add("error",   title, subtitle, action),
-    toast:   (title: string, subtitle?: string, action?: ToastData["action"]) => add("info",    title, subtitle, action),
-  };
+  // ✅ Each method is now a stable useCallback, not an inline arrow
+  const warning = useCallback(
+    (title: string, subtitle?: string, action?: ToastData["action"]) =>
+      add("warning", title, subtitle, action), [add]);
+
+  const info = useCallback(
+    (title: string, subtitle?: string, action?: ToastData["action"]) =>
+      add("info", title, subtitle, action), [add]);
+
+  const success = useCallback(
+    (title: string, subtitle?: string, action?: ToastData["action"]) =>
+      add("success", title, subtitle, action), [add]);
+
+  const error = useCallback(
+    (title: string, subtitle?: string, action?: ToastData["action"]) =>
+      add("error", title, subtitle, action), [add]);
+
+  const danger = useCallback(
+    (title: string, subtitle?: string, action?: ToastData["action"]) =>
+      add("error", title, subtitle, action), [add]);
+
+  const toast = useCallback(
+    (title: string, subtitle?: string, action?: ToastData["action"]) =>
+      add("info", title, subtitle, action), [add]);
+
+  return { toasts, dismiss, warning, info, success, error, danger, toast };
 }

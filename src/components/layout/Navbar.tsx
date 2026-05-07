@@ -1,15 +1,22 @@
+import React, { memo } from 'react';
 import { Bell, Menu } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useAppSelector } from '../../hooks';
-import { useNavigate } from 'react-router-dom';
 import { Badge } from '../ui/Badge';
 
 interface NavbarProps {
   onMobileMenuToggle: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onMobileMenuToggle }) => {
-  const navigate = useNavigate();
-  const { unreadCount } = useAppSelector((state) => state.notifications);
+// ── WHY React.memo + Link instead of useNavigate ──────────────────────────────
+// useNavigate() subscribes to React Router's NavigationContext. Every route
+// change updates that context → Navbar re-rendered on every navigation even
+// though its own props never change. Replacing navigate() calls with <Link>
+// components removes that subscription entirely. React.memo then ensures
+// Navbar only re-renders when onMobileMenuToggle or unreadCount actually
+// changes — not on every route transition.
+export const Navbar: React.FC<NavbarProps> = memo(({ onMobileMenuToggle }) => {
+  const unreadCount = useAppSelector((state) => state.notifications.unreadCount);
   const appMode = import.meta.env.VITE_APP_MODE;
 
   return (
@@ -38,11 +45,11 @@ export const Navbar: React.FC<NavbarProps> = ({ onMobileMenuToggle }) => {
           </div>
         </div>
 
-        {/* Right side - User info, notifications and sidebar toggle */}
+        {/* Right side - Notifications + User avatar */}
         <div className="flex items-center gap-3">
-          {/* Notifications */}
-          <button
-            onClick={() => navigate('/notifications')}
+          {/* Notifications — Link avoids useNavigate router subscription */}
+          <Link
+            to="/notifications"
             className="relative w-10 h-10 rounded-xl flex items-center justify-center text-black hover:bg-slate-50 transition-all active:scale-95"
             aria-label="Notifications"
           >
@@ -50,21 +57,22 @@ export const Navbar: React.FC<NavbarProps> = ({ onMobileMenuToggle }) => {
             {unreadCount > 0 && (
               <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white" />
             )}
-          </button>
+          </Link>
 
-          {/* User menu */}
-          <div
-            onClick={() => navigate('/settings')}
+          {/* User menu — Link avoids useNavigate router subscription */}
+          <Link
+            to="/settings"
             className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 transition-colors p-1 rounded-xl group"
           >
             <div className="h-7 w-7 bg-[#3b6d11] rounded-full flex flex-col items-center justify-end overflow-hidden shadow-sm ring-2 ring-transparent group-hover:ring-emerald-100 group-hover:bg-[#2c520d] transition-all">
               <div className="w-2.5 h-2.5 bg-white rounded-full mb-0.5 shrink-0" />
               <div className="w-[18px] h-[9px] bg-white rounded-t-full shrink-0" />
             </div>
-
-          </div>
+          </Link>
         </div>
       </div>
     </nav>
   );
-};
+});
+
+Navbar.displayName = 'Navbar';

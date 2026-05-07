@@ -1,27 +1,35 @@
-import React from 'react';
+import React, { lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { DashboardLayout } from '../components/layout';
+
+// ── Auth pages: kept eager — user sees these before any JS loads ──────────────
 import { LoginPage } from '../features/auth/LoginPage';
 import { SignupPage } from '../features/auth/SignupPage';
-import { DashboardPage } from '../features/dashboard/DashboardPage';
-import { PlotListPage } from '../features/plots/PlotListPage';
-import { PlotDetailsPage } from '../features/plots/PlotDetailsPage';
-import { AddPlotPage } from '../features/plots/AddPlotPage';
-import { AdvisoryPage } from '../features/advisories/AdvisoryPage';
-import { NotificationsPage } from '../features/notifications/NotificationsPage';
-import { MarketPage } from '../features/market/MarketPage';
-import { AssistantPage } from '../features/assistant/AssistantPage';
-import { SettingsPage } from '../features/settings/SettingsPage';
-import { WeatherPage } from '../features/weather/WeatherPage';
-
-// Admin Pages
-import { Overview as AdminDashboardPage } from '../admin/pages/Overview';
-import { FarmersDirectory } from '../admin/pages/FarmersDirectory';
-import { Alerts as AdminAlertsPage } from '../admin/pages/Alerts';
-import { AdminProfile } from '../admin/pages/AdminProfile';
-import { AdminSettings } from '../admin/pages/AdminSettings';
 
 import { ProtectedRoute } from './ProtectedRoute';
+
+// ── All page-level components are lazy-loaded ─────────────────────────────────
+// Each page is only downloaded when the user first navigates to it.
+// IMPORTANT: <Suspense> must NOT be placed inside <Routes> children —
+// React Router only allows <Route> or <React.Fragment> as direct children.
+// The Suspense boundary lives in DashboardLayout, wrapping the <Outlet>.
+const DashboardPage    = lazy(() => import('../features/dashboard/DashboardPage').then(m => ({ default: m.DashboardPage })));
+const PlotListPage     = lazy(() => import('../features/plots/PlotListPage').then(m => ({ default: m.PlotListPage })));
+const PlotDetailsPage  = lazy(() => import('../features/plots/PlotDetailsPage').then(m => ({ default: m.PlotDetailsPage })));
+const AddPlotPage      = lazy(() => import('../features/plots/AddPlotPage').then(m => ({ default: m.AddPlotPage })));
+const AdvisoryPage     = lazy(() => import('../features/advisories/AdvisoryPage').then(m => ({ default: m.AdvisoryPage })));
+const NotificationsPage = lazy(() => import('../features/notifications/NotificationsPage').then(m => ({ default: m.NotificationsPage })));
+const MarketPage       = lazy(() => import('../features/market/MarketPage').then(m => ({ default: m.MarketPage })));
+const AssistantPage    = lazy(() => import('../features/assistant/AssistantPage').then(m => ({ default: m.AssistantPage })));
+const SettingsPage     = lazy(() => import('../features/settings/SettingsPage').then(m => ({ default: m.SettingsPage })));
+const WeatherPage      = lazy(() => import('../features/weather/WeatherPage').then(m => ({ default: m.WeatherPage })));
+
+// Admin pages
+const AdminDashboardPage = lazy(() => import('../admin/pages/Overview').then(m => ({ default: m.Overview })));
+const FarmersDirectory   = lazy(() => import('../admin/pages/FarmersDirectory').then(m => ({ default: m.FarmersDirectory })));
+const AdminAlertsPage    = lazy(() => import('../admin/pages/Alerts').then(m => ({ default: m.Alerts })));
+const AdminProfile       = lazy(() => import('../admin/pages/AdminProfile').then(m => ({ default: m.AdminProfile })));
+const AdminSettings      = lazy(() => import('../admin/pages/AdminSettings').then(m => ({ default: m.AdminSettings })));
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -30,43 +38,43 @@ export const AppRoutes: React.FC = () => {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
 
-      {/* Protected Routes */}
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <DashboardLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route index element={<Navigate to="/dashboard" replace />} />
+      {/* Protected + Layout
+        * ProtectedRoute renders <Outlet /> (stable element, no props).
+        * DashboardLayout renders <Outlet /> wrapped in <Suspense> so lazy
+        * page chunks show a skeleton while loading — without violating
+        * React Router's rule that Route children must be Route elements.
+        */}
+      <Route element={<ProtectedRoute />}>
+        <Route path="/" element={<DashboardLayout />}>
+          <Route index element={<Navigate to="/dashboard" replace />} />
 
-        {/* Admin Routes */}
-        <Route path="admin/dashboard" element={<AdminDashboardPage />} />
-        <Route path="admin/farmers" element={<FarmersDirectory />} />
-        <Route path="admin/alerts" element={<AdminAlertsPage />} />
-        <Route path="admin/profile" element={<AdminProfile />} />
-        <Route path="admin/settings" element={<AdminSettings />} />
+          {/* Admin Routes */}
+          <Route path="admin/dashboard" element={<AdminDashboardPage />} />
+          <Route path="admin/farmers"   element={<FarmersDirectory />} />
+          <Route path="admin/alerts"    element={<AdminAlertsPage />} />
+          <Route path="admin/profile"   element={<AdminProfile />} />
+          <Route path="admin/settings"  element={<AdminSettings />} />
 
-        {/* Farmer/User Routes */}
-        <Route path="dashboard" element={<DashboardPage />} />
-        <Route path="plots" element={<PlotListPage />} />
-        <Route path="plots/create" element={<AddPlotPage />} />
-        <Route path="plots/:id" element={<PlotDetailsPage />} />
-        <Route path="plots/:id/edit" element={<AddPlotPage />} />
-        <Route path="advisories" element={<AdvisoryPage />} />
-        <Route path="weather" element={<WeatherPage />} />
-        <Route path="notifications" element={<NotificationsPage />} />
-        <Route path="market" element={<MarketPage />} />
-        <Route path="assistant" element={<AssistantPage />} />
-        <Route path="settings" element={<SettingsPage />}>
-          <Route path="profile" element={<SettingsPage />} />
-          <Route path="notifications" element={<SettingsPage />} />
-          <Route path="security" element={<SettingsPage />} />
+          {/* Farmer/User Routes */}
+          <Route path="dashboard"       element={<DashboardPage />} />
+          <Route path="plots"           element={<PlotListPage />} />
+          <Route path="plots/create"    element={<AddPlotPage />} />
+          <Route path="plots/:id"       element={<PlotDetailsPage />} />
+          <Route path="plots/:id/edit"  element={<AddPlotPage />} />
+          <Route path="advisories"      element={<AdvisoryPage />} />
+          <Route path="weather"         element={<WeatherPage />} />
+          <Route path="notifications"   element={<NotificationsPage />} />
+          <Route path="market"          element={<MarketPage />} />
+          <Route path="assistant"       element={<AssistantPage />} />
+          <Route path="settings"        element={<SettingsPage />}>
+            <Route path="profile"       element={<SettingsPage />} />
+            <Route path="notifications" element={<SettingsPage />} />
+            <Route path="security"      element={<SettingsPage />} />
+          </Route>
         </Route>
       </Route>
 
-      {/* Catch all - redirect to login */}
+      {/* Catch all */}
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );

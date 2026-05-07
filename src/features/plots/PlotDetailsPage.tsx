@@ -79,6 +79,8 @@ const SENSORS = [
 
 /* ── main ────────────────────────────────────────────── */
 export const PlotDetailsPage: React.FC = () => {
+  console.count('plotdetails rendered');
+
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();

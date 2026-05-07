@@ -10,19 +10,22 @@ import { mockNotifications } from './services/mockData';
 
 import { ToastProvider } from './components/toast';
 
-const AppContent: React.FC = () => {
+// Wrapped in React.memo so token refreshes (which update accessToken in Redux)
+// don't re-render the entire app tree — only isAuthenticated changes matter here
+const AppContent: React.FC = React.memo(() => {
   const dispatch = useAppDispatch();
-  const { isAuthenticated } = useAppSelector((state) => state.auth);
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
 
   useEffect(() => {
     if (isAuthenticated) {
-      // Load initial data in simulation mode
       dispatch(setNotifications(mockNotifications));
     }
   }, [isAuthenticated, dispatch]);
 
   return <AppRoutes />;
-};
+});
+
+AppContent.displayName = 'AppContent';
 
 function App() {
   return (

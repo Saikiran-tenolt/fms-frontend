@@ -1,5 +1,7 @@
 import axios from 'axios';
 import type { AxiosInstance } from 'axios';
+import { store } from '../store/store';
+import { updateTokens, logout } from '../features/auth/authSlice';
 
 const API_BASE_URL = 'https://fms-backend-976n.onrender.com/api/v1';
 
@@ -71,9 +73,8 @@ api.interceptors.response.use(
           if (res.data.success) {
             const { accessToken, refreshToken: newRefreshToken } = res.data.data;
 
-            // Store new tokens in localStorage
-            localStorage.setItem('accessToken', accessToken);
-            localStorage.setItem('refreshToken', newRefreshToken);
+            // Update Redux store (also persists to localStorage via authSlice)
+            store.dispatch(updateTokens({ accessToken, refreshToken: newRefreshToken }));
 
             console.log('[API] Token refreshed successfully');
 
@@ -94,11 +95,9 @@ api.interceptors.response.use(
         }
       }
 
-      // If refresh fails or no refresh token, clear auth and redirect
+      // If refresh fails or no refresh token, clear auth via Redux and redirect
       console.log('[API] Session expired, redirecting to login...');
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('authUser');
+      store.dispatch(logout());
       window.location.href = '/login';
       return Promise.reject(new Error('Session expired'));
     }

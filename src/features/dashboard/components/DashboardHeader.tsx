@@ -118,14 +118,9 @@ const S = {
     borderRadius: 20, fontSize: 11, fontWeight: 500,
     padding: "3px 10px",
   },
-  barWrap: {
-    height: 6, background: "#F3F4F6",
-    borderRadius: 99, overflow: "hidden", marginBottom: 9,
-  },
   stagesRow: {
     display: "flex", justifyContent: "space-between",
   },
-  /* Dropdown */
   ddWrap: { position: "relative" as const },
   ddMenu: {
     position: "absolute" as const, top: "calc(100% + 6px)", right: 0,
@@ -150,20 +145,32 @@ const PULSE_CSS = `
 @keyframes ddIn      { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
 `;
 
+// Inject once at module load — never inside render
+if (typeof document !== "undefined") {
+  const styleEl = document.createElement("style");
+  styleEl.textContent = PULSE_CSS;
+  document.head.appendChild(styleEl);
+}
+
+/* ─── Sub-components ─── */
+
 function LiveDot() {
   return (
     <div style={{
       width: 8, height: 8, borderRadius: "50%", background: "#22C55E",
-      animation: "livePulse 1.8s ease-in-out infinite"
+      animation: "livePulse 1.8s ease-in-out infinite",
     }} />
   );
 }
 
 function Dropdown({ open, items, onSelect, onClose, renderItem }: any) {
   const ref = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (!open) return;
-    const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) onClose(); };
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [open, onClose]);
@@ -172,11 +179,12 @@ function Dropdown({ open, items, onSelect, onClose, renderItem }: any) {
   return (
     <div ref={ref} style={S.ddMenu}>
       {items.map((item: any, i: number) => (
-        <button key={item._id || item.id || i}
+        <button
+          key={item._id || item.id || i}
           style={S.ddItem}
           onClick={() => { onSelect(item); onClose(); }}
-          onMouseEnter={e => e.currentTarget.style.background = "#F9FAFB"}
-          onMouseLeave={e => e.currentTarget.style.background = "none"}
+          onMouseEnter={e => (e.currentTarget.style.background = "#F9FAFB")}
+          onMouseLeave={e => (e.currentTarget.style.background = "none")}
         >
           {renderItem(item)}
         </button>
@@ -190,10 +198,11 @@ function StageDot({ status }: { status: "done" | "current" | "upcoming" }) {
     return (
       <div style={{
         width: 22, height: 22, borderRadius: "50%", background: "#1D9E75",
-        display: "flex", alignItems: "center", justifyContent: "center", color: "#fff"
+        display: "flex", alignItems: "center", justifyContent: "center", color: "#fff",
       }}>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="20 6 9 17 4 12"/>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="20 6 9 17 4 12" />
         </svg>
       </div>
     );
@@ -202,8 +211,9 @@ function StageDot({ status }: { status: "done" | "current" | "upcoming" }) {
     return (
       <div style={{
         width: 22, height: 22, borderRadius: "50%", background: "#EAF3DE",
-        border: "2px solid #1D9E75", display: "flex", alignItems: "center", justifyContent: "center",
-        boxShadow: "0 0 0 4px #F0FDF4"
+        border: "2px solid #1D9E75",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        boxShadow: "0 0 0 4px #F0FDF4",
       }}>
         <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#1D9E75" }} />
       </div>
@@ -211,11 +221,20 @@ function StageDot({ status }: { status: "done" | "current" | "upcoming" }) {
   }
   return (
     <div style={{
-      width: 22, height: 22, borderRadius: "50%", background: "#fff",
-      border: "2px solid #E5E7EB"
+      width: 22, height: 22, borderRadius: "50%",
+      background: "#fff", border: "2px solid #E5E7EB",
     }} />
   );
 }
+
+const Activity = ({ size }: { size: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+  </svg>
+);
+
+/* ─── Props ─── */
 
 interface DashboardHeaderProps {
   plots: PlotData[];
@@ -231,7 +250,12 @@ interface DashboardHeaderProps {
   onStageChange?: (stageId: string) => void;
 }
 
-export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
+/* ─── Component ─── */
+
+// React.memo: only re-renders when plots, selectedPlot, or crop/stage props change.
+// The key enabler is that DashboardPage passes a stable `handlePlotChange`
+// (useCallback) instead of an inline arrow — so memo's prop comparison works.
+export const DashboardHeader: React.FC<DashboardHeaderProps> = React.memo(({
   plots,
   selectedPlot,
   currentCropId = "PADDY",
@@ -252,20 +276,22 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 
   return (
     <div style={S.card}>
-      <style>{PULSE_CSS}</style>
 
       {/* ── Top row ── */}
       <div style={S.top}>
+
         {/* Plot Selector */}
         <div style={S.ddWrap}>
-          <button style={S.plotBtn} onClick={() => setPlotOpen(!plotOpen)}>
+          <button style={S.plotBtn} onClick={() => setPlotOpen(v => !v)}>
             <div style={S.plotIcon}>
               <Target size={20} />
             </div>
             <div>
               <p style={S.plotName}>
                 {selectedPlot?.plotName || "Select Plot"}
-                <span style={{ color: "#9CA3AF", marginLeft: 2 }}><ChevronDown size={14} /></span>
+                <span style={{ color: "#9CA3AF", marginLeft: 2 }}>
+                  <ChevronDown size={14} />
+                </span>
               </p>
               <p style={S.plotLoc}>
                 <MapPin size={12} style={{ color: "#9CA3AF" }} />
@@ -282,7 +308,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
               <>
                 <div style={{
                   width: 28, height: 28, borderRadius: 7, background: "#EAF3DE",
-                  display: "flex", alignItems: "center", justifyContent: "center", color: "#3B6D11"
+                  display: "flex", alignItems: "center", justifyContent: "center", color: "#3B6D11",
                 }}>
                   <Target size={14} />
                 </div>
@@ -301,7 +327,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           />
         </div>
 
-        {/* Right side: Live + Dropdowns */}
+        {/* Right side: Live + Tags */}
         <div style={S.rightCol}>
           {isLive && (
             <div style={S.liveRow}>
@@ -309,17 +335,13 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
               Live
             </div>
           )}
-
           <div style={S.tagsRow}>
-            {/* Crop Tag */}
             <div style={S.ddWrap}>
               <div style={{ ...S.tagCrop, cursor: "default" }}>
                 <span style={{ fontSize: 14 }}>{crop.icon}</span>
                 {crop.label}
               </div>
             </div>
-
-            {/* Stage Tag */}
             <div style={S.ddWrap}>
               <div style={{ ...S.tagStage, cursor: "default" }}>
                 <Activity size={12} />
@@ -342,20 +364,23 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           </div>
         </div>
 
-
         <div style={{ ...S.stagesRow, position: "relative", marginTop: 20 }}>
           {STAGES.map((s, i) => {
             const status = i < stageIndex ? "done" : i === stageIndex ? "current" : "upcoming";
             return (
-              <div key={s.id}
-                style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, position: "relative" }}
+              <div
+                key={s.id}
+                style={{
+                  flex: 1, display: "flex", flexDirection: "column",
+                  alignItems: "center", gap: 6, position: "relative",
+                }}
               >
-                {/* Connecting Line */}
                 {i < STAGES.length - 1 && (
                   <div style={{
-                    position: "absolute", top: 11, left: "50%", width: "100%", height: 2,
+                    position: "absolute", top: 11, left: "50%",
+                    width: "100%", height: 2,
                     background: i < stageIndex ? "#1D9E75" : "#F3F4F6",
-                    zIndex: 0
+                    zIndex: 0,
                   }} />
                 )}
                 <div style={{ zIndex: 1, background: "#fff", padding: "0 10px" }}>
@@ -379,11 +404,6 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
       </div>
     </div>
   );
-};
+});
 
-const Activity = ({ size }: { size: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-  </svg>
-);
+DashboardHeader.displayName = "DashboardHeader";
