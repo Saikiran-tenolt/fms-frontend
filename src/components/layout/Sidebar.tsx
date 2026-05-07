@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -44,12 +44,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onMobileClose }) =
   const { user } = useAppSelector((state) => state.auth);
   const { isSidebarCollapsed } = useAppSelector((state) => state.ui);
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     dispatch(logout());
     navigate('/login');
-  };
+  }, [dispatch, navigate]);
 
-  const getNavGroups = (): NavGroup[] => {
+  const navGroups = useMemo((): NavGroup[] => {
     if (user?.role === 'ADMIN') {
       return [
         {
@@ -105,15 +105,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onMobileClose }) =
         ]
       }
     ];
-  };
+  }, [user?.role, handleLogout]);
 
-  const navGroups = getNavGroups();
-
-  const handleNavClick = () => {
+  const handleNavClick = useCallback(() => {
     if (window.innerWidth < 1024) {
       onMobileClose();
     }
-  };
+  }, [onMobileClose]);
 
   const NavLinkItem = ({ item }: { item: NavItem }) => {
     const commonClasses = `group relative flex items-center transition-all duration-[400ms] ease-[cubic-bezier(0.25,1,0.5,1)] rounded-lg ${isSidebarCollapsed ? 'justify-center w-10 h-10 mx-auto p-0' : 'gap-3 py-2 px-3 mx-3'

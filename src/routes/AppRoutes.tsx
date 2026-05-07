@@ -39,15 +39,15 @@ export const AppRoutes: React.FC = () => {
           </ProtectedRoute>
         }
       >
-        <Route index element={<Navigate to="/login" replace />} />
-        
+        <Route index element={<Navigate to="/dashboard" replace />} />
+
         {/* Admin Routes */}
         <Route path="admin/dashboard" element={<AdminDashboardPage />} />
         <Route path="admin/farmers" element={<FarmersDirectory />} />
         <Route path="admin/alerts" element={<AdminAlertsPage />} />
         <Route path="admin/profile" element={<AdminProfile />} />
         <Route path="admin/settings" element={<AdminSettings />} />
-        
+
         {/* Farmer/User Routes */}
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="plots" element={<PlotListPage />} />

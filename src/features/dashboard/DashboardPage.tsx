@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../../hooks';
 import { setSensorData, setTrendData } from '../sensors/sensorsSlice';
@@ -60,6 +60,12 @@ export const DashboardPage: React.FC = () => {
   const [timeSinceUpdate, setTimeSinceUpdate] = useState('just now');
   const toast = useToastContext();
 
+  // Memoize selectedPlot to avoid recalculating on every render
+  const selectedPlot = useMemo(
+    () => plots.find((p: any) => p._id === selectedPlotId),
+    [plots, selectedPlotId]
+  );
+
   useEffect(() => {
     if (plots.length === 0 && !plotsLoading && !hasFetched) {
       dispatch(fetchAllPlots());
@@ -90,9 +96,30 @@ export const DashboardPage: React.FC = () => {
         hasShownNotifications.current = true;
       }
     }
-  }, [loading, notifications]);
+  }, [loading, notifications, toast]);
 
-  const selectedPlot = plots.find((p: any) => p._id === selectedPlotId);
+  // Stable loadDashboardData — won't trigger re-renders when identity changes
+  const loadDashboardData = useCallback(async () => {
+    if (!selectedPlot) return;
+    setLoading(true);
+    await new Promise((resolve) => setTimeout(resolve, 800));
+
+    const sensors = generateMockSensorData(selectedPlot._id, selectedPlot.environmentType);
+    dispatch(setSensorData({ plotId: selectedPlot._id, data: sensors }));
+    dispatch(setTrendData({ plotId: selectedPlot._id, sensor: 'soilMoisture', data: generateMockTrendData() }));
+
+    const { lat, lon } = getPlotCoordinates(selectedPlot.location);
+
+    if (lat !== undefined && lon !== undefined) {
+      dispatch(fetchWeatherAndAdvisories({ lat, lon }) as any);
+    } else if (user?.pincode) {
+      dispatch(fetchWeatherAndAdvisories({ pincode: user.pincode }) as any);
+    }
+
+    dispatch(setAdvisories(mockAdvisories));
+    setLoading(false);
+    setTimeSinceUpdate('just now');
+  }, [selectedPlot, dispatch, user?.pincode]);
 
   useEffect(() => {
     if (plots.length > 0 && selectedPlotId) {
@@ -100,30 +127,7 @@ export const DashboardPage: React.FC = () => {
     } else if (!plotsLoading && plots.length === 0) {
       setLoading(false);
     }
-  }, [selectedPlotId, plots.length, plotsLoading]);
-
-  const loadDashboardData = async () => {
-    setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
-
-    if (selectedPlot) {
-      const sensors = generateMockSensorData(selectedPlot._id, selectedPlot.environmentType);
-      dispatch(setSensorData({ plotId: selectedPlot._id, data: sensors }));
-      dispatch(setTrendData({ plotId: selectedPlot._id, sensor: 'soilMoisture', data: generateMockTrendData() }));
-
-      const { lat, lon } = getPlotCoordinates(selectedPlot.location);
-
-      if (lat !== undefined && lon !== undefined) {
-        dispatch(fetchWeatherAndAdvisories({ lat, lon }) as any);
-      } else if (user?.pincode) {
-        dispatch(fetchWeatherAndAdvisories({ pincode: user.pincode }) as any);
-      }
-
-      dispatch(setAdvisories(mockAdvisories));
-    }
-    setLoading(false);
-    setTimeSinceUpdate('just now');
-  };
+  }, [selectedPlotId, plots.length, plotsLoading, loadDashboardData]);
 
   useEffect(() => {
     const timer = setInterval(() => {
