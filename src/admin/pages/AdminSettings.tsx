@@ -1,4 +1,4 @@
-import { Card } from '../../components/ui/Card';
+import { Card } from '@/components/common/Card';
 import { Shield, Bell, Database, Sliders } from 'lucide-react';
 
 export function AdminSettings() {
@@ -81,3 +81,4 @@ export function AdminSettings() {
     </div>
   );
 }
+

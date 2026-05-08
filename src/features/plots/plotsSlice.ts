@@ -1,6 +1,8 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import type { PlotsState, Plot } from '../../types';
-import plotService, { CreatePlotPayload, UpdatePlotPayload } from '../../services/plotService';
+import type { PlotsState, Plot } from '@/types';
+import plotService, { CreatePlotPayload, UpdatePlotPayload } from '@/services/plotService';
+
+
 
 // Extended state type to include hasFetched without breaking existing PlotsState if imported strictly
 interface ExtendedPlotsState extends PlotsState {
@@ -174,3 +176,4 @@ export const {
 } = plotsSlice.actions;
 
 export default plotsSlice.reducer;
+

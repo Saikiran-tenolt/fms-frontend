@@ -1,10 +1,10 @@
 import React, { lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { DashboardLayout } from '../components/layout';
+import { DashboardLayout } from '@/layouts';
 
 // ── Auth pages: kept eager — user sees these before any JS loads ──────────────
-import { LoginPage } from '../features/auth/LoginPage';
-import { SignupPage } from '../features/auth/SignupPage';
+import { LoginPage } from '@/pages/Auth/LoginPage';
+import { SignupPage } from '@/pages/Auth/SignupPage';
 
 import { ProtectedRoute } from './ProtectedRoute';
 
@@ -13,23 +13,23 @@ import { ProtectedRoute } from './ProtectedRoute';
 // IMPORTANT: <Suspense> must NOT be placed inside <Routes> children —
 // React Router only allows <Route> or <React.Fragment> as direct children.
 // The Suspense boundary lives in DashboardLayout, wrapping the <Outlet>.
-const DashboardPage    = lazy(() => import('../features/dashboard/DashboardPage').then(m => ({ default: m.DashboardPage })));
-const PlotListPage     = lazy(() => import('../features/plots/PlotListPage').then(m => ({ default: m.PlotListPage })));
-const PlotDetailsPage  = lazy(() => import('../features/plots/PlotDetailsPage').then(m => ({ default: m.PlotDetailsPage })));
-const AddPlotPage      = lazy(() => import('../features/plots/AddPlotPage').then(m => ({ default: m.AddPlotPage })));
-const AdvisoryPage     = lazy(() => import('../features/advisories/AdvisoryPage').then(m => ({ default: m.AdvisoryPage })));
-const NotificationsPage = lazy(() => import('../features/notifications/NotificationsPage').then(m => ({ default: m.NotificationsPage })));
-const MarketPage       = lazy(() => import('../features/market/MarketPage').then(m => ({ default: m.MarketPage })));
-const AssistantPage    = lazy(() => import('../features/assistant/AssistantPage').then(m => ({ default: m.AssistantPage })));
-const SettingsPage     = lazy(() => import('../features/settings/SettingsPage').then(m => ({ default: m.SettingsPage })));
-const WeatherPage      = lazy(() => import('../features/weather/WeatherPage').then(m => ({ default: m.WeatherPage })));
+const DashboardPage    = lazy(() => import('@/pages/Dashboard/DashboardPage').then(m => ({ default: m.DashboardPage })));
+const PlotListPage     = lazy(() => import('@/pages/Plots/PlotListPage').then(m => ({ default: m.PlotListPage })));
+const PlotDetailsPage  = lazy(() => import('@/pages/Plots/PlotDetailsPage').then(m => ({ default: m.PlotDetailsPage })));
+const AddPlotPage      = lazy(() => import('@/pages/Plots/AddPlotPage').then(m => ({ default: m.AddPlotPage })));
+const AdvisoryPage     = lazy(() => import('@/pages/Advisories/AdvisoryPage').then(m => ({ default: m.AdvisoryPage })));
+const NotificationsPage = lazy(() => import('@/pages/Notifications/NotificationsPage').then(m => ({ default: m.NotificationsPage })));
+const MarketPage       = lazy(() => import('@/pages/Market/MarketPage').then(m => ({ default: m.MarketPage })));
+const AssistantPage    = lazy(() => import('@/pages/Assistant/AssistantPage').then(m => ({ default: m.AssistantPage })));
+const SettingsPage     = lazy(() => import('@/pages/Settings/SettingsPage').then(m => ({ default: m.SettingsPage })));
+const WeatherPage      = lazy(() => import('@/pages/Weather/WeatherPage').then(m => ({ default: m.WeatherPage })));
 
 // Admin pages
-const AdminDashboardPage = lazy(() => import('../admin/pages/Overview').then(m => ({ default: m.Overview })));
-const FarmersDirectory   = lazy(() => import('../admin/pages/FarmersDirectory').then(m => ({ default: m.FarmersDirectory })));
-const AdminAlertsPage    = lazy(() => import('../admin/pages/Alerts').then(m => ({ default: m.Alerts })));
-const AdminProfile       = lazy(() => import('../admin/pages/AdminProfile').then(m => ({ default: m.AdminProfile })));
-const AdminSettings      = lazy(() => import('../admin/pages/AdminSettings').then(m => ({ default: m.AdminSettings })));
+const AdminDashboardPage = lazy(() => import('@/admin/pages/Overview').then(m => ({ default: m.Overview })));
+const FarmersDirectory   = lazy(() => import('@/admin/pages/FarmersDirectory').then(m => ({ default: m.FarmersDirectory })));
+const AdminAlertsPage    = lazy(() => import('@/admin/pages/Alerts').then(m => ({ default: m.Alerts })));
+const AdminProfile       = lazy(() => import('@/admin/pages/AdminProfile').then(m => ({ default: m.AdminProfile })));
+const AdminSettings      = lazy(() => import('@/admin/pages/AdminSettings').then(m => ({ default: m.AdminSettings })));
 
 export const AppRoutes: React.FC = () => {
   return (

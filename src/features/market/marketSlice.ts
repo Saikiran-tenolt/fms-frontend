@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import type { MarketState, MarketPrice, PriceTrendData } from '../../types';
+import type { MarketState, MarketPrice, PriceTrendData } from '@/types';
 
 const initialState: MarketState = {
   prices: [],
@@ -29,3 +29,4 @@ const marketSlice = createSlice({
 
 export const { setPrices, setTrendData, setLoading, setError } = marketSlice.actions;
 export default marketSlice.reducer;
+

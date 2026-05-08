@@ -194,6 +194,7 @@ export interface PlotsState {
 export interface SensorsState {
   sensorData: Record<string, SensorData>;
   trendData: Record<string, SensorTrendData[]>;
+  lastUpdated: string | null;
   loading: boolean;
   error: string | null;
 }

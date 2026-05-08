@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Card } from '../../components/ui/Card';
-import { Modal } from '../../components/ui/Modal';
+import { Card } from '@/components/common/Card';
+import { Modal } from '@/components/common/Modal';
 import { Search, Filter, PhoneCall, Calendar, CheckCircle, Sprout } from 'lucide-react';
 import { recentFarmersData } from '../data/mockData';
 
@@ -158,3 +158,4 @@ export function FarmersDirectory() {
     </div>
   );
 }
+

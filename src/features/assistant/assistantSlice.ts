@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import type { AssistantState, ChatMessage } from '../../types';
+import type { AssistantState, ChatMessage } from '@/types';
 
 const initialState: AssistantState = {
   messages: [],
@@ -31,3 +31,4 @@ const assistantSlice = createSlice({
 
 export const { addMessage, setMessages, setLoading, attachImage, clearMessages } = assistantSlice.actions;
 export default assistantSlice.reducer;
+

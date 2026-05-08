@@ -1,7 +1,7 @@
 
-import { Card } from '../../components/ui/Card';
+import { Card } from '@/components/common/Card';
 import { User, Mail, Shield, MapPin, Building2, Phone } from 'lucide-react';
-import { useAppSelector } from '../../hooks';
+import { useAppSelector } from '@/hooks';
 
 export function AdminProfile() {
   const { user } = useAppSelector((state: any) => state.auth);
@@ -116,3 +116,4 @@ export function AdminProfile() {
     </div>
   );
 }
+

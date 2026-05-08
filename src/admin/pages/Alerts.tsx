@@ -1,5 +1,5 @@
 
-import { Card } from '../../components/ui/Card';
+import { Card } from '@/components/common/Card';
 import { Bell, AlertTriangle, ShieldCheck } from 'lucide-react';
 import { sensorStatusData } from '../data/mockData';
 
@@ -78,3 +78,4 @@ export function Alerts() {
     </div>
   );
 }
+

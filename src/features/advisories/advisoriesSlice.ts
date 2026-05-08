@@ -6,9 +6,10 @@ import {
   fetchForecastByPincode,
   WeatherResponse,
   ForecastResponse,
-} from '../../services/weatherService';
+} from '@/services/weatherService';
 import { v4 as uuidv4 } from 'uuid';
-import type { AdvisoriesState, Advisory } from '../../types';
+import type { AdvisoriesState, Advisory } from '@/types';
+
 
 interface ExtendedAdvisoriesState extends AdvisoriesState {
   weatherData: WeatherResponse | null;

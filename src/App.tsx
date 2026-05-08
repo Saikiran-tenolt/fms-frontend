@@ -1,14 +1,14 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { Provider } from 'react-redux';
-import { store } from './store/store';
-import { AppRoutes } from './routes/AppRoutes';
-import { useAppDispatch, useAppSelector } from './hooks';
+import { store } from '@/store/store';
+import { AppRoutes } from '@/routes/AppRoutes';
+import { useAppDispatch, useAppSelector } from '@/hooks';
 
-import { setNotifications } from './features/notifications/notificationsSlice';
-import { mockNotifications } from './services/mockData';
+import { setNotifications } from '@/features/notifications/notificationsSlice';
+import { mockNotifications } from '@/services/mockData';
 
-import { ToastProvider } from './components/toast';
+import { ToastProvider } from '@/components/toast';
 
 // Wrapped in React.memo so token refreshes (which update accessToken in Redux)
 // don't re-render the entire app tree — only isAuthenticated changes matter here

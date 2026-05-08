@@ -1,4 +1,4 @@
-import { Card } from '../../components/ui/Card';
+import { Card } from '@/components/common/Card';
 import { Users, Map, Radio, Activity, TrendingUp } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -194,3 +194,4 @@ export function Overview() {
     </div>
   );
 }
+

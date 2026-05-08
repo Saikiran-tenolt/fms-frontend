@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import type { NotificationsState, Notification } from '../../types';
+import type { NotificationsState, Notification } from '@/types';
 
 const initialState: NotificationsState = {
   notifications: [],
@@ -52,3 +52,4 @@ export const {
 } = notificationsSlice.actions;
 
 export default notificationsSlice.reducer;
+

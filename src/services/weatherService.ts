@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { mapWeatherCode } from '../shared/utils/weather';
+import { mapWeatherCode } from '../utils/weather';
 
 export interface WeatherResponse {
   coord: {
