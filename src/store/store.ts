@@ -7,6 +7,9 @@ import notificationsReducer from '../features/notifications/notificationsSlice';
 import marketReducer from '../features/market/marketSlice';
 import assistantReducer from '../features/assistant/assistantSlice';
 import uiReducer from './uiSlice';
+import sensorRequestsReducer from '../admin/features/sensorRequests/sensorRequestSlice';
+
+// 2. register (inside configureStore → reducer)
 
 export const store = configureStore({
   reducer: {
@@ -18,6 +21,7 @@ export const store = configureStore({
     market: marketReducer,
     assistant: assistantReducer,
     ui: uiReducer,
+    sensorRequests: sensorRequestsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

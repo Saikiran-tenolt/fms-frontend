@@ -13,7 +13,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Sparkles,
-  Cloud
+  Cloud,
+  Layers,
+  Radio,
+  Cpu,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -42,6 +45,9 @@ const ICON_LOGOUT = <LogOut className="h-4 w-4" />;
 const ICON_USERS = <Users className="h-4 w-4" />;
 const ICON_PROFILE = <User className="h-4 w-4" />;
 const ICON_ALERTS = <Bell className="h-4 w-4" />;
+const ICON_ALL_PLOTS = <Layers className="h-4 w-4" />;
+const ICON_SENSOR_REQUESTS = <Radio className="h-4 w-4" />;
+const ICON_SENSOR_CONFIG = <Cpu className="h-4 w-4" />;
 
 interface NavItem {
   name: string;
@@ -160,6 +166,9 @@ export const Sidebar: React.FC<SidebarProps> = memo(({ mobileOpen, onMobileClose
           label: 'Management',
           items: [
             { name: 'Farmers', path: '/admin/farmers', icon: ICON_USERS },
+            { name: 'All Plots', path: '/admin/plots', icon: ICON_ALL_PLOTS },
+            { name: 'Sensor Requests', path: '/admin/sensor-requests', icon: ICON_SENSOR_REQUESTS },
+            { name: 'Sensor Config', path: '/admin/sensor-config', icon: ICON_SENSOR_CONFIG },
             { name: 'Alerts', path: '/admin/alerts', icon: ICON_ALERTS },
           ],
         },
@@ -245,8 +254,8 @@ export const Sidebar: React.FC<SidebarProps> = memo(({ mobileOpen, onMobileClose
       <div className="p-4 border-t border-slate-100 bg-white/50">
         <div
           className={`group relative flex items-center rounded-xl p-2 transition-all duration-[400ms] ease-[cubic-bezier(0.25,1,0.5,1)] ${isSidebarCollapsed
-              ? 'justify-center p-0'
-              : 'bg-slate-50/50 border border-slate-200/50 hover:bg-slate-50'
+            ? 'justify-center p-0'
+            : 'bg-slate-50/50 border border-slate-200/50 hover:bg-slate-50'
             }`}
         >
           <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-md shadow-indigo-600/10">

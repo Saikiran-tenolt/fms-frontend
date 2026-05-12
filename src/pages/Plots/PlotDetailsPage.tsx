@@ -6,7 +6,13 @@ import { SkeletonPlotDetails } from '@/components/loaders/Skeleton';
 import { useAppSelector, useAppDispatch } from '@/hooks';
 import { shallowEqual } from 'react-redux';
 import { fetchAllPlots, fetchOnePlot } from '@/features/plots/plotsSlice';
+import {
+  fetchSensorRequests,
+  submitSensorRequest,
+  cancelSensorRequest,
+} from '@/admin/features/sensorRequests/sensorRequestSlice';
 import { getPlotCoordinates } from '@/utils/location';
+import { toast } from 'sonner';
 
 /* ── tiny primitives ─────────────────────────────────── */
 type PillVariant = 'green' | 'amber' | 'blue' | 'red' | 'gray';
@@ -60,41 +66,29 @@ const MoistureBar = ({ d, v }: { d: string; v: number }) => {
   );
 };
 
-const TL = [
-  { c: '#1d9e75', m: 'Soil Moisture Sensor request approved by Agricultural Authority.', t: 'Today, 11:42 AM' },
-  { c: '#854f0b', m: 'Humidity Sensor request submitted. Awaiting review.', t: 'Today, 09:15 AM' },
-  { c: '#378add', m: 'Temperature Sensor activated and streaming live data.', t: 'Yesterday, 4:30 PM' },
-  { c: '#888780', m: 'Plot configuration updated.', t: '28 Apr, 2:10 PM' },
-  { c: '#e24b4a', m: 'Soil moisture dipped below optimal — irrigation advisory issued.', t: '27 Apr, 8:00 AM' },
-];
-
-const SENSORS = [
-  { name: 'Soil Moisture Sensor', desc: 'Volumetric water content in soil.', s: 'active' },
-  { name: 'Temperature Sensor', desc: 'Ambient and canopy monitoring.', s: 'active' },
-  { name: 'Humidity Sensor', desc: 'Relative humidity monitoring.', s: 'pending' },
-  { name: 'Soil pH Sensor', desc: 'Continuous pH monitoring.', s: 'none' },
-  { name: 'Rainfall Sensor', desc: 'Tipping bucket rain gauge.', s: 'none' },
-  { name: 'NPK Soil Sensor', desc: 'N, P, K level monitoring.', s: 'none' },
+// Sensor catalogue — sensorType must match what the backend expects
+const SENSOR_CATALOGUE = [
+  { name: 'Soil Moisture Sensor', desc: 'Volumetric water content in soil.', sensorType: 'SOIL_MOISTURE' },
+  { name: 'Temperature Sensor', desc: 'Ambient and canopy monitoring.', sensorType: 'TEMPERATURE' },
+  { name: 'Humidity Sensor', desc: 'Relative humidity monitoring.', sensorType: 'HUMIDITY' },
+  { name: 'Soil pH Sensor', desc: 'Continuous pH monitoring.', sensorType: 'SOIL_PH' },
+  { name: 'Rainfall Sensor', desc: 'Tipping bucket rain gauge.', sensorType: 'RAINFALL' },
+  { name: 'NPK Soil Sensor', desc: 'N, P, K level monitoring.', sensorType: 'NPK' },
 ];
 
 /* ── main ────────────────────────────────────────────── */
 export const PlotDetailsPage: React.FC = React.memo(() => {
-  console.count("PlotDetailsPage render");
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
-  // FIX 4: Destructuring `s.plots` returns a new object on every render.
-  // Use granular selectors with shallowEqual instead.
   const plots = useAppSelector((s) => s.plots.plots, shallowEqual);
   const plotsLoading = useAppSelector((s) => s.plots.loading);
 
+  // Sensor request state
+  const sensorRequests = useAppSelector((s) => (id ? (s as any).sensorRequests.byPlot[id] ?? [] : []));
+  const requestLoading = useAppSelector((s) => (s as any).sensorRequests.loading);
 
-
-  // FIX 5: `plot` was derived inline — `plots.find(...)` returns a new
-  // object reference every render even if the plot data hasn't changed,
-  // because `plots` itself is a new array ref from Immer. Memoising it
-  // means downstream effects and renders only fire when the plot actually changes.
   const plot = React.useMemo(
     () => plots.find((p) => p._id === id) ?? null,
     [plots, id]
@@ -102,16 +96,49 @@ export const PlotDetailsPage: React.FC = React.memo(() => {
 
   const fetchedRef = useRef<Set<string>>(new Set());
 
+  // Fetch plot data
   useEffect(() => {
     if (!id) return;
-    if (fetchedRef.current.has(id)) return;    // already fetched this ID
+    if (fetchedRef.current.has(id)) return;
     fetchedRef.current.add(id);
-
     if (!plot && !plotsLoading) {
       if (plots.length === 0) dispatch(fetchAllPlots());
       else dispatch(fetchOnePlot(id));
     }
   }, [id, plot, plots.length, plotsLoading, dispatch]);
+
+  // Fetch sensor requests for this plot
+  useEffect(() => {
+    if (id) dispatch(fetchSensorRequests(id) as any);
+  }, [id, dispatch]);
+
+  // ── Sensor request helpers ─────────────────────────────────────────────────
+
+  /** Returns the request object for a given sensorType, or undefined */
+  const getRequest = (sensorType: string) =>
+    sensorRequests.find((r: any) => r.sensorType === sensorType);
+
+  const handleSendRequest = async (sensorType: string, sensorName: string) => {
+    if (!id) return;
+    try {
+      await dispatch(submitSensorRequest({ plotId: id, sensorType }) as any).unwrap();
+      toast.success(`${sensorName} request submitted`);
+    } catch (err: any) {
+      toast.error(err || 'Failed to submit request');
+    }
+  };
+
+  const handleCancelRequest = async (requestId: string, sensorName: string) => {
+    if (!id) return;
+    try {
+      await dispatch(cancelSensorRequest({ requestId, plotId: id }) as any).unwrap();
+      toast.info(`${sensorName} request cancelled`);
+    } catch (err: any) {
+      toast.error(err || 'Failed to cancel request');
+    }
+  };
+
+  // ── Guards ─────────────────────────────────────────────────────────────────
 
   if (plotsLoading) return <SkeletonPlotDetails />;
   if (!plot) return (
@@ -234,32 +261,81 @@ export const PlotDetailsPage: React.FC = React.memo(() => {
               </div>
             </Card>
 
-            {/* Sensor access */}
+            {/* ── Sensor Access Management — WIRED ── */}
             <Card>
               <div className="flex items-center justify-between mb-1">
                 <div className="text-[13px] font-medium text-[#1a1a18]">Sensor Access Management</div>
-                <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#3b6d11] text-white text-[11.5px] font-medium">
-                  + Request Sensor
-                </button>
               </div>
-              <div className="text-[11px] text-[#b4b2a9] mb-3">Request sensors from the Agricultural Authority. Approved sensors stream live data.</div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-                {SENSORS.map((sensor) => (
-                  <div key={sensor.name}
-                    className={`border rounded-xl p-3.5 ${sensor.s === 'pending' ? 'border-[#f5c97a] bg-[#fffdf9]' : sensor.s === 'active' ? 'border-[#c0dd97]' : 'border-[#e3e3e0] bg-white'}`}>
-                    <div className="text-[13px] font-medium text-[#1a1a18] mb-1">{sensor.name}</div>
-                    <div className="text-[11.5px] text-[#888780] mb-3 leading-relaxed">{sensor.desc}</div>
-                    <div className="flex items-center justify-between">
-                      {sensor.s === 'active' && <Pill v="green">Active · Live Feed</Pill>}
-                      {sensor.s === 'pending' && <Pill v="amber">Pending Review</Pill>}
-                      {sensor.s === 'none' && <span className="text-[11px] text-[#b4b2a9]">Not Requested</span>}
-                      {sensor.s === 'active' && <button className="text-[11px] border border-[#e3e3e0] rounded-lg px-2.5 py-1 text-[#5f5e5a] hover:border-[#c0dd97] transition-colors">View Data</button>}
-                      {sensor.s === 'pending' && <button className="text-[11px] border border-[#f5c97a] rounded-lg px-2.5 py-1 text-[#854f0b]">Cancel</button>}
-                      {sensor.s === 'none' && <button className="text-[11px] bg-[#1a1a18] text-white rounded-lg px-2.5 py-1 hover:bg-[#2c2c28] transition-colors">Send Request</button>}
-                    </div>
-                  </div>
-                ))}
+              <div className="text-[11px] text-[#b4b2a9] mb-3">
+                Request sensors from the Agricultural Authority. Approved sensors stream live data.
               </div>
+
+              {requestLoading && sensorRequests.length === 0 ? (
+                <div className="text-[12px] text-[#888780] py-4 text-center">Loading sensor status...</div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                  {SENSOR_CATALOGUE.map((sensor) => {
+                    const req = getRequest(sensor.sensorType);
+                    const status = req?.status ?? 'none';
+
+                    return (
+                      <div
+                        key={sensor.sensorType}
+                        className={`border rounded-xl p-3.5 ${status === 'pending' ? 'border-[#f5c97a] bg-[#fffdf9]' :
+                            status === 'active' ? 'border-[#c0dd97]' :
+                              status === 'rejected' ? 'border-[#f5b3ae] bg-[#fdecea]/30' :
+                                'border-[#e3e3e0] bg-white'
+                          }`}
+                      >
+                        <div className="text-[13px] font-medium text-[#1a1a18] mb-1">{sensor.name}</div>
+                        <div className="text-[11.5px] text-[#888780] mb-3 leading-relaxed">{sensor.desc}</div>
+
+                        <div className="flex items-center justify-between">
+                          {/* Status badge */}
+                          {status === 'active' && <Pill v="green">Active · Live Feed</Pill>}
+                          {status === 'pending' && <Pill v="amber">Pending Review</Pill>}
+                          {status === 'rejected' && <Pill v="red">Rejected</Pill>}
+                          {status === 'none' && <span className="text-[11px] text-[#b4b2a9]">Not Requested</span>}
+
+                          {/* Action button */}
+                          {status === 'active' && (
+                            <button className="text-[11px] border border-[#e3e3e0] rounded-lg px-2.5 py-1 text-[#5f5e5a] hover:border-[#c0dd97] transition-colors">
+                              View Data
+                            </button>
+                          )}
+                          {status === 'pending' && (
+                            <button
+                              disabled={requestLoading}
+                              onClick={() => handleCancelRequest(req!._id, sensor.name)}
+                              className="text-[11px] border border-[#f5c97a] rounded-lg px-2.5 py-1 text-[#854f0b] hover:bg-[#faeeda] transition-colors disabled:opacity-50"
+                            >
+                              Cancel
+                            </button>
+                          )}
+                          {status === 'rejected' && (
+                            <button
+                              disabled={requestLoading}
+                              onClick={() => handleSendRequest(sensor.sensorType, sensor.name)}
+                              className="text-[11px] bg-[#1a1a18] text-white rounded-lg px-2.5 py-1 hover:bg-[#2c2c28] transition-colors disabled:opacity-50"
+                            >
+                              Re-request
+                            </button>
+                          )}
+                          {status === 'none' && (
+                            <button
+                              disabled={requestLoading}
+                              onClick={() => handleSendRequest(sensor.sensorType, sensor.name)}
+                              className="text-[11px] bg-[#1a1a18] text-white rounded-lg px-2.5 py-1 hover:bg-[#2c2c28] transition-colors disabled:opacity-50"
+                            >
+                              Send Request
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </Card>
 
             {/* Map */}
@@ -334,22 +410,44 @@ export const PlotDetailsPage: React.FC = React.memo(() => {
               </div>
             </Card>
 
-            {/* Activity log */}
+            {/* Activity log — dynamic from sensorRequests */}
             <Card>
               <div className="text-[13px] font-medium text-[#1a1a18] mb-3">Activity Log</div>
-              <div>
-                {TL.map((e, i) => (
-                  <div key={i} className={`flex gap-3 py-2.5 ${i < TL.length - 1 ? 'border-b border-[#f0efec]' : ''}`}>
-                    <div className="pt-1.5 flex-shrink-0">
-                      <div className="w-2 h-2 rounded-full" style={{ background: e.c }} />
-                    </div>
-                    <div>
-                      <div className="text-[12px] text-[#5f5e5a] leading-relaxed">{e.m}</div>
-                      <div className="text-[10.5px] text-[#b4b2a9] mt-0.5">{e.t}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              {sensorRequests.length === 0 ? (
+                <div className="text-[12px] text-[#b4b2a9] py-2">No activity yet.</div>
+              ) : (
+                <div>
+                  {[...sensorRequests]
+                    .sort((a: any, b: any) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+                    .map((req: any, i: number, arr: any[]) => {
+                      const color =
+                        req.status === 'active' ? '#1d9e75' :
+                          req.status === 'pending' ? '#854f0b' :
+                            req.status === 'rejected' ? '#e24b4a' : '#888780';
+                      const msg =
+                        req.status === 'active'
+                          ? `${req.sensorType} approved and streaming live data.`
+                          : req.status === 'pending'
+                            ? `${req.sensorType} request submitted. Awaiting review.`
+                            : req.status === 'rejected'
+                              ? `${req.sensorType} request rejected.`
+                              : `${req.sensorType} request updated.`;
+                      const time = new Date(req.updatedAt).toLocaleString();
+
+                      return (
+                        <div key={req._id} className={`flex gap-3 py-2.5 ${i < arr.length - 1 ? 'border-b border-[#f0efec]' : ''}`}>
+                          <div className="pt-1.5 flex-shrink-0">
+                            <div className="w-2 h-2 rounded-full" style={{ background: color }} />
+                          </div>
+                          <div>
+                            <div className="text-[12px] text-[#5f5e5a] leading-relaxed">{msg}</div>
+                            <div className="text-[10.5px] text-[#b4b2a9] mt-0.5">{time}</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
             </Card>
 
           </div>{/* /RIGHT */}
@@ -360,4 +458,3 @@ export const PlotDetailsPage: React.FC = React.memo(() => {
 });
 
 PlotDetailsPage.displayName = 'PlotDetailsPage';
-

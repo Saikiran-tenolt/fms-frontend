@@ -38,13 +38,24 @@ export interface AuthVerifyResponse {
 }
 
 const authService = {
+  adminLogin: async (email: string, password: string): Promise<{ success: boolean; token: string }> => {
+    const response = await api.post('admin/login', { email, password });
+    const result = response.data;
+    if (result.success && result.token) {
+      localStorage.setItem('accessToken', result.token);
+      // For admin login, we might not get full user info immediately
+      // We can fetch it using getMe() later or set a placeholder
+    }
+    return result;
+  },
+
   sendOtp: async (phone: string) => {
-    const response = await api.post('/auth/send-otp', { phone });
+    const response = await api.post('auth/send-otp', { phone });
     return response.data;
   },
 
   verifyOtp: async (payload: VerifyPayload): Promise<AuthVerifyResponse> => {
-    const response = await api.post('/auth/verify-otp', payload);
+    const response = await api.post('auth/verify-otp', payload);
     const result = response.data as AuthVerifyResponse;
 
     if (result.success && (result.data.type === 'LOGIN' || result.data.type === 'SIGNUP')) {
@@ -71,13 +82,13 @@ const authService = {
   },
 
   refreshTokens: async (refreshToken: string) => {
-    const response = await api.post('/auth/refresh', { refreshToken });
+    const response = await api.post('auth/refresh', { refreshToken });
     return response.data;
   },
 
   logout: async (refreshToken: string) => {
     try {
-      const response = await api.post('/auth/logout', { refreshToken });
+      const response = await api.post('auth/logout', { refreshToken });
       return response.data;
     } finally {
       localStorage.removeItem('accessToken');
@@ -87,7 +98,7 @@ const authService = {
   },
 
   getMe: async (): Promise<{ success: boolean; user: User }> => {
-    const response = await api.get('/auth/me');
+    const response = await api.get('auth/me');
     const result = response.data;
 
     if (result.success && result.user) {
@@ -103,7 +114,7 @@ const authService = {
   },
 
   updateProfile: async (data: Partial<User>): Promise<{ success: boolean; user: User }> => {
-    const response = await api.patch('/auth/profile', data);
+    const response = await api.patch('auth/profile', data);
     return response.data;
   },
 };
