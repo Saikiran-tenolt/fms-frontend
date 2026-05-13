@@ -47,7 +47,8 @@ const adminService = {
   // 5. POST /admin/sensor-types  →  { success, data }
   createSensorType: async (payload: {
     name: string;
-    description: string;
+    key: string;
+    supportedSiteTypes: string[];
   }): Promise<{ success: boolean; data?: any }> => {
     const res = await api.post('/admin/sensor-types', payload);
     return res.data;
@@ -58,11 +59,12 @@ const adminService = {
 
   // 7. POST /admin/sensor-parameters
   createSensorParameter: async (payload: {
-    name: string;
+    displayName: string;
+    parameterKey: string;
     unit: string;
     sensorTypeId: string;
-    minValue?: number;
-    maxValue?: number;
+    minValue: number;
+    maxValue: number;
     description?: string;
   }): Promise<{ success: boolean; data?: any }> => {
     const res = await api.post('/admin/sensor-parameters', payload);
@@ -74,10 +76,8 @@ const adminService = {
 
   // 9. POST /admin/sensor-mappings
   createSensorMapping: async (payload: {
-    plotId: string;
-    sensorTypeId: string;
-    sensorId?: string;
-    installedAt?: string;
+    sensorType: string;
+    parameterKey: string;
   }): Promise<{ success: boolean; data?: any }> => {
     const res = await api.post('/admin/sensor-mappings', payload);
     return res.data;

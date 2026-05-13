@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Search, RefreshCw, Radio, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { Card } from '@/components/common/Card';
 import { Loader } from '@/components/common/Loader';
@@ -37,7 +37,9 @@ export function SensorRequests() {
     setLoading(true); setError(null);
     try {
       const res = await adminService.getSensorRequests();
-      setRequests(res.data);
+      // Guard: always store an array even if backend returns unexpected shape
+      const list = Array.isArray(res.data) ? res.data : [];
+      setRequests(list);
     } catch (err: any) {
       setError(err.message ?? 'Failed to load sensor requests');
     } finally {

@@ -33,7 +33,7 @@ function SensorTypesTab() {
     const [items, setItems] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
-    const [form, setForm] = useState({ name: '', description: '' });
+    const [form, setForm] = useState({ name: '', key: '', supportedSiteTypes: ['OPEN_FIELD', 'INDOOR'] });
     const [saving, setSaving] = useState(false);
     const toast = useToastContext();
 
@@ -47,15 +47,27 @@ function SensorTypesTab() {
 
     const save = async () => {
         if (!form.name.trim()) return toast.error('Name is required');
+        if (!form.key.trim()) return toast.error('Key is required');
+        if (form.supportedSiteTypes.length === 0) return toast.error('Select at least one site type');
+        
         setSaving(true);
         try {
             await adminService.createSensorType(form);
             toast.success('Sensor type created');
             setShowModal(false);
-            setForm({ name: '', description: '' });
+            setForm({ name: '', key: '', supportedSiteTypes: ['OPEN_FIELD', 'INDOOR'] });
             load();
         } catch (e: any) { toast.error(e.message ?? 'Create failed'); }
         finally { setSaving(false); }
+    };
+
+    const toggleSiteType = (type: string) => {
+        setForm(f => ({
+            ...f,
+            supportedSiteTypes: f.supportedSiteTypes.includes(type)
+                ? f.supportedSiteTypes.filter(t => t !== type)
+                : [...f.supportedSiteTypes, type]
+        }));
     };
 
     return (
@@ -74,11 +86,20 @@ function SensorTypesTab() {
             </div>
 
             {loading ? <div className="flex justify-center py-12"><Loader /></div> : (
-                <Table heads={['Name', 'Description', 'Created']} empty={items.length === 0}>
+                <Table heads={['Name', 'Key', 'Site Support', 'Created']} empty={items.length === 0}>
                     {items.map(item => (
                         <tr key={item._id ?? item.id} className="bg-white hover:bg-slate-50/50">
                             <td className="px-6 py-4 font-semibold text-slate-900">{item.name}</td>
-                            <td className="px-6 py-4 text-slate-500">{item.description ?? '—'}</td>
+                            <td className="px-6 py-4 font-mono text-xs text-emerald-600 uppercase">{item.key}</td>
+                            <td className="px-6 py-4">
+                                <div className="flex gap-1">
+                                    {item.supportedSiteTypes?.map((t: string) => (
+                                        <span key={t} className="text-[9px] font-bold px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded border border-slate-200">
+                                            {t === 'OPEN_FIELD' ? 'OUTDOOR' : 'INDOOR'}
+                                        </span>
+                                    ))}
+                                </div>
+                            </td>
                             <td className="px-6 py-4 text-xs text-slate-400">{item.createdAt ? new Date(item.createdAt).toLocaleDateString() : '—'}</td>
                         </tr>
                     ))}
@@ -87,13 +108,25 @@ function SensorTypesTab() {
 
             <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Create Sensor Type">
                 <div className="space-y-4 pt-2">
-                    <Field label="Name *">
+                    <Field label="Display Name *">
                         <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                             placeholder="e.g. Temperature Sensor" className={inp} />
                     </Field>
-                    <Field label="Description">
-                        <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                            placeholder="What does this sensor monitor?" rows={3} className={`${inp} resize-none`} />
+                    <Field label="Technical Key *">
+                        <input value={form.key} onChange={e => setForm(f => ({ ...f, key: e.target.value.toUpperCase().replace(/\s+/g, '_') }))}
+                            placeholder="e.g. TEMPERATURE" className={inp} />
+                    </Field>
+                    <Field label="Supported Environments *">
+                        <div className="flex gap-4 pt-1">
+                            {['OPEN_FIELD', 'INDOOR'].map(type => (
+                                <label key={type} className="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" checked={form.supportedSiteTypes.includes(type)}
+                                        onChange={() => toggleSiteType(type)}
+                                        className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
+                                    <span className="text-sm text-slate-600">{type === 'OPEN_FIELD' ? 'Outdoor (Open Field)' : 'Indoor (Greenhouse)'}</span>
+                                </label>
+                            ))}
+                        </div>
                     </Field>
                     <ModalFooter onCancel={() => setShowModal(false)} onSave={save} saving={saving} />
                 </div>
@@ -108,7 +141,7 @@ function SensorParametersTab() {
     const [sensorTypes, setSensorTypes] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
-    const [form, setForm] = useState({ name: '', unit: '', sensorTypeId: '', minValue: '', maxValue: '', description: '' });
+    const [form, setForm] = useState({ displayName: '', parameterKey: '', unit: '', sensorTypeId: '', minValue: '', maxValue: '', description: '' });
     const [saving, setSaving] = useState(false);
     const toast = useToastContext();
 
@@ -123,18 +156,26 @@ function SensorParametersTab() {
     useEffect(() => { load(); }, []);
 
     const save = async () => {
-        if (!form.name.trim() || !form.unit.trim()) return toast.error('Name and unit are required');
+        if (!form.displayName.trim()) return toast.error('Display Name is required');
+        if (!form.parameterKey.trim()) return toast.error('Key is required');
+        if (!form.unit.trim()) return toast.error('Unit is required');
+        if (!form.sensorTypeId) return toast.error('Sensor Type is required');
+        if (form.minValue === '' || form.maxValue === '') return toast.error('Min/Max range is required');
+        
         setSaving(true);
         try {
             await adminService.createSensorParameter({
-                name: form.name, unit: form.unit, sensorTypeId: form.sensorTypeId,
-                minValue: form.minValue ? Number(form.minValue) : undefined,
-                maxValue: form.maxValue ? Number(form.maxValue) : undefined,
+                displayName: form.displayName,
+                parameterKey: form.parameterKey,
+                unit: form.unit,
+                sensorTypeId: form.sensorTypeId,
+                minValue: Number(form.minValue),
+                maxValue: Number(form.maxValue),
                 description: form.description || undefined,
             });
             toast.success('Parameter created');
             setShowModal(false);
-            setForm({ name: '', unit: '', sensorTypeId: '', minValue: '', maxValue: '', description: '' });
+            setForm({ displayName: '', parameterKey: '', unit: '', sensorTypeId: '', minValue: '', maxValue: '', description: '' });
             load();
         } catch (e: any) { toast.error(e.message ?? 'Create failed'); }
         finally { setSaving(false); }
@@ -156,16 +197,17 @@ function SensorParametersTab() {
             </div>
 
             {loading ? <div className="flex justify-center py-12"><Loader /></div> : (
-                <Table heads={['Name', 'Unit', 'Sensor Type', 'Range']} empty={items.length === 0}>
+                <Table heads={['Display Name', 'Key', 'Unit', 'Sensor Type', 'Range']} empty={items.length === 0}>
                     {items.map(item => (
                         <tr key={item._id ?? item.id} className="bg-white hover:bg-slate-50/50">
-                            <td className="px-6 py-4 font-semibold text-slate-900">{item.name}</td>
+                            <td className="px-6 py-4 font-semibold text-slate-900">{item.displayName ?? item.name}</td>
+                            <td className="px-6 py-4 font-mono text-[10px] text-emerald-600 uppercase">{item.parameterKey ?? '—'}</td>
                             <td className="px-6 py-4">
                                 <span className="bg-slate-100 text-slate-600 rounded-full px-2 py-0.5 text-xs font-mono">{item.unit}</span>
                             </td>
                             <td className="px-6 py-4 text-slate-500">{item.sensorType?.name ?? item.sensorTypeId ?? '—'}</td>
-                            <td className="px-6 py-4 text-slate-500">
-                                {item.minValue != null && item.maxValue != null ? `${item.minValue} – ${item.maxValue}` : '—'}
+                            <td className="px-6 py-4 text-slate-500 font-mono text-xs">
+                                {item.minValue} – {item.maxValue}
                             </td>
                         </tr>
                     ))}
@@ -175,29 +217,34 @@ function SensorParametersTab() {
             <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Create Sensor Parameter">
                 <div className="space-y-4 pt-2">
                     <div className="grid grid-cols-2 gap-3">
-                        <Field label="Name *">
-                            <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Soil Moisture" className={inp} />
+                        <Field label="Display Name *">
+                            <input value={form.displayName} onChange={e => setForm(f => ({ ...f, displayName: e.target.value }))} placeholder="e.g. Soil Moisture" className={inp} />
                         </Field>
+                        <Field label="Technical Key *">
+                            <input value={form.parameterKey} onChange={e => setForm(f => ({ ...f, parameterKey: e.target.value.toUpperCase().replace(/\s+/g, '_') }))} placeholder="e.g. MOISTURE_PCT" className={inp} />
+                        </Field>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
                         <Field label="Unit *">
                             <input value={form.unit} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))} placeholder="%, °C, ppm" className={inp} />
                         </Field>
+                        <Field label="Sensor Type *">
+                            <select value={form.sensorTypeId} onChange={e => setForm(f => ({ ...f, sensorTypeId: e.target.value }))} className={inp}>
+                                <option value="">— Select —</option>
+                                {sensorTypes.map(t => <option key={t._id ?? t.id} value={t._id ?? t.id}>{t.name}</option>)}
+                            </select>
+                        </Field>
                     </div>
-                    <Field label="Sensor Type">
-                        <select value={form.sensorTypeId} onChange={e => setForm(f => ({ ...f, sensorTypeId: e.target.value }))} className={inp}>
-                            <option value="">— Select —</option>
-                            {sensorTypes.map(t => <option key={t._id ?? t.id} value={t._id ?? t.id}>{t.name}</option>)}
-                        </select>
-                    </Field>
                     <div className="grid grid-cols-2 gap-3">
-                        <Field label="Min Value">
+                        <Field label="Min Value *">
                             <input type="number" value={form.minValue} onChange={e => setForm(f => ({ ...f, minValue: e.target.value }))} placeholder="0" className={inp} />
                         </Field>
-                        <Field label="Max Value">
+                        <Field label="Max Value *">
                             <input type="number" value={form.maxValue} onChange={e => setForm(f => ({ ...f, maxValue: e.target.value }))} placeholder="100" className={inp} />
                         </Field>
                     </div>
                     <Field label="Description">
-                        <input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Optional" className={inp} />
+                        <input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Optional note" className={inp} />
                     </Field>
                     <ModalFooter onCancel={() => setShowModal(false)} onSave={save} saving={saving} />
                 </div>
@@ -210,34 +257,37 @@ function SensorParametersTab() {
 function SensorMappingsTab() {
     const [items, setItems] = useState<any[]>([]);
     const [sensorTypes, setSensorTypes] = useState<any[]>([]);
+    const [parameters, setParameters] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
-    const [form, setForm] = useState({ plotId: '', sensorTypeId: '', sensorId: '', installedAt: '' });
+    const [form, setForm] = useState({ sensorType: '', parameterKey: '' });
     const [saving, setSaving] = useState(false);
     const toast = useToastContext();
 
     const load = async () => {
         setLoading(true);
         try {
-            const [maps, types] = await Promise.all([adminService.getSensorMappings(), adminService.getSensorTypes()]);
-            setItems(maps.data); setSensorTypes(types.data);
+            const [maps, types, params] = await Promise.all([
+                adminService.getSensorMappings(),
+                adminService.getSensorTypes(),
+                adminService.getSensorParameters()
+            ]);
+            setItems(maps.data);
+            setSensorTypes(types.data);
+            setParameters(params.data);
         } catch (e: any) { toast.error(e.message ?? 'Load failed'); }
         finally { setLoading(false); }
     };
     useEffect(() => { load(); }, []);
 
     const save = async () => {
-        if (!form.plotId.trim() || !form.sensorTypeId) return toast.error('Plot ID and sensor type are required');
+        if (!form.sensorType || !form.parameterKey) return toast.error('Both sensor type and parameter are required');
         setSaving(true);
         try {
-            await adminService.createSensorMapping({
-                plotId: form.plotId, sensorTypeId: form.sensorTypeId,
-                sensorId: form.sensorId || undefined,
-                installedAt: form.installedAt || undefined,
-            });
+            await adminService.createSensorMapping(form);
             toast.success('Mapping created');
             setShowModal(false);
-            setForm({ plotId: '', sensorTypeId: '', sensorId: '', installedAt: '' });
+            setForm({ sensorType: '', parameterKey: '' });
             load();
         } catch (e: any) { toast.error(e.message ?? 'Create failed'); }
         finally { setSaving(false); }
@@ -259,34 +309,30 @@ function SensorMappingsTab() {
             </div>
 
             {loading ? <div className="flex justify-center py-12"><Loader /></div> : (
-                <Table heads={['Plot', 'Sensor Type', 'Sensor ID', 'Installed']} empty={items.length === 0}>
+                <Table heads={['Sensor Type', 'Parameter Key', 'Created']} empty={items.length === 0}>
                     {items.map(item => (
                         <tr key={item._id ?? item.id} className="bg-white hover:bg-slate-50/50">
-                            <td className="px-6 py-4 font-semibold text-slate-900">{item.plot?.plotName ?? item.plotId ?? '—'}</td>
-                            <td className="px-6 py-4 text-slate-500">{item.sensorType?.name ?? item.sensorTypeId ?? '—'}</td>
-                            <td className="px-6 py-4 font-mono text-xs text-slate-400">{item.sensorId ?? '—'}</td>
-                            <td className="px-6 py-4 text-xs text-slate-400">{item.installedAt ? new Date(item.installedAt).toLocaleDateString() : '—'}</td>
+                            <td className="px-6 py-4 font-semibold text-slate-900">{item.sensorType?.name ?? item.sensorType ?? '—'}</td>
+                            <td className="px-6 py-4 font-mono text-xs text-emerald-600 uppercase">{item.parameterKey ?? '—'}</td>
+                            <td className="px-6 py-4 text-xs text-slate-400">{item.createdAt ? new Date(item.createdAt).toLocaleDateString() : '—'}</td>
                         </tr>
                     ))}
                 </Table>
             )}
 
-            <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Create Sensor Mapping">
+            <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Link Parameter to Sensor Type">
                 <div className="space-y-4 pt-2">
-                    <Field label="Plot ID *">
-                        <input value={form.plotId} onChange={e => setForm(f => ({ ...f, plotId: e.target.value }))} placeholder="MongoDB _id of the plot" className={inp} />
-                    </Field>
                     <Field label="Sensor Type *">
-                        <select value={form.sensorTypeId} onChange={e => setForm(f => ({ ...f, sensorTypeId: e.target.value }))} className={inp}>
-                            <option value="">— Select —</option>
-                            {sensorTypes.map(t => <option key={t._id ?? t.id} value={t._id ?? t.id}>{t.name}</option>)}
+                        <select value={form.sensorType} onChange={e => setForm(f => ({ ...f, sensorType: e.target.value }))} className={inp}>
+                            <option value="">— Select Type —</option>
+                            {sensorTypes.map(t => <option key={t._id ?? t.id} value={t._id ?? t.id}>{t.name} ({t.key})</option>)}
                         </select>
                     </Field>
-                    <Field label="Sensor ID (optional)">
-                        <input value={form.sensorId} onChange={e => setForm(f => ({ ...f, sensorId: e.target.value }))} placeholder="Physical device ID" className={inp} />
-                    </Field>
-                    <Field label="Installed At">
-                        <input type="date" value={form.installedAt} onChange={e => setForm(f => ({ ...f, installedAt: e.target.value }))} className={inp} />
+                    <Field label="Parameter *">
+                        <select value={form.parameterKey} onChange={e => setForm(f => ({ ...f, parameterKey: e.target.value }))} className={inp}>
+                            <option value="">— Select Parameter —</option>
+                            {parameters.map(p => <option key={p._id ?? p.id} value={p._id ?? p.id}>{p.displayName} ({p.unit})</option>)}
+                        </select>
                     </Field>
                     <ModalFooter onCancel={() => setShowModal(false)} onSave={save} saving={saving} />
                 </div>

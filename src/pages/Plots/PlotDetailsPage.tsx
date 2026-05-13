@@ -1,18 +1,15 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MapPin, ExternalLink } from 'lucide-react';
 import { EmptyState } from '@/components/common/EmptyState';
 import { SkeletonPlotDetails } from '@/components/loaders/Skeleton';
 import { useAppSelector, useAppDispatch } from '@/hooks';
 import { shallowEqual } from 'react-redux';
-import { fetchAllPlots, fetchOnePlot } from '@/features/plots/plotsSlice';
-import {
-  fetchSensorRequests,
-  submitSensorRequest,
-  cancelSensorRequest,
-} from '@/admin/features/sensorRequests/sensorRequestSlice';
+import { fetchOnePlot } from '@/features/plots/plotsSlice';
+import { fetchSensorRequests } from '@/admin/features/sensorRequests/sensorRequestSlice';
 import { getPlotCoordinates } from '@/utils/location';
-import { toast } from 'sonner';
+
+const EMPTY_ARRAY: any[] = [];
 
 /* ── tiny primitives ─────────────────────────────────── */
 type PillVariant = 'green' | 'amber' | 'blue' | 'red' | 'gray';
@@ -66,15 +63,16 @@ const MoistureBar = ({ d, v }: { d: string; v: number }) => {
   );
 };
 
-// Sensor catalogue — sensorType must match what the backend expects
-const SENSOR_CATALOGUE = [
-  { name: 'Soil Moisture Sensor', desc: 'Volumetric water content in soil.', sensorType: 'SOIL_MOISTURE' },
-  { name: 'Temperature Sensor', desc: 'Ambient and canopy monitoring.', sensorType: 'TEMPERATURE' },
-  { name: 'Humidity Sensor', desc: 'Relative humidity monitoring.', sensorType: 'HUMIDITY' },
-  { name: 'Soil pH Sensor', desc: 'Continuous pH monitoring.', sensorType: 'SOIL_PH' },
-  { name: 'Rainfall Sensor', desc: 'Tipping bucket rain gauge.', sensorType: 'RAINFALL' },
-  { name: 'NPK Soil Sensor', desc: 'N, P, K level monitoring.', sensorType: 'NPK' },
+const TL = [
+  { c: '#1d9e75', m: 'Soil Moisture Sensor request approved by Agricultural Authority.', t: 'Today, 11:42 AM' },
+  { c: '#854f0b', m: 'Humidity Sensor request submitted. Awaiting review.', t: 'Today, 09:15 AM' },
+  { c: '#378add', m: 'Temperature Sensor activated and streaming live data.', t: 'Yesterday, 4:30 PM' },
+  { c: '#888780', m: 'Plot configuration updated.', t: '28 Apr, 2:10 PM' },
+  { c: '#e24b4a', m: 'Soil moisture dipped below optimal — irrigation advisory issued.', t: '27 Apr, 8:00 AM' },
 ];
+
+import { SensorAccessCard } from './components/SensorAccessCard';
+
 
 /* ── main ────────────────────────────────────────────── */
 export const PlotDetailsPage: React.FC = React.memo(() => {
@@ -85,60 +83,34 @@ export const PlotDetailsPage: React.FC = React.memo(() => {
   const plots = useAppSelector((s) => s.plots.plots, shallowEqual);
   const plotsLoading = useAppSelector((s) => s.plots.loading);
 
-  // Sensor request state
-  const sensorRequests = useAppSelector((s) => (id ? (s as any).sensorRequests.byPlot[id] ?? [] : []));
-  const requestLoading = useAppSelector((s) => (s as any).sensorRequests.loading);
+  const requests = useAppSelector((s) => s.sensorRequests.byPlot[id!] ?? EMPTY_ARRAY);
 
   const plot = React.useMemo(
     () => plots.find((p) => p._id === id) ?? null,
     [plots, id]
   );
 
-  const fetchedRef = useRef<Set<string>>(new Set());
-
   // Fetch plot data
   useEffect(() => {
     if (!id) return;
-    if (fetchedRef.current.has(id)) return;
-    fetchedRef.current.add(id);
-    if (!plot && !plotsLoading) {
-      if (plots.length === 0) dispatch(fetchAllPlots());
-      else dispatch(fetchOnePlot(id));
-    }
-  }, [id, plot, plots.length, plotsLoading, dispatch]);
+    // Only fetch if not already in store or if we want to ensure latest data
+    dispatch(fetchOnePlot(id));
+  }, [dispatch, id]);
 
-  // Fetch sensor requests for this plot
+  // Fetch sensor requests
   useEffect(() => {
-    if (id) dispatch(fetchSensorRequests(id) as any);
-  }, [id, dispatch]);
-
-  // ── Sensor request helpers ─────────────────────────────────────────────────
-
-  /** Returns the request object for a given sensorType, or undefined */
-  const getRequest = (sensorType: string) =>
-    sensorRequests.find((r: any) => r.sensorType === sensorType);
-
-  const handleSendRequest = async (sensorType: string, sensorName: string) => {
     if (!id) return;
-    try {
-      await dispatch(submitSensorRequest({ plotId: id, sensorType }) as any).unwrap();
-      toast.success(`${sensorName} request submitted`);
-    } catch (err: any) {
-      toast.error(err || 'Failed to submit request');
-    }
-  };
+    dispatch(fetchSensorRequests(id));
+  }, [dispatch, id]);
 
-  const handleCancelRequest = async (requestId: string, sensorName: string) => {
-    if (!id) return;
-    try {
-      await dispatch(cancelSensorRequest({ requestId, plotId: id }) as any).unwrap();
-      toast.info(`${sensorName} request cancelled`);
-    } catch (err: any) {
-      toast.error(err || 'Failed to cancel request');
-    }
-  };
-
-  // ── Guards ─────────────────────────────────────────────────────────────────
+  const requestMap = React.useMemo(() => {
+    const map: Record<string, string> = {};
+    requests.forEach(r => {
+      const sName = typeof r.sensorType === 'string' ? r.sensorType : r.sensorType.name;
+      map[sName] = r.status;
+    });
+    return map;
+  }, [requests]);
 
   if (plotsLoading) return <SkeletonPlotDetails />;
   if (!plot) return (
@@ -155,6 +127,24 @@ export const PlotDetailsPage: React.FC = React.memo(() => {
   const n = plot.npkLevels?.n ?? 142;
   const p = plot.npkLevels?.p ?? 58;
   const k = plot.npkLevels?.k ?? 44;
+
+  const liveWidgets = [
+    { type: 'TEMPERATURE', label: 'Temperature', mockVal: '39', unit: '°C', optimal: 'High', bv: 'amber' },
+    { type: 'SOIL_TEMPERATURE', label: 'Soil Temperature', mockVal: '24', unit: '°C', optimal: 'Optimal', bv: 'green' },
+    { type: 'SOIL_MOISTURE', label: 'Soil Moisture', mockVal: '35', unit: '%', optimal: 'Optimal', bv: 'green' },
+    { type: 'HUMIDITY', label: 'Humidity', mockVal: '60', unit: '%', optimal: 'Optimal', bv: 'green' },
+  ].map(sensor => {
+    const status = requestMap[sensor.type];
+    if (status === 'APPROVED' || status === 'INSTALLED') {
+      return { label: sensor.label, val: sensor.mockVal, unit: sensor.unit, badge: sensor.optimal, bv: sensor.bv as PillVariant, note: 'Updated just now', dim: false };
+    } else if (status === 'PENDING') {
+      return { label: sensor.label, val: '—', unit: '', badge: 'Pending', bv: 'amber' as PillVariant, note: '⏳ Awaiting approval', dim: true };
+    } else if (status === 'REJECTED') {
+      return { label: sensor.label, val: '—', unit: '', badge: 'Rejected', bv: 'red' as PillVariant, note: '❌ Request rejected', dim: true };
+    } else {
+      return { label: sensor.label, val: '—', unit: '', badge: 'Locked', bv: 'gray' as PillVariant, note: '🔒 Request not sent', dim: true };
+    }
+  });
 
   return (
     <div style={{ background: '#f5f5f3', minHeight: '100vh', fontFamily: "'DM Sans',sans-serif" }}>
@@ -223,12 +213,7 @@ export const PlotDetailsPage: React.FC = React.memo(() => {
                 </div>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
-                {[
-                  { label: 'Soil Moisture', val: '35', unit: '%', badge: 'Optimal', bv: 'green' as PillVariant, note: 'Updated just now' },
-                  { label: 'Temperature', val: '39', unit: '°C', badge: 'High', bv: 'amber' as PillVariant, note: 'Updated just now' },
-                  { label: 'Humidity', val: '—', unit: '', badge: 'Pending', bv: 'gray' as PillVariant, note: '🔒 Awaiting approval', dim: true },
-                  { label: 'Soil pH', val: '—', unit: '', badge: 'Locked', bv: 'gray' as PillVariant, note: '🔒 Request not sent', dim: true },
-                ].map((sc) => (
+                {liveWidgets.map((sc) => (
                   <div key={sc.label}
                     className={`border border-[#e3e3e0] rounded-xl p-3 ${sc.dim ? 'bg-[#fafaf8] opacity-70' : 'bg-white'}`}>
                     <div className="flex items-center justify-between mb-2">
@@ -261,82 +246,8 @@ export const PlotDetailsPage: React.FC = React.memo(() => {
               </div>
             </Card>
 
-            {/* ── Sensor Access Management — WIRED ── */}
-            <Card>
-              <div className="flex items-center justify-between mb-1">
-                <div className="text-[13px] font-medium text-[#1a1a18]">Sensor Access Management</div>
-              </div>
-              <div className="text-[11px] text-[#b4b2a9] mb-3">
-                Request sensors from the Agricultural Authority. Approved sensors stream live data.
-              </div>
-
-              {requestLoading && sensorRequests.length === 0 ? (
-                <div className="text-[12px] text-[#888780] py-4 text-center">Loading sensor status...</div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-                  {SENSOR_CATALOGUE.map((sensor) => {
-                    const req = getRequest(sensor.sensorType);
-                    const status = req?.status ?? 'none';
-
-                    return (
-                      <div
-                        key={sensor.sensorType}
-                        className={`border rounded-xl p-3.5 ${status === 'pending' ? 'border-[#f5c97a] bg-[#fffdf9]' :
-                            status === 'active' ? 'border-[#c0dd97]' :
-                              status === 'rejected' ? 'border-[#f5b3ae] bg-[#fdecea]/30' :
-                                'border-[#e3e3e0] bg-white'
-                          }`}
-                      >
-                        <div className="text-[13px] font-medium text-[#1a1a18] mb-1">{sensor.name}</div>
-                        <div className="text-[11.5px] text-[#888780] mb-3 leading-relaxed">{sensor.desc}</div>
-
-                        <div className="flex items-center justify-between">
-                          {/* Status badge */}
-                          {status === 'active' && <Pill v="green">Active · Live Feed</Pill>}
-                          {status === 'pending' && <Pill v="amber">Pending Review</Pill>}
-                          {status === 'rejected' && <Pill v="red">Rejected</Pill>}
-                          {status === 'none' && <span className="text-[11px] text-[#b4b2a9]">Not Requested</span>}
-
-                          {/* Action button */}
-                          {status === 'active' && (
-                            <button className="text-[11px] border border-[#e3e3e0] rounded-lg px-2.5 py-1 text-[#5f5e5a] hover:border-[#c0dd97] transition-colors">
-                              View Data
-                            </button>
-                          )}
-                          {status === 'pending' && (
-                            <button
-                              disabled={requestLoading}
-                              onClick={() => handleCancelRequest(req!._id, sensor.name)}
-                              className="text-[11px] border border-[#f5c97a] rounded-lg px-2.5 py-1 text-[#854f0b] hover:bg-[#faeeda] transition-colors disabled:opacity-50"
-                            >
-                              Cancel
-                            </button>
-                          )}
-                          {status === 'rejected' && (
-                            <button
-                              disabled={requestLoading}
-                              onClick={() => handleSendRequest(sensor.sensorType, sensor.name)}
-                              className="text-[11px] bg-[#1a1a18] text-white rounded-lg px-2.5 py-1 hover:bg-[#2c2c28] transition-colors disabled:opacity-50"
-                            >
-                              Re-request
-                            </button>
-                          )}
-                          {status === 'none' && (
-                            <button
-                              disabled={requestLoading}
-                              onClick={() => handleSendRequest(sensor.sensorType, sensor.name)}
-                              className="text-[11px] bg-[#1a1a18] text-white rounded-lg px-2.5 py-1 hover:bg-[#2c2c28] transition-colors disabled:opacity-50"
-                            >
-                              Send Request
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </Card>
+            {/* Sensor access */}
+            <SensorAccessCard plotId={id!} />
 
             {/* Map */}
             <Card>
@@ -410,44 +321,22 @@ export const PlotDetailsPage: React.FC = React.memo(() => {
               </div>
             </Card>
 
-            {/* Activity log — dynamic from sensorRequests */}
+            {/* Activity log */}
             <Card>
               <div className="text-[13px] font-medium text-[#1a1a18] mb-3">Activity Log</div>
-              {sensorRequests.length === 0 ? (
-                <div className="text-[12px] text-[#b4b2a9] py-2">No activity yet.</div>
-              ) : (
-                <div>
-                  {[...sensorRequests]
-                    .sort((a: any, b: any) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-                    .map((req: any, i: number, arr: any[]) => {
-                      const color =
-                        req.status === 'active' ? '#1d9e75' :
-                          req.status === 'pending' ? '#854f0b' :
-                            req.status === 'rejected' ? '#e24b4a' : '#888780';
-                      const msg =
-                        req.status === 'active'
-                          ? `${req.sensorType} approved and streaming live data.`
-                          : req.status === 'pending'
-                            ? `${req.sensorType} request submitted. Awaiting review.`
-                            : req.status === 'rejected'
-                              ? `${req.sensorType} request rejected.`
-                              : `${req.sensorType} request updated.`;
-                      const time = new Date(req.updatedAt).toLocaleString();
-
-                      return (
-                        <div key={req._id} className={`flex gap-3 py-2.5 ${i < arr.length - 1 ? 'border-b border-[#f0efec]' : ''}`}>
-                          <div className="pt-1.5 flex-shrink-0">
-                            <div className="w-2 h-2 rounded-full" style={{ background: color }} />
-                          </div>
-                          <div>
-                            <div className="text-[12px] text-[#5f5e5a] leading-relaxed">{msg}</div>
-                            <div className="text-[10.5px] text-[#b4b2a9] mt-0.5">{time}</div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                </div>
-              )}
+              <div>
+                {TL.map((e, i) => (
+                  <div key={i} className={`flex gap-3 py-2.5 ${i < TL.length - 1 ? 'border-b border-[#f0efec]' : ''}`}>
+                    <div className="pt-1.5 flex-shrink-0">
+                      <div className="w-2 h-2 rounded-full" style={{ background: e.c }} />
+                    </div>
+                    <div>
+                      <div className="text-[12px] text-[#5f5e5a] leading-relaxed">{e.m}</div>
+                      <div className="text-[10.5px] text-[#b4b2a9] mt-0.5">{e.t}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </Card>
 
           </div>{/* /RIGHT */}

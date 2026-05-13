@@ -1,13 +1,28 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// EDIT: src/features/plots/components/PlotForm.tsx
+//
+// CHANGES FROM ORIGINAL:
+//   1. Added `selectedSensors` + `onSensorChange` to PlotFormProps
+//   2. Imported SensorRequestStep component
+//   3. Added Section E (Sensor Requests) between D and the footer
+//   4. Section E is hidden in edit mode (initialData present)
+//   5. Footer label updated: "5 sections" when creating
+// ─────────────────────────────────────────────────────────────────────────────
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Navigation, X, Image as ImageIcon, Plus } from 'lucide-react';
 import { toast } from 'sonner';
-import type { SoilType, EnvironmentType, Plot, CropStage, CropType } from '@/types';
+import type { SoilType, EnvironmentType, Plot, CropStage, CropType, SensorType } from '@/types';
+import { SensorRequestStep } from './SensorRequestStep'; 
 
 interface PlotFormProps {
   initialData?: Plot;
   onSubmit: (data: any) => Promise<void>;
   onCancel: () => void;
   isSubmitting: boolean;
+  // NEW — sensor selection (only used when creating)
+  selectedSensors: SensorType[];
+  onSensorChange: (types: SensorType[]) => void;
 }
 
 /* ─── tiny primitives ─────────────────────────────── */
@@ -79,7 +94,14 @@ const FieldHint = ({ children }: { children: React.ReactNode }) => (
 );
 
 /* ─── main component ──────────────────────────────── */
-export const PlotForm: React.FC<PlotFormProps> = ({ initialData, onSubmit, onCancel, isSubmitting }) => {
+export const PlotForm: React.FC<PlotFormProps> = ({
+  initialData,
+  onSubmit,
+  onCancel,
+  isSubmitting,
+  selectedSensors,
+  onSensorChange,
+}) => {
   const [formData, setFormData] = useState({
     plotName: '',
     farmSize: '',
@@ -185,7 +207,6 @@ export const PlotForm: React.FC<PlotFormProps> = ({ initialData, onSubmit, onCan
     onSubmit(payload);
   };
 
-  /* input style with focus state */
   const inputStyle = (id: string, extra?: React.CSSProperties): React.CSSProperties => ({
     ...S.input,
     borderColor: focusedId === id ? '#93c5fd' : '#e3e3e0',
@@ -195,6 +216,8 @@ export const PlotForm: React.FC<PlotFormProps> = ({ initialData, onSubmit, onCan
 
   const selectArrow = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888780' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`;
 
+  const isCreating = !initialData;
+
   return (
     <form onSubmit={handleFormSubmit} style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
 
@@ -202,8 +225,6 @@ export const PlotForm: React.FC<PlotFormProps> = ({ initialData, onSubmit, onCan
       <div style={S.card}>
         <SectionHeader tag="A" title="Plot Identity" />
         <div style={S.sectionBody}>
-
-          {/* Row 1 */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
               <div style={S.fieldLabel}>Plot Name <Req /></div>
@@ -218,9 +239,7 @@ export const PlotForm: React.FC<PlotFormProps> = ({ initialData, onSubmit, onCan
               />
             </div>
             <div>
-              <div style={S.fieldLabel}>
-                Farm Size&nbsp;<FieldHint>(hectares)</FieldHint>&nbsp;<Req />
-              </div>
+              <div style={S.fieldLabel}>Farm Size&nbsp;<FieldHint>(hectares)</FieldHint>&nbsp;<Req /></div>
               <input
                 id="farmSize" type="number" step="any" required
                 placeholder="e.g. 3.5"
@@ -232,8 +251,6 @@ export const PlotForm: React.FC<PlotFormProps> = ({ initialData, onSubmit, onCan
               />
             </div>
           </div>
-
-          {/* Row 2 */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
               <div style={S.fieldLabel}>Soil Type <Req /></div>
@@ -243,14 +260,7 @@ export const PlotForm: React.FC<PlotFormProps> = ({ initialData, onSubmit, onCan
                 onChange={e => setFormData(p => ({ ...p, soilType: e.target.value as SoilType }))}
                 onFocus={() => setFocusedId('soilType')}
                 onBlur={() => setFocusedId(null)}
-                style={{
-                  ...inputStyle('soilType'),
-                  backgroundImage: selectArrow,
-                  backgroundRepeat: 'no-repeat',
-                  backgroundPosition: 'right 12px center',
-                  paddingRight: 32,
-                  cursor: 'pointer',
-                }}
+                style={{ ...inputStyle('soilType'), backgroundImage: selectArrow, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center', paddingRight: 32, cursor: 'pointer' }}
               >
                 <option value="">Select soil type</option>
                 <option value="SANDY">Sandy – Well Draining</option>
@@ -260,28 +270,15 @@ export const PlotForm: React.FC<PlotFormProps> = ({ initialData, onSubmit, onCan
             </div>
             <div>
               <div style={S.fieldLabel}>Environment Type <OptTag /></div>
-              {/* Toggle group */}
-              <div style={{
-                display: 'flex',
-                border: '0.5px solid #e3e3e0',
-                borderRadius: 8,
-                overflow: 'hidden',
-              }}>
+              <div style={{ display: 'flex', border: '0.5px solid #e3e3e0', borderRadius: 8, overflow: 'hidden' }}>
                 {(['OPEN_FIELD', 'INDOOR'] as EnvironmentType[]).map((val, i) => (
                   <button
-                    key={val}
-                    type="button"
+                    key={val} type="button"
                     onClick={() => setFormData(p => ({ ...p, environmentType: val }))}
                     style={{
-                      flex: 1,
-                      padding: '9px 10px',
-                      fontSize: 12.5,
-                      fontWeight: 500,
-                      cursor: 'pointer',
-                      border: 'none',
-                      borderLeft: i > 0 ? '0.5px solid #e3e3e0' : 'none',
-                      fontFamily: "'DM Sans', system-ui, sans-serif",
-                      transition: 'background .15s, color .15s',
+                      flex: 1, padding: '9px 10px', fontSize: 12.5, fontWeight: 500,
+                      cursor: 'pointer', border: 'none', borderLeft: i > 0 ? '0.5px solid #e3e3e0' : 'none',
+                      fontFamily: "'DM Sans', system-ui, sans-serif", transition: 'background .15s, color .15s',
                       background: formData.environmentType === val ? '#1d4ed8' : '#fff',
                       color: formData.environmentType === val ? '#fff' : '#888780',
                     }}
@@ -292,7 +289,6 @@ export const PlotForm: React.FC<PlotFormProps> = ({ initialData, onSubmit, onCan
               </div>
             </div>
           </div>
-
         </div>
       </div>
 
@@ -303,25 +299,17 @@ export const PlotForm: React.FC<PlotFormProps> = ({ initialData, onSubmit, onCan
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
               <div style={S.fieldLabel}>Sowing Date <Req /></div>
-              <input
-                id="sowingDate" type="date" required
-                value={formData.sowingDate}
+              <input id="sowingDate" type="date" required value={formData.sowingDate}
                 onChange={e => setFormData(p => ({ ...p, sowingDate: e.target.value }))}
-                onFocus={() => setFocusedId('sowingDate')}
-                onBlur={() => setFocusedId(null)}
-                style={inputStyle('sowingDate')}
-              />
+                onFocus={() => setFocusedId('sowingDate')} onBlur={() => setFocusedId(null)}
+                style={inputStyle('sowingDate')} />
             </div>
             <div>
               <div style={S.fieldLabel}>Expected Harvest Date <OptTag /></div>
-              <input
-                id="expectedHarvestDate" type="date"
-                value={formData.expectedHarvestDate}
+              <input id="expectedHarvestDate" type="date" value={formData.expectedHarvestDate}
                 onChange={e => setFormData(p => ({ ...p, expectedHarvestDate: e.target.value }))}
-                onFocus={() => setFocusedId('expectedHarvestDate')}
-                onBlur={() => setFocusedId(null)}
-                style={inputStyle('expectedHarvestDate')}
-              />
+                onFocus={() => setFocusedId('expectedHarvestDate')} onBlur={() => setFocusedId(null)}
+                style={inputStyle('expectedHarvestDate')} />
             </div>
           </div>
         </div>
@@ -331,102 +319,69 @@ export const PlotForm: React.FC<PlotFormProps> = ({ initialData, onSubmit, onCan
       <div style={S.card}>
         <SectionHeader tag="C" title="Location" />
         <div style={S.sectionBody}>
-
           <div>
             <div style={S.fieldLabel}>Address <Req /></div>
-            <input
-              id="address" type="text" required
-              placeholder="Village, Block, District"
+            <input id="address" type="text" required placeholder="Village, Block, District"
               value={formData.location.address}
               onChange={e => setFormData(p => ({ ...p, location: { ...p.location, address: e.target.value } }))}
-              onFocus={() => setFocusedId('address')}
-              onBlur={() => setFocusedId(null)}
-              style={inputStyle('address')}
-            />
+              onFocus={() => setFocusedId('address')} onBlur={() => setFocusedId(null)}
+              style={inputStyle('address')} />
           </div>
-
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
               <div style={S.fieldLabel}>State <Req /></div>
-              <input
-                id="state" type="text" required placeholder="e.g. Telangana"
+              <input id="state" type="text" required placeholder="e.g. Telangana"
                 value={formData.location.state}
                 onChange={e => setFormData(p => ({ ...p, location: { ...p.location, state: e.target.value } }))}
-                onFocus={() => setFocusedId('state')}
-                onBlur={() => setFocusedId(null)}
-                style={inputStyle('state')}
-              />
+                onFocus={() => setFocusedId('state')} onBlur={() => setFocusedId(null)}
+                style={inputStyle('state')} />
             </div>
             <div>
               <div style={S.fieldLabel}>District <Req /></div>
-              <input
-                id="district" type="text" required placeholder="e.g. Nalgonda"
+              <input id="district" type="text" required placeholder="e.g. Nalgonda"
                 value={formData.location.district}
                 onChange={e => setFormData(p => ({ ...p, location: { ...p.location, district: e.target.value } }))}
-                onFocus={() => setFocusedId('district')}
-                onBlur={() => setFocusedId(null)}
-                style={inputStyle('district')}
-              />
+                onFocus={() => setFocusedId('district')} onBlur={() => setFocusedId(null)}
+                style={inputStyle('district')} />
             </div>
           </div>
-
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
               <div style={S.fieldLabel}>Latitude <Req /></div>
-              <input
-                id="lat" type="number" step="any" required placeholder="0.000000"
+              <input id="lat" type="number" step="any" required placeholder="0.000000"
                 value={formData.location.lat}
                 onChange={e => setFormData(p => ({ ...p, location: { ...p.location, lat: e.target.value } }))}
-                onFocus={() => setFocusedId('lat')}
-                onBlur={() => setFocusedId(null)}
-                style={inputStyle('lat')}
-              />
+                onFocus={() => setFocusedId('lat')} onBlur={() => setFocusedId(null)}
+                style={inputStyle('lat')} />
             </div>
             <div>
               <div style={S.fieldLabel}>Longitude <Req /></div>
-              <input
-                id="lng" type="number" step="any" required placeholder="0.000000"
+              <input id="lng" type="number" step="any" required placeholder="0.000000"
                 value={formData.location.lng}
                 onChange={e => setFormData(p => ({ ...p, location: { ...p.location, lng: e.target.value } }))}
-                onFocus={() => setFocusedId('lng')}
-                onBlur={() => setFocusedId(null)}
-                style={inputStyle('lng')}
-              />
+                onFocus={() => setFocusedId('lng')} onBlur={() => setFocusedId(null)}
+                style={inputStyle('lng')} />
             </div>
           </div>
-
-          {/* GPS button */}
           <div>
-            <button
-              type="button"
-              onClick={fetchLocation}
-              disabled={isFetchingLocation}
+            <button type="button" onClick={fetchLocation} disabled={isFetchingLocation}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 7,
-                border: gpsDetected ? '0.5px solid #93c5fd' : '0.5px solid #e3e3e0',
-                borderRadius: 7,
-                background: '#fff',
-                padding: '7px 13px',
-                fontSize: 12, fontWeight: 500,
+                border: gpsDetected ? '0.5px solid #93c5fd' : '0.5px solid #e3e3e0', borderRadius: 7,
+                background: '#fff', padding: '7px 13px', fontSize: 12, fontWeight: 500,
                 color: gpsDetected ? '#1d4ed8' : '#5f5e5a',
                 cursor: isFetchingLocation ? 'not-allowed' : 'pointer',
                 opacity: isFetchingLocation ? 0.7 : 1,
-                fontFamily: "'DM Sans', system-ui, sans-serif",
-                transition: 'border-color .15s, color .15s',
+                fontFamily: "'DM Sans', system-ui, sans-serif", transition: 'border-color .15s, color .15s',
               }}
             >
               {isFetchingLocation ? (
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                  style={{ animation: 'spin 1s linear infinite' }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ animation: 'spin 1s linear infinite' }}>
                   <path d="M21 12a9 9 0 11-6.219-8.56" />
                 </svg>
               ) : gpsDetected ? (
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" strokeWidth="2.5">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-              ) : (
-                <Navigation size={13} />
-              )}
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" strokeWidth="2.5"><polyline points="20 6 9 17 4 12" /></svg>
+              ) : <Navigation size={13} />}
               {isFetchingLocation ? 'Detecting…' : gpsDetected ? 'GPS Detected' : 'Auto-Detect GPS'}
             </button>
           </div>
@@ -442,17 +397,15 @@ export const PlotForm: React.FC<PlotFormProps> = ({ initialData, onSubmit, onCan
               position: 'relative', height: 110, width: 156,
               border: `1.5px dashed ${imagePreview ? '#93c5fd' : '#d1d5db'}`,
               borderRadius: 8, display: 'flex', alignItems: 'center',
-              justifyContent: 'center', overflow: 'hidden', flexShrink: 0,
-              background: '#f9fafb',
+              justifyContent: 'center', overflow: 'hidden', flexShrink: 0, background: '#f9fafb',
             }}>
               {imagePreview ? (
                 <>
                   <img src={imagePreview} alt="Preview" style={{ height: '100%', width: '100%', objectFit: 'cover' }} />
                   <button type="button" onClick={handleRemoveImage} style={{
-                    position: 'absolute', top: 6, right: 6, padding: 4,
-                    background: '#fff', border: '0.5px solid #e3e3e0',
-                    borderRadius: 5, color: '#5f5e5a', cursor: 'pointer',
-                    display: 'flex', alignItems: 'center',
+                    position: 'absolute', top: 6, right: 6, padding: 4, background: '#fff',
+                    border: '0.5px solid #e3e3e0', borderRadius: 5, color: '#5f5e5a',
+                    cursor: 'pointer', display: 'flex', alignItems: 'center',
                   }}>
                     <X size={11} />
                   </button>
@@ -469,14 +422,11 @@ export const PlotForm: React.FC<PlotFormProps> = ({ initialData, onSubmit, onCan
               <p style={{ fontSize: 11, color: '#888780', lineHeight: 1.6, maxWidth: 260, marginBottom: 10 }}>
                 Attach a clear photograph of the field for official records. Max size: 5MB.
               </p>
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
+              <button type="button" onClick={() => fileInputRef.current?.click()}
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: 6,
-                  border: '0.5px solid #e3e3e0', borderRadius: 7,
-                  background: '#fff', padding: '7px 13px',
-                  fontSize: 12, fontWeight: 500, color: '#5f5e5a',
+                  border: '0.5px solid #e3e3e0', borderRadius: 7, background: '#fff',
+                  padding: '7px 13px', fontSize: 12, fontWeight: 500, color: '#5f5e5a',
                   cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif",
                 }}
               >
@@ -489,7 +439,17 @@ export const PlotForm: React.FC<PlotFormProps> = ({ initialData, onSubmit, onCan
         </div>
       </div>
 
-      {/* ── E: HARVEST RECORD (edit only) ────────────── */}
+      {/* ── E: SENSOR REQUESTS (create mode only) ────── */}
+      {isCreating && (
+        <SensorRequestStep
+          selected={selectedSensors}
+          onChange={onSensorChange}
+          environmentType={formData.environmentType}
+          isEditMode={false}
+        />
+      )}
+
+      {/* ── F: HARVEST RECORD (edit only) ────────────── */}
       {initialData && (
         <div style={S.card}>
           <SectionHeader tag="E" title="Harvest Record" />
@@ -497,14 +457,10 @@ export const PlotForm: React.FC<PlotFormProps> = ({ initialData, onSubmit, onCan
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div>
                 <div style={S.fieldLabel}>Actual Harvest Date <Req /></div>
-                <input
-                  id="actualHarvestDate" type="date" required
-                  value={formData.actualHarvestDate}
+                <input id="actualHarvestDate" type="date" required value={formData.actualHarvestDate}
                   onChange={e => setFormData(p => ({ ...p, actualHarvestDate: e.target.value }))}
-                  onFocus={() => setFocusedId('actualHarvestDate')}
-                  onBlur={() => setFocusedId(null)}
-                  style={inputStyle('actualHarvestDate')}
-                />
+                  onFocus={() => setFocusedId('actualHarvestDate')} onBlur={() => setFocusedId(null)}
+                  style={inputStyle('actualHarvestDate')} />
               </div>
             </div>
           </div>
@@ -512,39 +468,30 @@ export const PlotForm: React.FC<PlotFormProps> = ({ initialData, onSubmit, onCan
       )}
 
       {/* ── FOOTER ───────────────────────────────────── */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        paddingTop: 6, marginTop: 2,
-      }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 6, marginTop: 2 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#b4b2a9' }}>
           <span style={{ color: '#c0392b', fontWeight: 700 }}>*</span> Required
           <div style={{ width: '0.5px', height: 11, background: '#e3e3e0', margin: '0 2px' }} />
           <OptTag /> fields can be updated later
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button
-            type="button"
-            onClick={onCancel}
+          <button type="button" onClick={onCancel}
             style={{
               padding: '8px 18px', fontSize: 13, fontWeight: 500,
-              border: '0.5px solid #e3e3e0', borderRadius: 7,
-              background: '#fff', color: '#5f5e5a',
-              cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif",
+              border: '0.5px solid #e3e3e0', borderRadius: 7, background: '#fff',
+              color: '#5f5e5a', cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif",
             }}
           >
             Cancel
           </button>
-          <button
-            type="submit"
-            disabled={isSubmitting}
+          <button type="submit" disabled={isSubmitting}
             style={{
               display: 'flex', alignItems: 'center', gap: 7,
               padding: '8px 20px', fontSize: 13, fontWeight: 600,
               border: 'none', borderRadius: 7,
               background: isSubmitting ? '#93c5fd' : '#1d4ed8',
               color: '#fff', cursor: isSubmitting ? 'not-allowed' : 'pointer',
-              fontFamily: "'DM Sans', system-ui, sans-serif",
-              transition: 'background .15s',
+              fontFamily: "'DM Sans', system-ui, sans-serif", transition: 'background .15s',
             }}
           >
             {isSubmitting && (
@@ -553,7 +500,13 @@ export const PlotForm: React.FC<PlotFormProps> = ({ initialData, onSubmit, onCan
                 <path d="M21 12a9 9 0 11-6.219-8.56" />
               </svg>
             )}
-            {isSubmitting ? 'Saving…' : initialData ? 'Update Record' : 'Register Plot'}
+            {isSubmitting
+              ? 'Saving…'
+              : initialData
+                ? 'Update Record'
+                : selectedSensors.length > 0
+                  ? `Register Plot + ${selectedSensors.length} Sensor${selectedSensors.length > 1 ? 's' : ''}`
+                  : 'Register Plot'}
           </button>
         </div>
       </div>
@@ -562,4 +515,3 @@ export const PlotForm: React.FC<PlotFormProps> = ({ initialData, onSubmit, onCan
     </form>
   );
 };
-

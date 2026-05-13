@@ -78,7 +78,25 @@ export interface Plot {
 }
 
 // Sensor Types
+export type SensorType = 'SOIL_MOISTURE' | 'TEMPERATURE' | 'SOIL_TEMPERATURE' | 'HUMIDITY' | 'Soil Moisture Sensor' | 'Temperature Sensor' | 'Soil Temperature Sensor' | 'Humidity Sensor';
 export type SensorStatus = 'ok' | 'warning' | 'critical';
+export type SensorRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'INSTALLED' | 'DEPLOYED';
+
+export interface SensorRequest {
+  _id: string;
+  plotId: string | { _id: string; plotName: string; cropType: string };
+  userId: string | { _id: string; name: string; phone: string };
+  sensorType: SensorType | { _id: string; name: string };
+  quantity?: number;
+  placement?: string;
+  status: SensorRequestStatus;
+  adminComment?: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
+  createdAt: string;
+  updatedAt: string;
+  __v?: number;
+}
 
 export interface SensorReading {
   value: number;
@@ -223,4 +241,13 @@ export interface AssistantState {
   messages: ChatMessage[];
   loading: boolean;
   attachedImage: File | null;
+}
+
+export interface SensorRequestsState {
+  byPlot: Record<string, SensorRequest[]>;
+  all: SensorRequest[];
+  loading: boolean;
+  submitting: boolean;
+  error: string | null;
+  actionLoading?: string;
 }

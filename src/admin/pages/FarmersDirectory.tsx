@@ -1,74 +1,42 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Card } from '@/components/common/Card';
 import { Modal } from '@/components/common/Modal';
-import { Search, Filter, PhoneCall, Calendar, CheckCircle, Sprout, Loader2 } from 'lucide-react';
+import { Loader } from '@/components/common/Loader';
+import { EmptyState } from '@/components/common/EmptyState';
+import { Search, PhoneCall, Calendar, CheckCircle, Sprout, RefreshCw, Users } from 'lucide-react';
 import api from '@/services/api';
 
-interface CropHistory {
-  season: string;
-  crop: string;
-  yield: string;
-  revenue: string;
-  rating: string;
-}
-
-interface Farmer {
-  id: string;
-  _id?: string;
-  name: string;
-  phone: string;
-  email?: string;
-  permanentLocation?: {
-    village: string;
-    block: string;
-    district: string;
-    state: string;
-  };
-  // Extended fields (populated by backend or derived)
-  farmSize?: string;
-  cropType?: string;
-  joinDate?: string;
-  status?: string;
-  yieldAverage?: string;
-  cropHistory?: CropHistory[];
-}
-
 export function FarmersDirectory() {
-  const [farmers, setFarmers] = useState<Farmer[]>([]);
+  const [farmers, setFarmers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  const [selectedFarmer, setSelectedFarmer] = useState<Farmer | null>(null);
+  const [selectedFarmer, setSelectedFarmer] = useState<any>(null);
 
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await api.get('/admin/farmers');
-        // Support both { data: [...] } and { data: { farmers: [...] } } shapes
-        const raw = res.data?.data;
-        const list: Farmer[] = Array.isArray(raw)
-          ? raw
-          : Array.isArray(raw?.farmers)
-            ? raw.farmers
-            : [];
-        // normalise _id → id
-        setFarmers(list.map((f) => ({ ...f, id: f._id ?? f.id })));
-      } catch (err: any) {
-        setError(err.message || 'Failed to load farmers');
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, []);
+  const load = async () => {
+    setLoading(true); setError(null);
+    try {
+      const res = await api.get('/admin/farmers');
+      const d = res.data;
+      setFarmers(Array.isArray(d) ? d : Array.isArray(d?.data) ? d.data : []);
+    } catch (err: any) {
+      setError(err.message ?? 'Failed to load farmers');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const filtered = farmers.filter((f) =>
-    f.name.toLowerCase().includes(search.toLowerCase()) ||
-    f.phone.includes(search) ||
-    f.permanentLocation?.village?.toLowerCase().includes(search.toLowerCase())
-  );
+  useEffect(() => { load(); }, []);
+
+  const filtered = farmers.filter(f => {
+    const q = search.toLowerCase();
+    return (
+      f.name?.toLowerCase().includes(q) ||
+      f.phone?.toLowerCase().includes(q) ||
+      f.village?.toLowerCase().includes(q) ||
+      f.permanentLocation?.village?.toLowerCase().includes(q)
+    );
+  });
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 font-inter">
@@ -76,7 +44,8 @@ export function FarmersDirectory() {
         <div>
           <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Farmer Directory</h2>
           <p className="text-sm text-slate-500 mt-1">
-            Manage and view all registered farmers in your assigned block.
+            All registered farmers.{' '}
+            {!loading && <span className="font-semibold text-slate-700">{farmers.length} total</span>}
           </p>
         </div>
         <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -85,179 +54,137 @@ export function FarmersDirectory() {
             <input
               type="text"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={e => setSearch(e.target.value)}
               placeholder="Search farmers..."
               className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
             />
           </div>
-          <button className="p-2 border border-slate-200 rounded-lg text-slate-500 hover:bg-slate-50 transition-colors">
-            <Filter className="h-4 w-4" />
+          <button onClick={load} disabled={loading}
+            className="p-2 border border-slate-200 rounded-lg text-slate-500 hover:bg-slate-50 disabled:opacity-50 transition-colors">
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
         </div>
       </div>
 
-      {error && (
-        <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
-          {error}
-        </div>
-      )}
-
-      <Card className="shadow-sm border-slate-200">
-        <div className="overflow-x-auto rounded-xl border border-slate-100">
-          <table className="w-full text-sm text-left font-medium text-slate-500">
-            <thead className="text-[11px] text-slate-400 uppercase bg-slate-50/50 tracking-wider">
-              <tr>
-                <th scope="col" className="px-6 py-4 font-semibold">Farmer ID</th>
-                <th scope="col" className="px-6 py-4 font-semibold">Farmer Name</th>
-                <th scope="col" className="px-6 py-4 font-semibold">Village</th>
-                <th scope="col" className="px-6 py-4 font-semibold">Farm Size</th>
-                <th scope="col" className="px-6 py-4 font-semibold">Crop Type</th>
-                <th scope="col" className="px-6 py-4 font-semibold text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {loading ? (
+      {loading ? (
+        <div className="flex justify-center py-20"><Loader /></div>
+      ) : error ? (
+        <Card className="shadow-sm border-slate-200">
+          <p className="py-12 text-center text-red-500 text-sm">{error}</p>
+        </Card>
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          icon={<Users className="h-10 w-10 text-slate-300" />}
+          title="No farmers found"
+          description={search ? 'Try a different search term.' : 'No farmers registered yet.'}
+        />
+      ) : (
+        <Card className="shadow-sm border-slate-200">
+          <div className="overflow-x-auto rounded-xl border border-slate-100">
+            <table className="w-full text-sm text-left font-medium text-slate-500">
+              <thead className="text-[11px] text-slate-400 uppercase bg-slate-50/50 tracking-wider">
                 <tr>
-                  <td colSpan={6} className="px-6 py-10 text-center text-slate-400 text-sm">
-                    <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2" />
-                    Loading farmers...
-                  </td>
+                  <th scope="col" className="px-6 py-4 font-semibold">Farmer</th>
+                  <th scope="col" className="px-6 py-4 font-semibold">Phone</th>
+                  <th scope="col" className="px-6 py-4 font-semibold">Village</th>
+                  <th scope="col" className="px-6 py-4 font-semibold">District</th>
+                  <th scope="col" className="px-6 py-4 font-semibold">Joined</th>
+                  <th scope="col" className="px-6 py-4 font-semibold text-right">Actions</th>
                 </tr>
-              ) : filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-10 text-center text-slate-400 text-sm">
-                    {search ? 'No farmers match your search.' : 'No farmers registered yet.'}
-                  </td>
-                </tr>
-              ) : (
-                filtered.map((farmer) => (
-                  <tr key={farmer.id} className="bg-white hover:bg-slate-50/50 transition-colors">
-                    <td className="px-6 py-4 text-slate-400 font-mono text-xs">
-                      FMR-{farmer.id.slice(-4).toUpperCase()}
-                    </td>
-                    <td className="px-6 py-4 font-semibold text-slate-900 whitespace-nowrap">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-emerald-100/50 flex items-center justify-center shrink-0">
-                          <span className="text-emerald-700 font-bold text-xs">
-                            {farmer.name.charAt(0).toUpperCase()}
-                          </span>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filtered.map((farmer) => {
+                  const id = farmer._id ?? farmer.id ?? '';
+                  const loc = farmer.permanentLocation ?? {};
+                  return (
+                    <tr key={id} className="bg-white hover:bg-slate-50/50 transition-colors">
+                      <td className="px-6 py-4 font-semibold text-slate-900 whitespace-nowrap">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-emerald-100/50 flex items-center justify-center shrink-0">
+                            <span className="text-emerald-700 font-bold text-xs">
+                              {(farmer.name ?? '?').charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                          {farmer.name ?? '—'}
                         </div>
-                        {farmer.name}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      {farmer.permanentLocation?.village ?? '—'}
-                    </td>
-                    <td className="px-6 py-4">{farmer.farmSize ?? '—'}</td>
-                    <td className="px-6 py-4 text-slate-700">
-                      <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-wider">
-                        {farmer.cropType ?? 'N/A'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <button
-                        onClick={() => setSelectedFarmer(farmer)}
-                        className="text-emerald-600 hover:text-emerald-700 font-semibold text-xs uppercase tracking-wider transition-colors"
-                      >
-                        View Profile
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+                      </td>
+                      <td className="px-6 py-4 font-mono text-xs text-slate-500">{farmer.phone ?? '—'}</td>
+                      <td className="px-6 py-4">{loc.village ?? farmer.village ?? '—'}</td>
+                      <td className="px-6 py-4">{loc.district ?? farmer.district ?? '—'}</td>
+                      <td className="px-6 py-4 text-xs text-slate-400">
+                        {farmer.createdAt ? new Date(farmer.createdAt).toLocaleDateString() : '—'}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <button
+                          onClick={() => setSelectedFarmer(farmer)}
+                          className="text-emerald-600 hover:text-emerald-700 font-semibold text-xs uppercase tracking-wider transition-colors">
+                          View Profile
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
 
       {/* Farmer Details Modal */}
       <Modal
         isOpen={!!selectedFarmer}
         onClose={() => setSelectedFarmer(null)}
-        title="Beneficiary Profile Insights"
+        title="Farmer Profile"
         size="xl"
       >
         {selectedFarmer && (
-          <div className="space-y-8">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-slate-50 p-5 rounded-2xl border border-slate-200">
+          <div className="space-y-6 pt-2">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 bg-slate-50 p-5 rounded-2xl border border-slate-200">
               <div className="space-y-1">
                 <div className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-                  <PhoneCall className="w-3 h-3 text-slate-400" /> Phone Number
+                  <PhoneCall className="w-3 h-3" /> Phone
                 </div>
-                <div className="text-sm font-bold text-slate-900">{selectedFarmer.phone}</div>
+                <div className="text-sm font-bold text-slate-900">{selectedFarmer.phone ?? '—'}</div>
               </div>
               <div className="space-y-1">
                 <div className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-                  <Calendar className="w-3 h-3 text-slate-400" /> Joined Platform
+                  <Calendar className="w-3 h-3" /> Joined
                 </div>
                 <div className="text-sm font-bold text-slate-900">
-                  {selectedFarmer.joinDate ?? '—'}
+                  {selectedFarmer.createdAt ? new Date(selectedFarmer.createdAt).toLocaleDateString() : '—'}
                 </div>
               </div>
               <div className="space-y-1">
                 <div className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-                  <CheckCircle className="w-3 h-3 text-emerald-500" /> Account Status
+                  <CheckCircle className="w-3 h-3 text-emerald-500" /> Role
                 </div>
-                <div className="text-sm font-bold text-emerald-600">
-                  {selectedFarmer.status ?? 'Active'}
-                </div>
+                <div className="text-sm font-bold text-emerald-600">{selectedFarmer.role ?? 'FARMER'}</div>
               </div>
               <div className="space-y-1">
                 <div className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-                  <Sprout className="w-3 h-3 text-amber-500" /> Historical Yield Avg
+                  <Sprout className="w-3 h-3 text-amber-500" /> Village
                 </div>
                 <div className="text-sm font-bold text-slate-900">
-                  {selectedFarmer.yieldAverage ?? '—'}
+                  {selectedFarmer.permanentLocation?.village ?? '—'}
+                </div>
+              </div>
+              <div className="space-y-1">
+                <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">District</div>
+                <div className="text-sm font-bold text-slate-900">
+                  {selectedFarmer.permanentLocation?.district ?? '—'}
+                </div>
+              </div>
+              <div className="space-y-1">
+                <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">State</div>
+                <div className="text-sm font-bold text-slate-900">
+                  {selectedFarmer.permanentLocation?.state ?? '—'}
                 </div>
               </div>
             </div>
 
-            {selectedFarmer.cropHistory && selectedFarmer.cropHistory.length > 0 ? (
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-sm font-bold text-slate-900">Registered Crop Harvesting History</h4>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-100 px-2.5 py-1 rounded-md">
-                    {selectedFarmer.cropHistory.length} Seasons Logged
-                  </span>
-                </div>
-
-                <div className="overflow-hidden rounded-xl border border-slate-200 shadow-sm">
-                  <table className="w-full text-sm text-left">
-                    <thead className="bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500 font-bold border-b border-slate-200">
-                      <tr>
-                        <th className="px-4 py-3">Season</th>
-                        <th className="px-4 py-3">Crop Planted</th>
-                        <th className="px-4 py-3 text-right">Harvest Yield</th>
-                        <th className="px-4 py-3 text-right">Estimated Revenue</th>
-                        <th className="px-4 py-3 text-center">Outcome Rating</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 bg-white">
-                      {selectedFarmer.cropHistory.map((history, idx) => (
-                        <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
-                          <td className="px-4 py-3 font-semibold text-slate-800">{history.season}</td>
-                          <td className="px-4 py-3 text-slate-600">{history.crop}</td>
-                          <td className="px-4 py-3 text-right font-medium text-slate-900">{history.yield}</td>
-                          <td className="px-4 py-3 text-right font-medium text-emerald-600">{history.revenue}</td>
-                          <td className="px-4 py-3 text-center">
-                            <span className={`inline-flex px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${history.rating === 'Outstanding' ? 'bg-indigo-50 text-indigo-700' :
-                                history.rating === 'Excellent' ? 'bg-emerald-50 text-emerald-700' :
-                                  history.rating === 'Good' ? 'bg-blue-50 text-blue-700' :
-                                    history.rating === 'Average' ? 'bg-amber-50 text-amber-700' :
-                                      'bg-red-50 text-red-700'
-                              }`}>
-                              {history.rating}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            ) : (
-              <div className="text-sm text-slate-400 text-center py-4">
-                No crop history available for this farmer.
+            {selectedFarmer.email && (
+              <div className="text-sm text-slate-500">
+                <span className="font-semibold text-slate-700">Email: </span>{selectedFarmer.email}
               </div>
             )}
           </div>

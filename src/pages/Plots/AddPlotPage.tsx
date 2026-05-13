@@ -1,10 +1,22 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// EDIT: src/features/plots/AddPlotPage.tsx
+//
+// CHANGES FROM ORIGINAL:
+//   1. Tracks selectedSensors state (SensorType[])
+//   2. After plot creation succeeds → dispatches submitSensorRequests
+//   3. Shows a post-submit status toast with sensor count
+//   4. Passes selectedSensors + onSensorChange down to PlotForm
+// ─────────────────────────────────────────────────────────────────────────────
+
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '@/hooks';
 import { createNewPlot, updateExistingPlot, fetchOnePlot } from '@/features/plots/plotsSlice';
+import { submitSensorRequest } from '@/admin/features/sensorRequests/sensorRequestSlice';
 import { PlotForm } from './components/PlotForm';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/loaders/Skeleton';
+import type { SensorType } from '@/types';
 
 export const AddPlotPage: React.FC = () => {
   const navigate = useNavigate();
@@ -12,11 +24,18 @@ export const AddPlotPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { plots, loading: plotsLoading } = useAppSelector((state) => state.plots);
 
-  const existingPlot = id ? plots.find(p => p._id === id) : undefined;
+  const existingPlot = id ? plots.find((p) => p._id === id) : undefined;
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // ── NEW: sensor selection state ──────────────────────────────────────────
+  const [selectedSensors, setSelectedSensors] = useState<SensorType[]>([]);
+
+  const fetchedRef = React.useRef<Set<string>>(new Set());
 
   React.useEffect(() => {
     if (id && !existingPlot && !plotsLoading) {
+      if (fetchedRef.current.has(id)) return;
+      fetchedRef.current.add(id);
       dispatch(fetchOnePlot(id));
     }
   }, [dispatch, id, existingPlot, plotsLoading]);
@@ -25,13 +44,36 @@ export const AddPlotPage: React.FC = () => {
     setIsSubmitting(true);
     try {
       if (existingPlot) {
+        // ── UPDATE flow (unchanged) ────────────────────────────────────────
         await dispatch(updateExistingPlot({ id: existingPlot._id, data: payload })).unwrap();
         toast.success(`Plot "${payload.plotName}" updated successfully`);
+        navigate('/dashboard');
       } else {
-        await dispatch(createNewPlot(payload)).unwrap();
+        // ── CREATE flow ────────────────────────────────────────────────────
+        const newPlot = await dispatch(createNewPlot(payload)).unwrap();
         toast.success(`Plot "${payload.plotName}" registered successfully`);
+
+        // Submit sensor requests if any were selected
+        if (selectedSensors.length > 0) {
+          try {
+            await Promise.all(
+              selectedSensors.map((sensorType) =>
+                dispatch(submitSensorRequest({ plotId: newPlot._id, sensorType })).unwrap()
+              )
+            );
+            toast.success(
+              `${selectedSensors.length} sensor request${selectedSensors.length > 1 ? 's' : ''} sent to Agricultural Authority`
+            );
+          } catch (sensorErr: any) {
+            // Don't block navigation — plot was created. Sensor request can be retried from PlotDetails.
+            toast.error(
+              `Plot registered, but sensor requests failed: ${sensorErr}. You can re-request from Plot Details.`
+            );
+          }
+        }
+
+        navigate('/dashboard');
       }
-      navigate('/dashboard');
     } catch (err: any) {
       toast.error(err || 'Failed to save plot');
     } finally {
@@ -64,7 +106,6 @@ export const AddPlotPage: React.FC = () => {
       {/* ── page header ── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          {/* back button */}
           <button
             onClick={() => navigate('/plots')}
             style={{
@@ -72,8 +113,7 @@ export const AddPlotPage: React.FC = () => {
               width: 28, height: 28, borderRadius: 7,
               border: '0.5px solid #e3e3e0', background: '#fff',
               cursor: 'pointer', color: '#888780',
-              transition: 'border-color .15s, color .15s',
-              flexShrink: 0,
+              transition: 'border-color .15s, color .15s', flexShrink: 0,
             }}
             title="Back to Plots"
           >
@@ -88,7 +128,7 @@ export const AddPlotPage: React.FC = () => {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <span style={{ fontSize: 11, color: '#b4b2a9' }}>
-            {existingPlot ? 'Edit mode' : `${id ? '4' : '4'} sections`}
+            {existingPlot ? 'Edit mode' : '5 sections'}
           </span>
           <div style={{ width: '0.5px', height: 11, background: '#e3e3e0' }} />
           <span style={{ fontSize: 11, color: '#b4b2a9' }}>
@@ -103,9 +143,9 @@ export const AddPlotPage: React.FC = () => {
         onSubmit={handleSubmit}
         onCancel={() => navigate('/plots')}
         isSubmitting={isSubmitting}
+        selectedSensors={selectedSensors}
+        onSensorChange={setSelectedSensors}
       />
-
     </div>
   );
 };
-

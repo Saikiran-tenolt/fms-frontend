@@ -31,7 +31,7 @@ const AdminAlertsPage = lazy(() => import('@/admin/pages/Alerts').then(m => ({ d
 const AdminProfile = lazy(() => import('@/admin/pages/AdminProfile').then(m => ({ default: m.AdminProfile })));
 const AdminSettings = lazy(() => import('@/admin/pages/AdminSettings').then(m => ({ default: m.AdminSettings })));
 const AllPlotsPage = lazy(() => import('@/admin/pages/AllPlots').then(m => ({ default: m.AllPlots })));
-const SensorRequestsPage = lazy(() => import('@/admin/pages/SensorRequests').then(m => ({ default: m.SensorRequests })));
+const SensorRequestsPage = lazy(() => import('@/admin/pages/AdminSensorRequestsPage').then(m => ({ default: m.AdminSensorRequestsPage })));
 const SensorConfigPage = lazy(() => import('@/admin/pages/SensorConfig').then(m => ({ default: m.SensorConfig })));
 
 export const AppRoutes: React.FC = () => {

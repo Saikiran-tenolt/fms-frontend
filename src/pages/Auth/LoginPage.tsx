@@ -22,12 +22,6 @@ const API_BASE_URL = 'https://fms-backend-976n.onrender.com/api/v1';
 // ─── Component ────────────────────────────────────────────────────────────────
 export const LoginPage: React.FC = () => {
   const { isAuthenticated, user } = useAppSelector((state) => state.auth);
-
-  if (isAuthenticated) {
-    const destination = user?.role === 'ADMIN' ? '/admin/dashboard' : '/dashboard';
-    return <Navigate to={destination} replace />;
-  }
-
   const [role, setRole] = useState<Role>('farmer');
   const [stage, setStage] = useState<Stage>('PHONE');
   const [isSignup, setIsSignup] = useState(false);
@@ -94,12 +88,17 @@ export const LoginPage: React.FC = () => {
     } finally {
       setIsFetchingPin(false);
     }
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     if (pincode.length === 6) fetchLocation(pincode);
     else setIsPinVerified(false);
   }, [pincode, fetchLocation]);
+
+  if (isAuthenticated) {
+    const destination = user?.role === 'ADMIN' ? '/admin/dashboard' : '/dashboard';
+    return <Navigate to={destination} replace />;
+  }
 
   const handleOtpChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
