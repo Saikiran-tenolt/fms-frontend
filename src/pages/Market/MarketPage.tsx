@@ -155,19 +155,19 @@ export const MarketPage: React.FC = () => {
         </div>
 
         {/* Card 3: AI Intelligence / Opportunity */}
-        <div className="bg-slate-900 rounded-3xl border border-slate-800 p-6 shadow-xl relative overflow-hidden group">
-          <div className="absolute -right-4 -top-4 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-all"></div>
+        <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm relative overflow-hidden group hover:border-emerald-200 transition-all">
+          <div className="absolute -right-4 -top-4 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl group-hover:bg-emerald-500/10 transition-all"></div>
           <div className="flex items-center gap-2 mb-4 relative z-10">
-            <div className="p-2 bg-white/5 rounded-xl border border-white/10"><IndianRupee size={18} className="text-emerald-400" /></div>
-            <h3 className="text-sm font-bold text-white tracking-tight">Arbitrage Insight</h3>
+            <div className="p-2 bg-emerald-50 rounded-xl border border-emerald-100/50"><IndianRupee size={18} className="text-emerald-600" /></div>
+            <h3 className="text-sm font-bold text-slate-900 tracking-tight">Arbitrage Insight</h3>
           </div>
-          <p className="text-sm font-medium text-slate-300 leading-relaxed mb-4 relative z-10">
+          <p className="text-sm font-medium text-slate-600 leading-relaxed mb-4 relative z-10">
             {arbitrageInsight ? (
               <>
-                {arbitrageInsight.crop} prices are <span className="text-emerald-400 font-black">{arbitrageInsight.diffPct}% higher</span> in <span className="text-white">{arbitrageInsight.highMandi}</span> than in {arbitrageInsight.lowMandi}.
+                {arbitrageInsight.crop} prices are <span className="text-emerald-600 font-black">{arbitrageInsight.diffPct}% higher</span> in <span className="text-slate-900">{arbitrageInsight.highMandi}</span> than in {arbitrageInsight.lowMandi}.
               </>
             ) : (
-              <>Global market volatility is low. Current local prices represent <span className="text-emerald-400 font-black">optimal value</span> for deployment.</>
+              <>Global market volatility is low. Current local prices represent <span className="text-emerald-600 font-black">optimal value</span> for deployment.</>
             )}
           </p>
           <button 
@@ -256,7 +256,7 @@ export const MarketPage: React.FC = () => {
           <div className="flex-1 overflow-x-auto">
             {filteredPrices.length > 0 ? (
               <table className="w-full text-left border-collapse">
-                <thead className="bg-slate-50 text-[10px] uppercase font-bold tracking-wider text-slate-500 sticky top-0 z-10 shadow-sm">
+                <thead className="bg-slate-50/50 text-xs uppercase font-bold tracking-wider text-slate-500 sticky top-0 z-10 border-b border-slate-100">
                   <tr>
                     <th className="px-6 py-4 border-b border-slate-200">Asset</th>
                     <th className="px-6 py-4 border-b border-slate-200">Mandi</th>

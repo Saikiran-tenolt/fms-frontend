@@ -6,9 +6,9 @@ import { EmptyState } from '@/components/common/EmptyState';
 import adminService from '@/services/adminService';
 
 const STAGE_BADGE: Record<string, string> = {
-    SOWED: 'bg-amber-100 text-amber-700',
-    GROWING: 'bg-emerald-100 text-emerald-700',
-    HARVEST_READY: 'bg-blue-100 text-blue-700',
+    SOWED: 'bg-indigo-100 text-indigo-700',
+    GROWING: 'bg-blue-100 text-blue-700',
+    HARVEST_READY: 'bg-indigo-600 text-white shadow-sm shadow-indigo-100',
     HARVESTED: 'bg-slate-100 text-slate-500',
 };
 
@@ -43,7 +43,7 @@ export function AllPlots() {
     });
 
     return (
-        <div className="space-y-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="space-y-6 px-4 sm:px-6 lg:px-8 py-8">
 
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -51,7 +51,7 @@ export function AllPlots() {
                     <h2 className="text-2xl font-bold text-slate-900 tracking-tight">All Plots</h2>
                     <p className="text-sm text-slate-500 mt-1">
                         All farm plots across all users.{' '}
-                        {!loading && <span className="font-semibold text-slate-700">{plots.length} total</span>}
+                        {!loading && <span className="font-semibold text-indigo-700">{plots.length} total</span>}
                     </p>
                 </div>
                 <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -60,7 +60,7 @@ export function AllPlots() {
                         <input
                             value={search} onChange={e => setSearch(e.target.value)}
                             placeholder="Search plots…"
-                            className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                            className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                     </div>
                     <button onClick={load} disabled={loading}
@@ -100,29 +100,29 @@ export function AllPlots() {
                             <tbody className="divide-y divide-slate-100">
                                 {filtered.map(plot => (
                                     <tr key={plot._id} className="bg-white hover:bg-slate-50/50 transition-colors">
-                                        <td className="px-6 py-4 font-semibold text-slate-900 whitespace-nowrap">
+                                        <td className="px-6 py-3 font-semibold text-slate-900 whitespace-nowrap">
                                             {plot.plotName ?? '—'}
                                         </td>
-                                        <td className="px-6 py-4 text-slate-600">
+                                        <td className="px-6 py-3 text-slate-600">
                                             {plot.farmSize != null ? `${plot.farmSize} acres` : '—'}
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td className="px-6 py-3">
                                             <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
                                                 {plot.soilType ?? '—'}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td className="px-6 py-3">
                                             <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${STAGE_BADGE[plot.cropStage] ?? 'bg-slate-100 text-slate-500'}`}>
                                                 {plot.cropStage ?? '—'}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td className="px-6 py-3">
                                             <div className="flex items-center gap-1.5 text-slate-500">
                                                 <MapPin className="h-3.5 w-3.5 flex-shrink-0 text-slate-400" />
                                                 {plot.location?.address ?? '—'}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-xs text-slate-400">
+                                        <td className="px-6 py-3 text-xs text-slate-400">
                                             {plot.createdAt ? new Date(plot.createdAt).toLocaleDateString() : '—'}
                                         </td>
                                     </tr>

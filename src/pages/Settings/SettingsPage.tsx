@@ -87,7 +87,7 @@ export const SettingsPage: React.FC = () => {
               <Button
                 variant="ghost"
                 onClick={() => setIsEditing(true)}
-                className="flex gap-2 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 font-bold text-xs uppercase tracking-widest px-4 py-2"
+                className="flex gap-2 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 font-bold text-xs px-4 py-2"
               >
                 <Pencil className="h-3.5 w-3.5" />
                 Edit Profile
@@ -167,8 +167,8 @@ export const SettingsPage: React.FC = () => {
                   <UserIcon className="h-12 w-12 text-slate-300 group-hover:text-emerald-600 transition-colors" />
                   <div className="absolute bottom-2 right-2 bg-emerald-500 h-4 w-4 rounded-full border-2 border-white shadow-lg shadow-emerald-200" />
                 </div>
-                <div className="text-center md:text-left pt-2">
-                  <h3 className="text-3xl font-black text-slate-900 tracking-tight leading-tight">{user?.name}</h3>
+                <div className="text-center md:text-left pt-2 flex-1">
+                  <h3 className="text-3xl font-black text-slate-900 tracking-tight leading-tight">{user?.name || 'Incomplete Profile'}</h3>
                   <p className="text-slate-500 font-bold text-sm tracking-wide mt-1">{user?.email || 'No email provided'}</p>
                   {user?.phone && (
                     <p className="text-slate-400 font-mono text-sm tracking-wide mt-0.5">+91 {user.phone}</p>

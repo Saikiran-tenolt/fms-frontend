@@ -14,7 +14,7 @@ const sensorRequestService = {
   },
 
   getByPlot: async (plotId: string): Promise<ApiResponse<SensorRequest[]>> => {
-    const { data } = await api.get(`/plots/${plotId}/sensor-requests`);
+    const { data } = await api.get(`/plot/${plotId}/sensor-requests`);
     return data;
   },
 
@@ -29,7 +29,7 @@ const sensorRequestService = {
   },
 
   resolveRequest: async (requestId: string, payload: { status: 'APPROVED' | 'REJECTED'; adminNote?: string }): Promise<ApiResponse<SensorRequest>> => {
-    const { data } = await api.put(`/admin/sensor-requests/${requestId}/resolve`, payload);
+    const { data } = await api.patch(`/admin/sensor-requests/${requestId}`, payload);
     return data;
   },
 };

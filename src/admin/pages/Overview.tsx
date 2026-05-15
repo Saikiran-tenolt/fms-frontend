@@ -8,7 +8,7 @@ import { harvestReadinessData, soilMoistureData, recentFarmersData, farmerCountB
 
 export function Overview() {
   return (
-    <div className="space-y-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 font-inter">
+    <div className="space-y-6 px-4 sm:px-6 lg:px-8 py-8 font-inter">
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="shadow-sm border-slate-200">
@@ -28,13 +28,13 @@ export function Overview() {
 
         <Card className="shadow-sm border-slate-200">
           <div className="flex items-center space-x-4">
-            <div className="p-3 bg-emerald-100/50 rounded-lg">
-              <Map className="h-6 w-6 text-emerald-600" />
+            <div className="p-3 bg-indigo-100/50 rounded-lg">
+              <Map className="h-6 w-6 text-indigo-600" />
             </div>
             <div>
               <p className="text-sm font-medium text-slate-500">Paddy Cultivation Area</p>
               <h4 className="text-2xl font-bold text-slate-900">12,450 Acres</h4>
-              <p className="text-xs text-emerald-600 flex items-center mt-1 font-medium">
+              <p className="text-xs text-indigo-600 flex items-center mt-1 font-medium">
                 <TrendingUp className="h-3 w-3 mr-1" /> +5% this season
               </p>
             </div>
@@ -43,8 +43,8 @@ export function Overview() {
 
         <Card className="shadow-sm border-slate-200">
           <div className="flex items-center space-x-4">
-            <div className="p-3 bg-purple-100/50 rounded-lg">
-              <Radio className="h-6 w-6 text-purple-600" />
+            <div className="p-3 bg-indigo-100/50 rounded-lg">
+              <Radio className="h-6 w-6 text-indigo-600" />
             </div>
             <div>
               <p className="text-sm font-medium text-slate-500">Sensor Status (Online)</p>
@@ -58,13 +58,13 @@ export function Overview() {
 
         <Card className="shadow-sm border-slate-200">
           <div className="flex items-center space-x-4">
-            <div className="p-3 bg-amber-100/50 rounded-lg">
-              <Activity className="h-6 w-6 text-amber-600" />
+            <div className="p-3 bg-blue-100/50 rounded-lg">
+              <Activity className="h-6 w-6 text-blue-600" />
             </div>
             <div>
               <p className="text-sm font-medium text-slate-500">Harvest Readiness</p>
               <h4 className="text-2xl font-bold text-slate-900">350 Farms</h4>
-              <p className="text-xs text-amber-600 flex items-center mt-1 font-medium">Ready within 14 days</p>
+              <p className="text-xs text-blue-600 flex items-center mt-1 font-medium">Ready within 14 days</p>
             </div>
           </div>
         </Card>
@@ -82,8 +82,8 @@ export function Overview() {
                 <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
                 <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} cursor={{fill: '#f8fafc'}} />
                 <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
-                <Bar dataKey="ready" name="Ready" stackId="a" fill="#10b981" radius={[0, 0, 4, 4]} />
-                <Bar dataKey="approaching" name="Approaching" stackId="a" fill="#3b82f6" />
+                <Bar dataKey="ready" name="Ready" stackId="a" fill="#3b82f6" radius={[0, 0, 4, 4]} />
+                <Bar dataKey="approaching" name="Approaching" stackId="a" fill="#6366f1" />
                 <Bar dataKey="notReady" name="Not Ready" stackId="a" fill="#cbd5e1" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -135,7 +135,7 @@ export function Overview() {
                 <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
                 <Bar dataKey="farmers" name="Registered Farmers" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={24}>
                   {farmerCountByDistrict.map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={index === 0 ? '#10b981' : '#3b82f6'} />
+                    <Cell key={`cell-${index}`} fill={index === 0 ? '#4f46e5' : '#3b82f6'} />
                   ))}
                 </Bar>
               </BarChart>
@@ -150,15 +150,15 @@ export function Overview() {
               <AreaChart data={paddyCultivationStats} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                 <defs>
                   <linearGradient id="colorArea" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} domain={['dataMin - 500', 'auto']} />
                 <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                <Area type="monotone" dataKey="area" name="Total Acres" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorArea)" />
+                <Area type="monotone" dataKey="area" name="Total Acres" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorArea)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>

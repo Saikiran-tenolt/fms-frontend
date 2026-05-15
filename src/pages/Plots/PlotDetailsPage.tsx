@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MapPin, ExternalLink } from 'lucide-react';
 import { EmptyState } from '@/components/common/EmptyState';
@@ -6,8 +6,10 @@ import { SkeletonPlotDetails } from '@/components/loaders/Skeleton';
 import { useAppSelector, useAppDispatch } from '@/hooks';
 import { shallowEqual } from 'react-redux';
 import { fetchOnePlot } from '@/features/plots/plotsSlice';
+import type { ExtendedPlotsState } from '@/features/plots/plotsSlice';
 import { fetchSensorRequests } from '@/admin/features/sensorRequests/sensorRequestSlice';
 import { getPlotCoordinates } from '@/utils/location';
+import { SensorAccessCard } from './components/SensorAccessCard';
 
 const EMPTY_ARRAY: any[] = [];
 
@@ -71,9 +73,6 @@ const TL = [
   { c: '#e24b4a', m: 'Soil moisture dipped below optimal — irrigation advisory issued.', t: '27 Apr, 8:00 AM' },
 ];
 
-import { SensorAccessCard } from './components/SensorAccessCard';
-
-
 /* ── main ────────────────────────────────────────────── */
 export const PlotDetailsPage: React.FC = React.memo(() => {
   const { id } = useParams<{ id: string }>();
@@ -82,6 +81,7 @@ export const PlotDetailsPage: React.FC = React.memo(() => {
 
   const plots = useAppSelector((s) => s.plots.plots, shallowEqual);
   const plotsLoading = useAppSelector((s) => s.plots.loading);
+  const hasFetched = useAppSelector((s) => (s.plots as ExtendedPlotsState).hasFetched);
 
   const requests = useAppSelector((s) => s.sensorRequests.byPlot[id!] ?? EMPTY_ARRAY);
 
@@ -90,10 +90,10 @@ export const PlotDetailsPage: React.FC = React.memo(() => {
     [plots, id]
   );
 
-  // Fetch plot data
+  // Fetch plot data — always runs to get the freshest data,
+  // but the render is NOT blocked if the plot is already in the store.
   useEffect(() => {
     if (!id) return;
-    // Only fetch if not already in store or if we want to ensure latest data
     dispatch(fetchOnePlot(id));
   }, [dispatch, id]);
 
@@ -112,23 +112,25 @@ export const PlotDetailsPage: React.FC = React.memo(() => {
     return map;
   }, [requests]);
 
-  if (plotsLoading) return <SkeletonPlotDetails />;
-  if (!plot) return (
-    <EmptyState icon={<MapPin className="h-12 w-12" />} title="Plot Not Found"
-      description="This plot does not exist."
-      action={{ label: 'Back to Plots', onClick: () => navigate('/plots') }} />
+  // ── All hooks must run unconditionally before any early return (Rules of Hooks) ──
+
+  // Coordinates — safe-default when plot is null (loading state)
+  const { lat = 0, lon = 0 } = plot ? getPlotCoordinates(plot.location) : { lat: 0, lon: 0 };
+
+  const mapsUrl = useMemo(
+    () => `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`,
+    [lat, lon]
   );
 
-  const { lat = 0, lon = 0 } = getPlotCoordinates(plot.location);
-  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
-  const daysLeft = plot.expectedHarvestDate
-    ? Math.ceil((new Date(plot.expectedHarvestDate).getTime() - Date.now()) / 86400000)
-    : null;
-  const n = plot.npkLevels?.n ?? 142;
-  const p = plot.npkLevels?.p ?? 58;
-  const k = plot.npkLevels?.k ?? 44;
+  const daysLeft = useMemo(
+    () => plot?.expectedHarvestDate
+      ? Math.ceil((new Date(plot.expectedHarvestDate).getTime() - Date.now()) / 86400000)
+      : null,
+    [plot?.expectedHarvestDate]
+  );
 
-  const liveWidgets = [
+  // liveWidgets depends only on requestMap — safe to call before plot guard
+  const liveWidgets = useMemo(() => [
     { type: 'TEMPERATURE', label: 'Temperature', mockVal: '39', unit: '°C', optimal: 'High', bv: 'amber' },
     { type: 'SOIL_TEMPERATURE', label: 'Soil Temperature', mockVal: '24', unit: '°C', optimal: 'Optimal', bv: 'green' },
     { type: 'SOIL_MOISTURE', label: 'Soil Moisture', mockVal: '35', unit: '%', optimal: 'Optimal', bv: 'green' },
@@ -144,7 +146,27 @@ export const PlotDetailsPage: React.FC = React.memo(() => {
     } else {
       return { label: sensor.label, val: '—', unit: '', badge: 'Locked', bv: 'gray' as PillVariant, note: '🔒 Request not sent', dim: true };
     }
-  });
+  }), [requestMap]);
+
+  // ── Early returns (all hooks have already run above) ────────────────────────
+  //
+  // Stale-while-revalidate: if the plot already exists in the store (e.g. the
+  // user navigated from the plot list which already fetched it), render it
+  // IMMEDIATELY — don't block on the skeleton. fetchOnePlot runs in the
+  // background and updates the data silently.
+  //
+  // Only show the skeleton when we have NO data yet AND are still loading
+  // (e.g. direct URL access or hard refresh with empty store).
+  if (!plot && (plotsLoading || !hasFetched)) return <SkeletonPlotDetails />;
+  if (!plot) return (
+    <EmptyState icon={<MapPin className="h-12 w-12" />} title="Plot Not Found"
+      description="This plot does not exist or could not be loaded."
+      action={{ label: 'Back to Plots', onClick: () => navigate('/plots') }} />
+  );
+
+  const n = plot.npkLevels?.n ?? 142;
+  const p = plot.npkLevels?.p ?? 58;
+  const k = plot.npkLevels?.k ?? 44;
 
   return (
     <div style={{ background: '#f5f5f3', minHeight: '100vh', fontFamily: "'DM Sans',sans-serif" }}>

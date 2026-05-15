@@ -7,7 +7,7 @@ import { login } from '@/features/auth/authSlice';
 import { Button } from '@/components/common/Button';
 import { useToastContext } from '@/components/toast';
 import authService, { VerifyPayload, Location as ProfileLocation } from '@/services/authService';
-import axios from 'axios';
+import adminService from '@/services/adminService';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 // Removed ADMIN_ASSIGN — admin flow is now one step: email + password → JWT
@@ -16,8 +16,6 @@ type Role = 'farmer' | 'admin';
 
 const FONT_URL =
   'https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap';
-
-const API_BASE_URL = 'https://fms-backend-976n.onrender.com/api/v1';
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export const LoginPage: React.FC = () => {
@@ -213,14 +211,12 @@ export const LoginPage: React.FC = () => {
     if (!adminEmail || !adminPassword) return setError('Email and password required');
     setIsLoading(true); setError(null);
     try {
-      const res = await axios.post(`${API_BASE_URL}/admin/login`, {
+      const { success, token, message } = await adminService.login({
         email: adminEmail,
         password: adminPassword,
       });
 
-      const { success, token, message } = res.data;
-
-      if (!success) {
+      if (!success || !token) {
         setError(message || 'Login failed');
         return;
       }

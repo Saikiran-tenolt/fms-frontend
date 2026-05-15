@@ -12,7 +12,7 @@ type Status = typeof STATUSES[number];
 
 const STATUS_STYLE: Record<Status, string> = {
   PENDING: 'bg-amber-100 text-amber-700',
-  APPROVED: 'bg-emerald-100 text-emerald-700',
+  APPROVED: 'bg-indigo-100 text-indigo-700',
   REJECTED: 'bg-red-100 text-red-600',
   INSTALLED: 'bg-blue-100 text-blue-700',
 };
@@ -81,7 +81,7 @@ export function SensorRequests() {
   });
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="space-y-6 px-4 sm:px-6 lg:px-8 py-8">
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -98,7 +98,7 @@ export function SensorRequests() {
             <input
               value={search} onChange={e => setSearch(e.target.value)}
               placeholder="Search requests…"
-              className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
           <button onClick={load} disabled={loading}
@@ -145,10 +145,18 @@ export function SensorRequests() {
                         {String(id).slice(-8).toUpperCase()}
                       </td>
                       <td className="px-6 py-4 font-semibold text-slate-900 whitespace-nowrap">
-                        {req.plotName ?? req.plotId ?? '—'}
+                        {(() => {
+                          if (!req.plotName && !req.plotId) return '—';
+                          const p = req.plotName ?? req.plotId;
+                          return typeof p === 'object' ? (p.plotName ?? p._id ?? '—') : p;
+                        })()}
                       </td>
                       <td className="px-6 py-4 text-slate-600">
-                        {req.sensorType ?? req.type ?? '—'}
+                        {(() => {
+                          const t = req.sensorType ?? req.type;
+                          if (!t) return '—';
+                          return typeof t === 'object' ? (t.name ?? t.key ?? '—') : t;
+                        })()}
                       </td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLE[status] ?? 'bg-slate-100 text-slate-500'}`}>
@@ -161,7 +169,7 @@ export function SensorRequests() {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <button onClick={() => openModal(req)}
-                          className="text-xs font-semibold text-emerald-600 hover:text-emerald-800 transition-colors">
+                          className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors">
                           Update
                         </button>
                       </td>
@@ -181,7 +189,11 @@ export function SensorRequests() {
             <div>
               <p className="text-xs text-slate-500 mb-0.5">Plot</p>
               <p className="font-semibold text-slate-900">
-                {selected.plotName ?? selected.plotId ?? '—'}
+                {(() => {
+                  if (!selected.plotName && !selected.plotId) return '—';
+                  const p = selected.plotName ?? selected.plotId;
+                  return typeof p === 'object' ? (p.plotName ?? p._id ?? '—') : p;
+                })()}
               </p>
             </div>
             <div>
@@ -190,7 +202,7 @@ export function SensorRequests() {
                 {STATUSES.map(s => (
                   <button key={s} onClick={() => setNewStatus(s)}
                     className={`py-2.5 px-3 rounded-lg border text-sm font-semibold transition-all ${newStatus === s
-                      ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
                       : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
                     {s}
                   </button>
@@ -203,7 +215,7 @@ export function SensorRequests() {
                 Cancel
               </button>
               <button onClick={handleUpdate} disabled={updating || newStatus === selected.status}
-                className="flex-1 py-2.5 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50 transition-colors">
+                className="flex-1 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50 transition-colors">
                 {updating ? 'Updating…' : 'Confirm'}
               </button>
             </div>

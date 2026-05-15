@@ -143,9 +143,9 @@ export const WeatherPage: React.FC = () => {
       </header>
 
       {/* Current Weather Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-[2.5rem] p-10 text-white shadow-2xl">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full -mr-32 -mt-32 blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-500/10 rounded-full -ml-24 -mb-24 blur-3xl" />
+      <section className="relative overflow-hidden bg-white border border-slate-200/60 rounded-[2.5rem] p-10 text-slate-900 shadow-sm">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full -mr-32 -mt-32 blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-500/5 rounded-full -ml-24 -mb-24 blur-3xl" />
 
         <div className="relative z-10 grid grid-cols-1 sm:grid-cols-12 gap-8 items-center">
           <div className="sm:col-span-7 space-y-6">
@@ -156,12 +156,12 @@ export const WeatherPage: React.FC = () => {
             <div>
               <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-2">Current Weather</p>
               <div className="flex items-baseline gap-3">
-                <span className="text-8xl font-black tracking-tighter">
+                <span className="text-8xl font-black tracking-tighter text-slate-900">
                   {current ? Math.round(current.main.temp) : '--'}°
                 </span>
                 <div>
-                  <p className="text-2xl font-bold capitalize">{current?.weather[0].description || 'Loading...'}</p>
-                  <p className="text-slate-400 text-sm font-medium">{current?.name || 'Your Location'}</p>
+                  <p className="text-2xl font-bold capitalize text-slate-800">{current?.weather[0].description || 'Loading...'}</p>
+                  <p className="text-slate-500 text-sm font-medium">{current?.name || 'Your Location'}</p>
                 </div>
               </div>
             </div>
@@ -172,9 +172,9 @@ export const WeatherPage: React.FC = () => {
                 { icon: Wind, label: 'Wind', value: current ? `${current.wind.speed} m/s` : '--' },
                 { icon: Eye, label: 'Pressure', value: current ? `${current.main.pressure} hPa` : '--' },
               ].map((item) => (
-                <div key={item.label} className="bg-white/5 backdrop-blur rounded-2xl p-4 text-center border border-white/10">
-                  <item.icon size={18} className="text-emerald-400 mx-auto mb-2" />
-                  <p className="text-lg font-black">{item.value}</p>
+                <div key={item.label} className="bg-slate-50 border border-slate-100 rounded-2xl p-4 text-center">
+                  <item.icon size={18} className="text-emerald-600 mx-auto mb-2" />
+                  <p className="text-lg font-black text-slate-900">{item.value}</p>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{item.label}</p>
                 </div>
               ))}

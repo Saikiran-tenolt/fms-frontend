@@ -2,11 +2,15 @@
 // NEW FILE: src/admin/pages/AdminSensorRequestsPage.tsx
 // ─────────────────────────────────────────────────────────────────────────────
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, memo } from 'react';
 import { useAppDispatch, useAppSelector } from '@/hooks';
 import { fetchAllPendingRequests, approveSensorRequest, rejectSensorRequest } from '@/admin/features/sensorRequests/sensorRequestSlice';
 import type { SensorRequest, SensorRequestStatus } from '@/admin/features/sensorRequests/sensorRequestSlice';
 import { toast } from 'sonner';
+
+// Hoisted to module-level so it is only injected once into the stylesheet,
+// not recreated on every ResolveModal mount.
+const SPIN_KEYFRAMES = `@keyframes spin { to { transform: rotate(360deg); } }`;
 
 /* ── status config ────────────────────────────────── */
 const STATUS: Record<SensorRequestStatus, { label: string; bg: string; color: string; border: string }> = {
@@ -20,17 +24,22 @@ const STATUS: Record<SensorRequestStatus, { label: string; bg: string; color: st
 
 const SENSOR_LABELS: Record<string, string> = {
     'Temperature Sensor': '🌡️ Temperature',
+    'Temperature sensor': '🌡️ Temperature',
     'Soil Temperature Sensor': '🌡️ Soil Temperature',
+    'Soil Sensor': '🌱 Soil Sensor',
     'Soil Moisture Sensor': '💧 Soil Moisture',
+    'Environment Sensor': '🌍 Environment',
     'Humidity Sensor': '🌫️ Humidity',
     'TEMPERATURE': '🌡️ Temperature',
+    'SOIL_SENSOR': '🌱 Soil Sensor',
     'SOIL_TEMPERATURE': '🌡️ Soil Temperature',
     'SOIL_MOISTURE': '💧 Soil Moisture',
+    'ENV_SENSOR': '🌍 Environment',
     'HUMIDITY': '🌫️ Humidity',
 };
 
 /* ── tiny components ──────────────────────────────── */
-const StatusPill = ({ status }: { status: SensorRequestStatus }) => {
+const StatusPill = memo(({ status }: { status: SensorRequestStatus }) => {
     const s = STATUS[status];
     return (
         <span style={{
@@ -41,7 +50,8 @@ const StatusPill = ({ status }: { status: SensorRequestStatus }) => {
             {s.label}
         </span>
     );
-};
+});
+StatusPill.displayName = 'StatusPill';
 
 /* ── resolve modal ────────────────────────────────── */
 interface ResolveModalProps {
@@ -49,7 +59,7 @@ interface ResolveModalProps {
     onClose: () => void;
     onConfirm: (status: 'APPROVED' | 'REJECTED', note: string) => Promise<void>;
 }
-const ResolveModal: React.FC<ResolveModalProps> = ({ request, onClose, onConfirm }) => {
+const ResolveModal: React.FC<ResolveModalProps> = memo(({ request, onClose, onConfirm }) => {
     const [action, setAction] = useState<'APPROVED' | 'REJECTED'>('APPROVED');
     const [note, setNote] = useState('');
     const [loading, setLoading] = useState(false);
@@ -155,10 +165,11 @@ const ResolveModal: React.FC<ResolveModalProps> = ({ request, onClose, onConfirm
                     </button>
                 </div>
             </div>
-            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+            <style>{SPIN_KEYFRAMES}</style>
         </div>
     );
-};
+});
+ResolveModal.displayName = 'ResolveModal';
 
 /* ── main page ────────────────────────────────────── */
 export const AdminSensorRequestsPage: React.FC = () => {
@@ -172,30 +183,45 @@ export const AdminSensorRequestsPage: React.FC = () => {
         dispatch(fetchAllPendingRequests());
     }, [dispatch]);
 
-    const filtered = filterStatus === 'ALL'
-        ? requests
-        : requests.filter((r) => r.status === filterStatus);
+    // Memoize the filtered list — only recomputes when requests array or active
+    // filter tab changes, not on every render (e.g. resolving modal open/close).
+    const filtered = useMemo(
+        () => filterStatus === 'ALL' ? requests : requests.filter((r) => r.status === filterStatus),
+        [requests, filterStatus]
+    );
+
+    // Memoize count map for all tabs so tab row doesn't run 6x .filter() each render.
+    const tabCounts = useMemo(() => {
+        const counts: Record<string, number> = { ALL: requests.length };
+        for (const r of requests) {
+            counts[r.status] = (counts[r.status] ?? 0) + 1;
+        }
+        return counts;
+    }, [requests]);
+
+    // Pending count derived from the already-computed tab counts map.
+    const pending = tabCounts['PENDING'] ?? 0;
 
     const handleResolve = useCallback(
-        async (status: 'APPROVED' | 'REJECTED') => {
+        async (status: 'APPROVED' | 'REJECTED', note: string) => {
             if (!resolving) return;
             try {
                 if (status === 'APPROVED') {
-                    await dispatch(approveSensorRequest(resolving._id)).unwrap();
+                    await dispatch(approveSensorRequest({ requestId: resolving._id, adminNote: note || undefined })).unwrap();
                 } else {
-                    await dispatch(rejectSensorRequest(resolving._id)).unwrap();
+                    await dispatch(rejectSensorRequest({ requestId: resolving._id, adminNote: note || undefined })).unwrap();
                 }
                 const sName = typeof resolving.sensorType === 'string' ? resolving.sensorType : resolving.sensorType.name;
                 toast.success(`Request ${status === 'APPROVED' ? 'approved' : 'rejected'} — ${SENSOR_LABELS[sName] ?? sName}`);
                 setResolving(null);
+                // Refresh list to ensure UI is in sync
+                dispatch(fetchAllPendingRequests());
             } catch (err: any) {
                 toast.error(err || 'Failed to resolve request');
             }
         },
         [dispatch, resolving]
     );
-
-    const pending = requests.filter((r) => r.status === 'PENDING').length;
 
     return (
         <div style={{ minHeight: '100vh', background: '#f5f5f3', fontFamily: "'DM Sans', system-ui, sans-serif", padding: '28px 32px' }}>
@@ -236,7 +262,7 @@ export const AdminSensorRequestsPage: React.FC = () => {
                     overflow: 'hidden', marginBottom: 16, width: 'fit-content',
                 }}>
                     {(['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'INSTALLED', 'DEPLOYED'] as const).map((s, i) => {
-                        const count = s === 'ALL' ? requests.length : requests.filter(r => r.status === s).length;
+                        const count = tabCounts[s] ?? 0;
                         return (
                             <button key={s} onClick={() => setFilterStatus(s)}
                                 style={{
@@ -269,40 +295,51 @@ export const AdminSensorRequestsPage: React.FC = () => {
                             <div key={req._id}
                                 style={{
                                     background: '#fff', border: '0.5px solid #e2e2d9', borderRadius: 10,
-                                    padding: '12px 16px', display: 'grid',
-                                    gridTemplateColumns: '1fr 1fr 140px 120px auto',
-                                    alignItems: 'center', gap: 12,
+                                    padding: '14px 18px', display: 'grid',
+                                    gridTemplateColumns: '1.2fr 1.2fr 100px 1fr auto',
+                                    alignItems: 'center', gap: 14,
                                 }}
                             >
-                                {/* Sensor */}
+                                {/* Sensor + qty */}
                                 <div>
                                     <div style={{ fontSize: 13, fontWeight: 500, color: '#111', marginBottom: 2 }}>
                                         {(() => {
                                             const sName = typeof req.sensorType === 'string' ? req.sensorType : req.sensorType.name;
                                             return SENSOR_LABELS[sName] ?? sName;
                                         })()}
+                                        {req.quantity && req.quantity > 1 && (
+                                            <span style={{ fontSize: 10, color: '#6b7280', fontWeight: 400, marginLeft: 6 }}>×{req.quantity}</span>
+                                        )}
                                     </div>
                                     <div style={{ fontSize: 10.5, color: '#9ca3af' }}>
                                         {new Date(req.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                        {req.placement && <span style={{ marginLeft: 6 }}>· {req.placement}</span>}
                                     </div>
                                 </div>
 
-                                {/* Plot + user */}
+                                {/* Plot + user + phone */}
                                 <div>
                                     <div style={{ fontSize: 12, fontWeight: 500, color: '#374151' }}>
                                         {typeof req.plotId === 'string' ? req.plotId : (req.plotId as any).plotName || '—'}
                                     </div>
                                     <div style={{ fontSize: 11, color: '#9ca3af' }}>
                                         {req.userId?.name || '—'}
+                                        {req.userId?.phone && <span style={{ marginLeft: 4, fontFamily: 'monospace', fontSize: 10 }}>({req.userId.phone})</span>}
                                     </div>
                                 </div>
 
                                 {/* Status */}
                                 <div><StatusPill status={req.status} /></div>
 
-                                {/* Admin note */}
-                                <div style={{ fontSize: 11, color: '#9ca3af', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                    {/* Admin note removed */}
+                                {/* Admin comment */}
+                                <div style={{ fontSize: 11, color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                                     title={req.adminComment || ''}
+                                >
+                                    {req.adminComment ? (
+                                        <span style={{ fontStyle: 'italic' }}>💬 {req.adminComment}</span>
+                                    ) : (
+                                        <span style={{ color: '#d1d5db' }}>—</span>
+                                    )}
                                 </div>
 
                                 {/* Action */}

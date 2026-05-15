@@ -79,7 +79,7 @@ function SensorTypesTab() {
                         <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                     </button>
                     <button onClick={() => setShowModal(true)}
-                        className="flex items-center gap-2 px-3 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700 transition-colors">
+                        className="flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition-colors">
                         <Plus className="h-4 w-4" /> Add Type
                     </button>
                 </div>
@@ -90,7 +90,7 @@ function SensorTypesTab() {
                     {items.map(item => (
                         <tr key={item._id ?? item.id} className="bg-white hover:bg-slate-50/50">
                             <td className="px-6 py-4 font-semibold text-slate-900">{item.name}</td>
-                            <td className="px-6 py-4 font-mono text-xs text-emerald-600 uppercase">{item.key}</td>
+                            <td className="px-6 py-4 font-mono text-xs text-indigo-600 uppercase">{item.key}</td>
                             <td className="px-6 py-4">
                                 <div className="flex gap-1">
                                     {item.supportedSiteTypes?.map((t: string) => (
@@ -122,7 +122,7 @@ function SensorTypesTab() {
                                 <label key={type} className="flex items-center gap-2 cursor-pointer">
                                     <input type="checkbox" checked={form.supportedSiteTypes.includes(type)}
                                         onChange={() => toggleSiteType(type)}
-                                        className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
+                                        className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
                                     <span className="text-sm text-slate-600">{type === 'OPEN_FIELD' ? 'Outdoor (Open Field)' : 'Indoor (Greenhouse)'}</span>
                                 </label>
                             ))}
@@ -190,7 +190,7 @@ function SensorParametersTab() {
                         <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                     </button>
                     <button onClick={() => setShowModal(true)}
-                        className="flex items-center gap-2 px-3 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700 transition-colors">
+                        className="flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition-colors">
                         <Plus className="h-4 w-4" /> Add Parameter
                     </button>
                 </div>
@@ -201,7 +201,7 @@ function SensorParametersTab() {
                     {items.map(item => (
                         <tr key={item._id ?? item.id} className="bg-white hover:bg-slate-50/50">
                             <td className="px-6 py-4 font-semibold text-slate-900">{item.displayName ?? item.name}</td>
-                            <td className="px-6 py-4 font-mono text-[10px] text-emerald-600 uppercase">{item.parameterKey ?? '—'}</td>
+                            <td className="px-6 py-4 font-mono text-[10px] text-indigo-600 uppercase">{item.parameterKey ?? '—'}</td>
                             <td className="px-6 py-4">
                                 <span className="bg-slate-100 text-slate-600 rounded-full px-2 py-0.5 text-xs font-mono">{item.unit}</span>
                             </td>
@@ -302,7 +302,7 @@ function SensorMappingsTab() {
                         <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                     </button>
                     <button onClick={() => setShowModal(true)}
-                        className="flex items-center gap-2 px-3 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700 transition-colors">
+                        className="flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition-colors">
                         <Plus className="h-4 w-4" /> Add Mapping
                     </button>
                 </div>
@@ -313,7 +313,7 @@ function SensorMappingsTab() {
                     {items.map(item => (
                         <tr key={item._id ?? item.id} className="bg-white hover:bg-slate-50/50">
                             <td className="px-6 py-4 font-semibold text-slate-900">{item.sensorType?.name ?? item.sensorType ?? '—'}</td>
-                            <td className="px-6 py-4 font-mono text-xs text-emerald-600 uppercase">{item.parameterKey ?? '—'}</td>
+                            <td className="px-6 py-4 font-mono text-xs text-indigo-600 uppercase">{item.parameterKey ?? '—'}</td>
                             <td className="px-6 py-4 text-xs text-slate-400">{item.createdAt ? new Date(item.createdAt).toLocaleDateString() : '—'}</td>
                         </tr>
                     ))}
@@ -342,7 +342,7 @@ function SensorMappingsTab() {
 }
 
 // ─── Shared micro-components ──────────────────────────────────────────────────
-const inp = "w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all";
+const inp = "w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
     return (
@@ -360,7 +360,7 @@ function ModalFooter({ onCancel, onSave, saving }: { onCancel: () => void; onSav
                 Cancel
             </button>
             <button onClick={onSave} disabled={saving}
-                className="flex-1 py-2.5 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50 transition-colors">
+                className="flex-1 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50 transition-colors">
                 {saving ? 'Creating…' : 'Create'}
             </button>
         </div>
@@ -378,7 +378,7 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
 export function SensorConfig() {
     const [tab, setTab] = useState<Tab>('types');
     return (
-        <div className="space-y-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="space-y-6 px-4 sm:px-6 lg:px-8 py-8">
             <div>
                 <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Sensor Configuration</h2>
                 <p className="text-sm text-slate-500 mt-1">Manage sensor types, parameters, and plot mappings.</p>
@@ -388,7 +388,7 @@ export function SensorConfig() {
             <div className="flex gap-1 p-1 bg-slate-100 rounded-xl w-fit">
                 {TABS.map(t => (
                     <button key={t.id} onClick={() => setTab(t.id)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${tab === t.id ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all border border-transparent ${tab === t.id ? 'bg-white text-indigo-700 shadow-sm border-indigo-200/50' : 'text-slate-500 hover:text-slate-700'}`}>
                         {t.icon}{t.label}
                     </button>
                 ))}

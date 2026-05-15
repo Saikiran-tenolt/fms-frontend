@@ -13,10 +13,21 @@ export interface AdminLoginResponse {
   message?: string;
 }
 
-// Backend may return array directly OR { success, data: [] } — handle both
-const toList = (d: any): { success: boolean; data: any[] } => {
+// Normalise all response shapes the backend can return:
+//   • Array directly                      → { success: true, data: [...] }
+//   • { success, data: [...] }            → as-is
+//   • { success, data: { requests: [...], meta } }  → unwrap requests array
+//   • { success, data: { ... } }          → wrap in array for safety
+const toList = (d: any): { success: boolean; data: any[]; meta?: any } => {
   if (Array.isArray(d)) return { success: true, data: d };
-  return { success: d.success ?? true, data: d.data ?? d };
+  // Paginated shape: { success, data: { requests: [], meta: {} } }
+  if (Array.isArray(d?.data?.requests)) {
+    return { success: d.success ?? true, data: d.data.requests, meta: d.data.meta };
+  }
+  // Flat array shape: { success, data: [] }
+  if (Array.isArray(d?.data)) return { success: d.success ?? true, data: d.data };
+  // Fallback
+  return { success: d.success ?? true, data: [] };
 };
 
 // ─── Service ──────────────────────────────────────────────────────────────────

@@ -5,7 +5,7 @@ import plotService, { CreatePlotPayload, UpdatePlotPayload } from '@/services/pl
 
 
 // Extended state type to include hasFetched without breaking existing PlotsState if imported strictly
-interface ExtendedPlotsState extends PlotsState {
+export interface ExtendedPlotsState extends PlotsState {
   hasFetched: boolean;
 }
 
@@ -29,7 +29,6 @@ export const fetchAllPlots = createAsyncThunk(
       }
       return rejectWithValue('Failed to fetch plots');
     } catch (error: any) {
-      console.warn("API Error:", error.message);
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch plots');
     }
   }

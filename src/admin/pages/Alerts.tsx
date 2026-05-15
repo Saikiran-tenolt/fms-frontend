@@ -7,16 +7,16 @@ import adminService from '@/services/adminService';
 
 const STATUS_STYLE: Record<string, string> = {
   PENDING: 'bg-amber-100/60 text-amber-700 border border-amber-200/50',
-  APPROVED: 'bg-emerald-100/60 text-emerald-700 border border-emerald-200/50',
+  APPROVED: 'bg-indigo-100/60 text-indigo-700 border border-indigo-200/50',
   REJECTED: 'bg-red-100/60 text-red-700 border border-red-200/50',
   INSTALLED: 'bg-blue-100/60 text-blue-700 border border-blue-200/50',
 };
 
 const BELL_COLOR: Record<string, string> = {
   PENDING: 'text-amber-500',
-  APPROVED: 'text-emerald-500',
+  APPROVED: 'text-indigo-500',
   REJECTED: 'text-red-500',
-  INSTALLED: 'text-blue-400',
+  INSTALLED: 'text-blue-500',
 };
 
 export function Alerts() {
@@ -42,7 +42,7 @@ export function Alerts() {
   const critical = requests.filter(r => r.status === 'REJECTED');
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="space-y-6 px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-900 tracking-tight">System Alerts</h2>
@@ -51,7 +51,7 @@ export function Alerts() {
         <div className="flex items-center gap-3">
           {!loading && (
             critical.length === 0 && pending.length === 0 ? (
-              <div className="flex items-center gap-2 text-sm font-bold text-emerald-600 bg-emerald-50 px-4 py-2 rounded-full border border-emerald-100/50">
+              <div className="flex items-center gap-2 text-sm font-bold text-indigo-600 bg-indigo-50 px-4 py-2 rounded-full border border-indigo-100/50">
                 <ShieldCheck className="w-4 h-4" /> All Clear
               </div>
             ) : (
@@ -107,8 +107,20 @@ export function Alerts() {
                           </span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 font-semibold text-slate-900">{req.plotName ?? req.plotId ?? '—'}</td>
-                      <td className="px-6 py-4 text-slate-500">{req.sensorType ?? req.type ?? '—'}</td>
+                      <td className="px-6 py-4 font-semibold text-slate-900">
+                        {(() => {
+                          if (!req.plotName && !req.plotId) return '—';
+                          const p = req.plotName ?? req.plotId;
+                          return typeof p === 'object' ? (p.plotName ?? p._id ?? '—') : p;
+                        })()}
+                      </td>
+                      <td className="px-6 py-4 text-slate-500">
+                        {(() => {
+                          const t = req.sensorType ?? req.type;
+                          if (!t) return '—';
+                          return typeof t === 'object' ? (t.name ?? t.key ?? '—') : t;
+                        })()}
+                      </td>
                       <td className="px-6 py-4">
                         <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${STATUS_STYLE[status] ?? 'bg-slate-100 text-slate-500'}`}>
                           {status}

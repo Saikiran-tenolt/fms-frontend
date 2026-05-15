@@ -54,8 +54,8 @@ export const fetchSensorRequests = createAsyncThunk(
     '/admin/sensorRequests/fetchByPlot',
     async (plotId: string, { rejectWithValue }) => {
         try {
-            // GET /plots/:plotId/sensor-requests (matches sensorRequestService.ts)
-            const res = await api.get(`/plots/${plotId}/sensor-requests`);
+            // GET /plot/:plotId/sensor-requests
+            const res = await api.get(`/plot/${plotId}/sensor-requests`);
             return { plotId, data: toArray(res.data) };
         } catch (err: any) {
             return rejectWithValue(err.message || 'Failed to fetch sensor requests');
@@ -71,8 +71,8 @@ export const submitSensorRequest = createAsyncThunk(
         { rejectWithValue }
     ) => {
         try {
-            // POST /sensor-requests (expects sensorTypes array)
-            const res = await api.post('/admin/sensor-requests', {
+            // POST /sensor-requests (farmer endpoint — NOT /admin/sensor-requests)
+            const res = await api.post('/sensor-requests', {
                 plotId: payload.plotId,
                 sensorTypes: [payload.sensorType]
             });
@@ -94,8 +94,8 @@ export const cancelSensorRequest = createAsyncThunk(
         { rejectWithValue }
     ) => {
         try {
-            // DELETE /sensor-requests/:id (matches sensorRequestService.ts)
-            await api.delete(`/admin/sensor-requests/${requestId}`);
+            // DELETE /sensor-requests/:id (farmer cancels their own request)
+            await api.delete(`/sensor-requests/${requestId}`);
             return { requestId, plotId };
         } catch (err: any) {
             return rejectWithValue(err.message || 'Failed to cancel request');
@@ -117,13 +117,15 @@ export const fetchAllPendingRequests = createAsyncThunk(
     }
 );
 
-/** Admin: approve a sensor request */
+/** Admin: approve a sensor request (optionally with a note) */
 export const approveSensorRequest = createAsyncThunk(
     'sensorRequests/approve',
-    async (requestId: string, { rejectWithValue }) => {
+    async ({ requestId, adminNote }: { requestId: string; adminNote?: string }, { rejectWithValue }) => {
         try {
-            // PATCH /sensor-requests/:id (matches USER spec for Admin)
-            const res = await api.patch(`/admin/sensor-requests/${requestId}`, { status: 'APPROVED' });
+            const res = await api.patch(`/admin/sensor-requests/${requestId}`, {
+                status: 'APPROVED',
+                ...(adminNote ? { adminNote } : {}),
+            });
             return (res.data.data ?? res.data) as SensorRequest;
         } catch (err: any) {
             return rejectWithValue(err.message || 'Failed to approve request');
@@ -131,19 +133,38 @@ export const approveSensorRequest = createAsyncThunk(
     }
 );
 
-/** Admin: reject a sensor request */
+/** Admin: reject a sensor request (optionally with a note) */
 export const rejectSensorRequest = createAsyncThunk(
     'sensorRequests/reject',
-    async (requestId: string, { rejectWithValue }) => {
+    async ({ requestId, adminNote }: { requestId: string; adminNote?: string }, { rejectWithValue }) => {
         try {
-            // PATCH /sensor-requests/:id (matches USER spec for Admin)
-            const res = await api.patch(`/admin/sensor-requests/${requestId}`, { status: 'REJECTED' });
+            const res = await api.patch(`/admin/sensor-requests/${requestId}`, {
+                status: 'REJECTED',
+                ...(adminNote ? { adminNote } : {}),
+            });
             return (res.data.data ?? res.data) as SensorRequest;
         } catch (err: any) {
             return rejectWithValue(err.message || 'Failed to reject request');
         }
     }
 );
+
+// ── Helpers (private) ─────────────────────────────────────────────────────────
+
+/**
+ * Shared update logic for approve & reject fulfilled cases.
+ * Updates the request in both `allPending` and the `byPlot` cache.
+ */
+const updateRequestInState = (state: SensorRequestState, payload: SensorRequest) => {
+    const idx = state.allPending.findIndex(r => r._id === payload._id);
+    if (idx !== -1) state.allPending[idx] = payload;
+
+    const plotIdStr = typeof payload.plotId === 'string' ? payload.plotId : payload.plotId?._id;
+    if (plotIdStr && state.byPlot[plotIdStr]) {
+        const pidx = state.byPlot[plotIdStr].findIndex(r => r._id === payload._id);
+        if (pidx !== -1) state.byPlot[plotIdStr][pidx] = payload;
+    }
+};
 
 // ── Slice ─────────────────────────────────────────────────────────────────────
 
@@ -209,17 +230,11 @@ const sensorRequestSlice = createSlice({
 
         // approveSensorRequest
         builder.addCase(approveSensorRequest.pending, (state, action) => {
-            state.actionLoading = action.meta.arg;
+            state.actionLoading = action.meta.arg.requestId;
         });
         builder.addCase(approveSensorRequest.fulfilled, (state, action) => {
             state.actionLoading = null;
-            state.allPending = state.allPending.filter(r => r._id !== action.payload._id);
-            const { plotId } = action.payload;
-            const plotIdStr = typeof plotId === 'string' ? plotId : plotId?._id;
-            if (plotIdStr && state.byPlot[plotIdStr]) {
-                const idx = state.byPlot[plotIdStr].findIndex(r => r._id === action.payload._id);
-                if (idx !== -1) state.byPlot[plotIdStr][idx] = action.payload;
-            }
+            updateRequestInState(state, action.payload);
         });
         builder.addCase(approveSensorRequest.rejected, (state, action) => {
             state.actionLoading = null;
@@ -228,17 +243,11 @@ const sensorRequestSlice = createSlice({
 
         // rejectSensorRequest
         builder.addCase(rejectSensorRequest.pending, (state, action) => {
-            state.actionLoading = action.meta.arg;
+            state.actionLoading = action.meta.arg.requestId;
         });
         builder.addCase(rejectSensorRequest.fulfilled, (state, action) => {
             state.actionLoading = null;
-            state.allPending = state.allPending.filter(r => r._id !== action.payload._id);
-            const { plotId } = action.payload;
-            const plotIdStr = typeof plotId === 'string' ? plotId : plotId?._id;
-            if (plotIdStr && state.byPlot[plotIdStr]) {
-                const idx = state.byPlot[plotIdStr].findIndex(r => r._id === action.payload._id);
-                if (idx !== -1) state.byPlot[plotIdStr][idx] = action.payload;
-            }
+            updateRequestInState(state, action.payload);
         });
         builder.addCase(rejectSensorRequest.rejected, (state, action) => {
             state.actionLoading = null;

@@ -65,38 +65,39 @@ api.interceptors.response.use(
 
       const refreshToken = localStorage.getItem('refreshToken');
 
-      if (refreshToken) {
-        try {
-          console.log('[API] Access token expired, refreshing...');
-          const res = await axios.post(`${API_BASE_URL}/auth/refresh`, { refreshToken });
-
-          if (res.data.success) {
-            const { accessToken, refreshToken: newRefreshToken } = res.data.data;
-
-            // Update Redux store (also persists to localStorage via authSlice)
-            store.dispatch(updateTokens({ accessToken, refreshToken: newRefreshToken }));
-
-            console.log('[API] Token refreshed successfully');
-
-            // Update the failed request's auth header
-            originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-
-            // Process any queued requests
-            processQueue(null, accessToken);
-            isRefreshing = false;
-
-            // Retry the original request
-            return api(originalRequest);
-          }
-        } catch (refreshError) {
-          console.error('[API] Token refresh failed:', refreshError);
-          processQueue(refreshError, null);
-          isRefreshing = false;
-        }
+      // Admin tokens have no refresh token — skip refresh, clear session immediately
+      if (!refreshToken) {
+        processQueue(new Error('No refresh token'), null);
+        isRefreshing = false;
+        store.dispatch(logout());
+        window.location.href = '/login';
+        return Promise.reject(new Error('Session expired'));
       }
 
-      // If refresh fails or no refresh token, clear auth via Redux and redirect
-      console.log('[API] Session expired, redirecting to login...');
+      try {
+        const res = await axios.post(`${API_BASE_URL}/auth/refresh`, { refreshToken });
+
+        if (res.data.success) {
+          const { accessToken, refreshToken: newRefreshToken } = res.data.data;
+
+          // Update Redux store (also persists to localStorage via authSlice)
+          store.dispatch(updateTokens({ accessToken, refreshToken: newRefreshToken }));
+
+          // Update the failed request's auth header
+          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+
+          // Process any queued requests and retry original
+          processQueue(null, accessToken);
+          isRefreshing = false;
+          return api(originalRequest);
+        }
+      } catch (refreshError) {
+        console.error('[API] Token refresh failed:', refreshError);
+        processQueue(refreshError, null);
+        isRefreshing = false;
+      }
+
+      // Refresh failed — clear auth and redirect
       store.dispatch(logout());
       window.location.href = '/login';
       return Promise.reject(new Error('Session expired'));
